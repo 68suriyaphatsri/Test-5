@@ -1,0 +1,16 @@
+{
+  "name": "memory-garden",
+  "version": "1.0.0",
+  "description": "Cognitive test app using MCP and Supabase",
+  "main": "index.html",
+  "scripts": {
+    "dev": "http-server -c-1 -p 4000"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "keywords": [],
+  "type": "commonjs"
+}

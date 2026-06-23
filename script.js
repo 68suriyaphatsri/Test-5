@@ -5,6 +5,10 @@ let widthValue = 0;
 let userId = localStorage.getItem('memory_garden_user_id');
 console.log("Initial User ID from storage:", userId);
 
+// ตัวแปรสำหรับ LINE Login
+let isLineLogin = false;
+let lineProfile = null;
+
 let detectedProvince = null; // ย้ายมาประกาศด้านบนเพื่อเลี่ยง ReferenceError
 let hourAngle = 0;
 let minuteAngle = 0;
@@ -49,6 +53,21 @@ window.addEventListener('load', async function () {
         // We can optionally set them here if we want dynamic control.
     });
 
+    try {
+        // Initialize LIFF
+        // ใส่ LIFF ID ของคุณที่นี่
+        await liff.init({ liffId: "YOUR_LIFF_ID" });
+        if (liff.isLoggedIn() || liff.isInClient()) {
+            isLineLogin = true;
+            lineProfile = await liff.getProfile();
+            userId = lineProfile.userId;
+            localStorage.setItem('memory_garden_user_id', userId);
+            console.log("Logged in via LINE. User ID:", userId);
+        }
+    } catch (err) {
+        console.error("LIFF Initialization failed", err);
+    }
+
     clearInterval(fakeLoadingInterval);
     widthValue = 100;
     if (progressBar) progressBar.style.width = '100%';
@@ -80,7 +99,7 @@ async function goToLogin() {
         // ยังคงเช็คจำนวนผู้ใช้สูงสุดจาก Supabase
         const count = await MemoryGardenTools.getUserCount();
         
-        // ถ้าไม่มี userId ใน localStorage ให้สร้างใหม่แบบ Sequential
+        // ถ้าไม่มี userId ใน localStorage ให้สร้างใหม่แบบ Sequential (กรณีไม่ได้ผ่าน LINE)
         if (!userId) {
             userId = String(count + 1).padStart(3, '0'); // เช่น 001, 002
             localStorage.setItem('memory_garden_user_id', userId);
@@ -171,9 +190,18 @@ if (infoForm) {
         setTimeout(() => {
             document.getElementById('login-container').style.display = 'none';
 
-            // แสดงหน้า User ID ก่อน
-            document.getElementById('userid-display').innerText = userId;
-            document.getElementById('userid-page').style.display = 'flex';
+            if (isLineLogin) {
+                // ถ้าล็อกอินผ่าน LINE ข้ามหน้ารหัสประจำตัวไปเลย
+                const welcomePage = document.getElementById('welcome-garden-page');
+                if (welcomePage) welcomePage.style.display = 'flex';
+                typeWriter(`สวัสดีคุณ ${lineProfile.displayName || 'ผู้ใช้งาน'} ยินดีต้อนรับเข้าสู่สวนแห่งความทรงจำ...`, "welcome-text", 50, () => {
+                    document.getElementById('start-journey-btn').style.display = 'inline-block';
+                });
+            } else {
+                // แสดงหน้า User ID แบบปกติ
+                document.getElementById('userid-display').innerText = userId;
+                document.getElementById('userid-page').style.display = 'flex';
+            }
 
             if (fade) fade.style.opacity = '0';
             setTimeout(() => { if (fade) fade.style.display = 'none'; }, 600);

@@ -10,6 +10,8 @@ let isLineLogin = false;
 let lineProfile = null;
 
 let detectedProvince = null; // ย้ายมาประกาศด้านบนเพื่อเลี่ยง ReferenceError
+let userLatitude = null;
+let userLongitude = null;
 let hourAngle = 0;
 let minuteAngle = 0;
 let clockScore = 0;
@@ -352,26 +354,78 @@ function setupClockGame() {
         makeElementDraggable(num);
         pile.appendChild(num);
     }
+
+    // Reset clock hands transform rotation
+    const hrHand = document.getElementById('hour-hand');
+    const mnHand = document.getElementById('minute-hand');
+    if (hrHand) hrHand.style.transform = `translateX(-50%) rotate(0deg)`;
+    if (mnHand) mnHand.style.transform = `translateX(-50%) rotate(0deg)`;
+
+    // Setup reset button action
+    const resetBtn = document.getElementById('clock-reset-btn');
+    if (resetBtn) {
+        resetBtn.onclick = function () {
+            const currentPile = document.getElementById('numbers-pile');
+            const zones = document.querySelectorAll('.drop-zone');
+            
+            zones.forEach(zone => {
+                zone.querySelectorAll('.draggable-number').forEach(num => {
+                    currentPile.appendChild(num);
+                    num.style.position = 'static';
+                    num.style.transform = 'none';
+                });
+                zone.classList.remove('filled');
+            });
+            
+            checkClockState();
+        };
+    }
+
+    checkClockState();
 }
 
 function makeElementDraggable(el) {
     let isDragging = false;
+    let startX = 0, startY = 0;
     const startDrag = (e) => {
         isDragging = true;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        startX = clientX;
+        startY = clientY;
+
         el.style.position = 'fixed';
         const moveAt = (ev) => {
-            const clientX = ev.clientX || (ev.touches && ev.touches[0].clientX);
-            const clientY = ev.clientY || (ev.touches && ev.touches[0].clientY);
-            el.style.left = clientX - el.offsetWidth / 2 + 'px';
-            el.style.top = clientY - el.offsetHeight / 2 + 'px';
+            const cx = ev.clientX || (ev.touches && ev.touches[0].clientX);
+            const cy = ev.clientY || (ev.touches && ev.touches[0].clientY);
+            el.style.left = cx - el.offsetWidth / 2 + 'px';
+            el.style.top = cy - el.offsetHeight / 2 + 'px';
         };
         const onMouseMove = (ev) => { if (isDragging) moveAt(ev); };
-        const stopDrag = () => {
+        const stopDrag = (ev) => {
             isDragging = false;
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', stopDrag);
             document.removeEventListener('touchmove', onMouseMove);
             document.removeEventListener('touchend', stopDrag);
+            
+            const endX = ev.clientX || (ev.changedTouches && ev.changedTouches[0].clientX) || startX;
+            const endY = ev.clientY || (ev.changedTouches && ev.changedTouches[0].clientY) || startY;
+            const distMoved = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+
+            if (distMoved < 5) {
+                // Click/tap: return to pile if in a drop-zone
+                const parentZone = el.parentElement;
+                if (parentZone && parentZone.classList.contains('drop-zone')) {
+                    parentZone.classList.remove('filled');
+                    document.getElementById('numbers-pile').appendChild(el);
+                    el.style.position = 'static';
+                    el.style.transform = 'none';
+                    checkClockState();
+                    return;
+                }
+            }
+
             checkDrop(el);
         };
         document.addEventListener('mousemove', onMouseMove);
@@ -383,41 +437,117 @@ function makeElementDraggable(el) {
     el.ontouchstart = startDrag;
 }
 
+function checkClockState() {
+    const placedCount = document.querySelectorAll('.drop-zone .draggable-number').length;
+    const clockHands = document.getElementById('clock-hands');
+    const handBtns = document.getElementById('clock-hand-btns');
+    const submitBtn = document.getElementById('clock-submit-btn');
+    const resetBtn = document.getElementById('clock-reset-btn');
+
+    if (resetBtn) {
+        resetBtn.style.display = placedCount > 0 ? 'inline-block' : 'none';
+    }
+
+    if (placedCount === 12) {
+        if (clockHands) {
+            clockHands.style.display = 'block';
+            clockHands.style.pointerEvents = 'auto';
+        }
+        if (handBtns) handBtns.style.display = 'flex';
+        if (submitBtn) submitBtn.style.display = 'inline-block';
+        enableRotation('hour-hand', 'hour');
+        enableRotation('minute-hand', 'minute');
+    } else {
+        if (clockHands) {
+            clockHands.style.display = 'none';
+            clockHands.style.pointerEvents = 'none';
+        }
+        if (handBtns) handBtns.style.display = 'none';
+        if (submitBtn) submitBtn.style.display = 'none';
+    }
+}
+
 function checkDrop(el) {
     const zones = document.querySelectorAll('.drop-zone');
     let dropped = false;
+    const oldParentZone = el.parentElement;
+
     zones.forEach(zone => {
         const r1 = el.getBoundingClientRect(),
             r2 = zone.getBoundingClientRect();
         const dist = Math.sqrt(Math.pow((r1.left + r1.width / 2) - (r2.left + r2.width / 2), 2) + Math.pow((r1.top + r1.height / 2) - (r2.top + r2.height / 2), 2));
-        if (dist < 45 && zone.children.length === 0) {
-            zone.appendChild(el);
-            zone.classList.add('filled');
-            el.style.position = 'absolute';
-            el.style.left = '50%';
-            el.style.top = '50%';
-            el.style.transform = 'translate(-50%, -50%)';
-            dropped = true;
+
+        if (dist < 45) {
+            // Case 1: The zone is empty
+            if (zone.children.length === 0) {
+                if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
+                    oldParentZone.classList.remove('filled');
+                }
+                zone.appendChild(el);
+                zone.classList.add('filled');
+                el.style.position = 'absolute';
+                el.style.left = '50%';
+                el.style.top = '50%';
+                el.style.transform = 'translate(-50%, -50%)';
+                dropped = true;
+            }
+            // Case 2: The zone is occupied by another number
+            else if (zone.children.length === 1 && zone.children[0] !== el) {
+                const existingEl = zone.children[0];
+                
+                // If we dragged from another zone, swap them
+                if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
+                    oldParentZone.appendChild(existingEl);
+                    existingEl.style.position = 'absolute';
+                    existingEl.style.left = '50%';
+                    existingEl.style.top = '50%';
+                    existingEl.style.transform = 'translate(-50%, -50%)';
+                    oldParentZone.classList.add('filled');
+                    
+                    zone.appendChild(el);
+                    zone.classList.add('filled');
+                    el.style.position = 'absolute';
+                    el.style.left = '50%';
+                    el.style.top = '50%';
+                    el.style.transform = 'translate(-50%, -50%)';
+                    dropped = true;
+                }
+                // If dragged from the pile, swap (existingEl back to pile)
+                else {
+                    document.getElementById('numbers-pile').appendChild(existingEl);
+                    existingEl.style.position = 'static';
+                    existingEl.style.transform = 'none';
+                    
+                    zone.appendChild(el);
+                    zone.classList.add('filled');
+                    el.style.position = 'absolute';
+                    el.style.left = '50%';
+                    el.style.top = '50%';
+                    el.style.transform = 'translate(-50%, -50%)';
+                    dropped = true;
+                }
+            }
+            // Case 3: We dragged it but let go in its own zone
+            else if (zone.children[0] === el) {
+                el.style.position = 'absolute';
+                el.style.left = '50%';
+                el.style.top = '50%';
+                el.style.transform = 'translate(-50%, -50%)';
+                dropped = true;
+            }
         }
     });
+
     if (!dropped) {
-        const parentZone = el.parentElement;
-        if (parentZone && parentZone.classList.contains('drop-zone')) {
-            parentZone.classList.remove('filled');
+        if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
+            oldParentZone.classList.remove('filled');
         }
         document.getElementById('numbers-pile').appendChild(el);
         el.style.position = 'static';
         el.style.transform = 'none';
     }
-    if (document.querySelectorAll('.drop-zone .draggable-number').length === 12) {
-        const clockHands = document.getElementById('clock-hands');
-        clockHands.style.display = 'block';
-        clockHands.style.pointerEvents = 'auto';
-        document.getElementById('clock-hand-btns').style.display = 'flex';
-        document.getElementById('clock-submit-btn').style.display = 'inline-block';
-        enableRotation('hour-hand', 'hour');
-        enableRotation('minute-hand', 'minute');
-    }
+
+    checkClockState();
 }
 
 function enableRotation(id, type) {
@@ -863,6 +993,8 @@ function getUserProvince() {
     navigator.geolocation.getCurrentPosition(
         async (pos) => {
             const { latitude, longitude } = pos.coords;
+            userLatitude = latitude;
+            userLongitude = longitude;
             try {
                 const res = await fetch(
                     `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=th`,
@@ -1001,6 +1133,8 @@ function calculateAndShowResult() {
         disease: document.getElementById('user-disease').value || "ไม่มี",
         totalScore: totalScore,
         riskLevel: document.getElementById('risk-level-title').innerText,
+        latitude: userLatitude,
+        longitude: userLongitude,
         details: {
             memory: recallScore,
             focus: (clockScore + handsScore + mathScore),

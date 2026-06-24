@@ -106,11 +106,15 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS test_results (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id TEXT NOT NULL,
+    name TEXT,
     age INT,
     gender TEXT,
     education TEXT,
     disease TEXT,
     total_score INT,
     risk_level TEXT,
+    details JSONB,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

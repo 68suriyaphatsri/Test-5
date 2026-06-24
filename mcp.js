@@ -108,7 +108,9 @@ const MemoryGardenTools = {
                     disease: userData.disease,
                     total_score: userData.totalScore,
                     risk_level: userData.riskLevel,
-                    details: userData.details
+                    details: userData.details,
+                    latitude: userData.latitude,
+                    longitude: userData.longitude
                 }]);
             if (error) throw error;
             console.log('[MCP] บันทึกผลลง Supabase สำเร็จ');

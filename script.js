@@ -327,6 +327,9 @@ function setupClockGame() {
     const face = document.getElementById('clock-face');
     if (!pile || !face) return;
 
+    const hint = document.getElementById('clock-hint');
+    if (hint) hint.style.display = 'block';
+
     pile.innerHTML = "";
     face.querySelectorAll('.drop-zone').forEach(z => z.remove());
 
@@ -386,22 +389,50 @@ function setupClockGame() {
 
 function makeElementDraggable(el) {
     let isDragging = false;
+    let hasMoved = false;
     let startX = 0, startY = 0;
+    let originalLeft = el.style.left;
+    let originalTop = el.style.top;
+    let originalPosition = el.style.position;
+    let originalTransform = el.style.transform;
+
     const startDrag = (e) => {
-        isDragging = true;
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
         const clientY = e.clientY || (e.touches && e.touches[0].clientY);
         startX = clientX;
         startY = clientY;
+        isDragging = true;
+        hasMoved = false;
 
-        el.style.position = 'fixed';
+        originalLeft = el.style.left;
+        originalTop = el.style.top;
+        originalPosition = el.style.position;
+        originalTransform = el.style.transform;
+
         const moveAt = (ev) => {
             const cx = ev.clientX || (ev.touches && ev.touches[0].clientX);
             const cy = ev.clientY || (ev.touches && ev.touches[0].clientY);
             el.style.left = cx - el.offsetWidth / 2 + 'px';
             el.style.top = cy - el.offsetHeight / 2 + 'px';
         };
-        const onMouseMove = (ev) => { if (isDragging) moveAt(ev); };
+
+        const onMouseMove = (ev) => {
+            if (!isDragging) return;
+            const cx = ev.clientX || (ev.touches && ev.touches[0].clientX);
+            const cy = ev.clientY || (ev.touches && ev.touches[0].clientY);
+            const dist = Math.sqrt(Math.pow(cx - startX, 2) + Math.pow(cy - startY, 2));
+
+            if (!hasMoved && dist > 5) {
+                hasMoved = true;
+                el.style.position = 'fixed';
+                el.style.transform = 'none';
+            }
+
+            if (hasMoved) {
+                moveAt(ev);
+            }
+        };
+
         const stopDrag = (ev) => {
             isDragging = false;
             document.removeEventListener('mousemove', onMouseMove);
@@ -413,20 +444,28 @@ function makeElementDraggable(el) {
             const endY = ev.clientY || (ev.changedTouches && ev.changedTouches[0].clientY) || startY;
             const distMoved = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
 
-            if (distMoved < 5) {
-                // Click/tap: return to pile if in a drop-zone
+            if (distMoved < 15 && !hasMoved) {
                 const parentZone = el.parentElement;
                 if (parentZone && parentZone.classList.contains('drop-zone')) {
                     parentZone.classList.remove('filled');
                     document.getElementById('numbers-pile').appendChild(el);
                     el.style.position = 'static';
                     el.style.transform = 'none';
+                    el.style.left = '';
+                    el.style.top = '';
                     checkClockState();
                     return;
                 }
             }
 
-            checkDrop(el);
+            if (hasMoved) {
+                checkDrop(el);
+            } else {
+                el.style.position = originalPosition;
+                el.style.left = originalLeft;
+                el.style.top = originalTop;
+                el.style.transform = originalTransform;
+            }
         };
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', stopDrag);

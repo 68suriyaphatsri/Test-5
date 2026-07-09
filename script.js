@@ -1310,3 +1310,207 @@ function updateRiskDisplay(score) {
         `;
     }
 }
+
+// =====================================================
+// ระบบค้นหาโรงพยาบาลและคลินิกความจำเกี่ยวกับอัลไซเมอร์ใกล้ฉัน
+// =====================================================
+
+const ALZHEIMER_HOSPITALS = [
+    {
+        name: "คลินิกความจำ โรงพยาบาลจุฬาลงกรณ์ สภากาชาดไทย",
+        lat: 13.7319,
+        lng: 100.5348,
+        phone: "022564000",
+        phoneDisplay: "02-256-4000",
+        specialty: "คลินิกผู้สูงอายุและคลินิกความจำ (Memory Clinic) บริการตรวจวินิจฉัย รักษา และดูแลผู้ป่วยโรคสมองเสื่อมอย่างครบวงจรโดยทีมแพทย์ผู้เชี่ยวชาญเฉพาะทาง",
+        address: "ถนนพระรามที่ 4 แขวงปทุมวัน เขตปทุมวัน กรุงเทพฯ"
+    },
+    {
+        name: "คลินิกความจำ โรงพยาบาลศิริราช",
+        lat: 13.7583,
+        lng: 100.4856,
+        phone: "024197000",
+        phoneDisplay: "02-419-7000",
+        specialty: "คลินิกความจำ ภาควิชาเวชศาสตร์ป้องกันและสังคม ให้บริการตรวจคัดกรอง วินิจฉัย ฟื้นฟูสมรรถภาพทางสมอง และฝึกทักษะการจำสำหรับผู้สูงอายุและผู้ป่วยสมองเสื่อม",
+        address: "ถนนวังหลัง แขวงศิริราช เขตบางกอกน้อย กรุงเทพฯ"
+    },
+    {
+        name: "คลินิกความจำและพฤติกรรม โรงพยาบาลรามาธิบดี",
+        lat: 13.7667,
+        lng: 100.5281,
+        phone: "022011000",
+        phoneDisplay: "02-201-1000",
+        specialty: "ตรวจประเมินผู้ที่มีปัญหาด้านความจำ ทักษะการรู้คิด และพฤติกรรมที่ผิดปกติโดยคณะแพทย์ผู้เชี่ยวชาญเฉพาะทางด้านประสาทวิทยาและสมองเสื่อม",
+        address: "ถนนพระรามที่ 6 แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพฯ"
+    },
+    {
+        name: "คลินิกผู้สูงอายุ สถาบันประสาทวิทยา",
+        lat: 13.7656,
+        lng: 100.5255,
+        phone: "023069899",
+        phoneDisplay: "02-306-9899",
+        specialty: "สถาบันเฉพาะทางโรคสมองและประสาทวิทยา มีศูนย์ประเมินและดูแลผู้ป่วยภาวะสมองเสื่อมระดับตติยภูมิที่มีความเชี่ยวชาญและเครื่องมือพิเศษในการตรวจโดยเฉพาะ",
+        address: "ถนนราชวิถี แขวงทุ่งพญาไท เขตราชเทวี กรุงเทพฯ"
+    },
+    {
+        name: "คลินิกจิตเวชผู้สูงอายุ สถาบันจิตเวชศาสตร์สมเด็จเจ้าพระยา",
+        lat: 13.7317,
+        lng: 100.5019,
+        phone: "024422500",
+        phoneDisplay: "02-442-2500",
+        specialty: "ดูแลผู้ป่วยสมองเสื่อม (Alzheimer's) ที่มีภาวะแทรกซ้อนทางด้านจิตวิทยา พฤติกรรม อารมณ์ และการนอนหลับ โดยทีมจิตแพทย์และนักกิจกรรมบำบัดผู้สูงอายุ",
+        address: "ถนนสมเด็จเจ้าพระยา แขวงคลองสาน เขตคลองสาน กรุงเทพฯ"
+    },
+    {
+        name: "ศูนย์สุขภาพผู้สูงอายุ โรงพยาบาลมหาราชนครเชียงใหม่",
+        lat: 18.7898,
+        lng: 98.9744,
+        phone: "053936150",
+        phoneDisplay: "053-936-150",
+        specialty: "ศูนย์ดูแลสุขภาพผู้สูงอายุและบริการคลินิกความจำเฉพาะทางสำหรับภาคเหนือ ตรวจประเมิน คัดกรอง และรักษาฟื้นฟูโรคอัลไซเมอร์",
+        address: "ถนนอินทวโรรส ตำบลศรีภูมิ อำเภอเมือง จ.เชียงใหม่"
+    },
+    {
+        name: "คลินิกอายุรกรรมสมอง โรงพยาบาลสงขลานครินทร์",
+        lat: 7.0094,
+        lng: 100.4967,
+        phone: "074455000",
+        phoneDisplay: "074-455-000",
+        specialty: "ให้บริการตรวจคัดกรอง ประเมินสุขภาพสมอง และรักษาผู้ป่วยที่มีปัญหาภาวะสมองเสื่อมและโรคอัลไซเมอร์ในเขตพื้นที่ภาคใต้",
+        address: "ถนนกาญจนวณิชย์ ตำบลคอหงส์ อำเภอหาดใหญ่ จ.สงขลา"
+    },
+    {
+        name: "คลินิกผู้สูงอายุ โรงพยาบาลศรีนครินทร์ (ม.ขอนแก่น)",
+        lat: 16.4632,
+        lng: 102.8274,
+        phone: "043363666",
+        phoneDisplay: "043-363-666",
+        specialty: "ให้บริการรักษาโรคสมองเสื่อมและอัลไซเมอร์ระดับตติยภูมิในภาคตะวันออกเฉียงเหนือ มีทีมแพทย์เฉพาะทางระบบประสาทและเวชศาสตร์ผู้สูงอายุดูแลอย่างใกล้ชิด",
+        address: "ถนนมิตรภาพ ตำบลในเมือง อำเภอเมือง จ.ขอนแก่น"
+    }
+];
+
+// ฟังก์ชันคำนวณระยะทางจากพิกัด (Haversine Formula)
+function getHaversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // รัศมีของโลกในหน่วยกิโลเมตร
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // ระยะทางเป็นกิโลเมตร
+}
+
+// เชื่อมโยงปุ่มกับ Event Listener
+function initHospitalLocator() {
+    const findHospitalBtn = document.getElementById('find-hospital-btn');
+    const hospitalModal = document.getElementById('hospital-modal');
+    const closeModalBtn = document.getElementById('close-hospital-modal');
+    const loadingSec = document.getElementById('hospital-loading');
+    const resultSec = document.getElementById('hospital-result');
+
+    if (findHospitalBtn) {
+        findHospitalBtn.addEventListener('click', () => {
+            if (hospitalModal) {
+                hospitalModal.style.display = 'flex';
+                loadingSec.style.display = 'block';
+                resultSec.style.display = 'none';
+            }
+
+            // ร้องขอตำแหน่ง Geolocation ของเบราว์เซอร์
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+                        
+                        // ค้นหาโรงพยาบาลที่อยู่ใกล้ที่สุด
+                        let nearestHosp = null;
+                        let minDistance = Infinity;
+
+                        ALZHEIMER_HOSPITALS.forEach(hosp => {
+                            const distance = getHaversineDistance(userLat, userLng, hosp.lat, hosp.lng);
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                nearestHosp = hosp;
+                            }
+                        });
+
+                        if (nearestHosp) {
+                            renderHospitalResult(nearestHosp, minDistance);
+                        } else {
+                            showFallbackHospital();
+                        }
+                    },
+                    (error) => {
+                        console.warn("Geolocation access denied or failed:", error);
+                        // หากปฏิเสธสิทธิ์ หรือหาไม่เจอ ให้แสดงโรงพยาบาลแนะนำ (เช่น รพ.จุฬาฯ เป็นค่าเริ่มต้น)
+                        showFallbackHospital("กรุณาเปิดสิทธิ์เข้าถึงตำแหน่งเพื่อคำนวณระยะทางจริง หรือเลือกติดต่อโรงพยาบาลหลักด้านล่างนี้ครับ");
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            } else {
+                showFallbackHospital("เบราว์เซอร์ของคุณไม่รองรับการระบุพิกัด ตำแหน่งด้านล่างเป็นโรงพยาบาลแนะนำหลักครับ");
+            }
+        });
+    }
+
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
+            if (hospitalModal) hospitalModal.style.display = 'none';
+        });
+    }
+
+    // ปิดโมดอลเมื่อคลิกนอกพื้นที่กล่อง
+    if (hospitalModal) {
+        hospitalModal.addEventListener('click', (e) => {
+            if (e.target === hospitalModal) {
+                hospitalModal.style.display = 'none';
+            }
+        });
+    }
+
+    function renderHospitalResult(hosp, distance) {
+        loadingSec.style.display = 'none';
+        resultSec.style.display = 'block';
+
+        document.getElementById('hosp-name').textContent = hosp.name;
+        document.getElementById('hosp-distance').textContent = `📍 ห่างจากคุณประมาณ ${distance.toFixed(1)} กิโลเมตร`;
+        document.getElementById('hosp-desc').textContent = hosp.specialty;
+        document.getElementById('hosp-address').textContent = `ที่อยู่: ${hosp.address}`;
+
+        const callBtn = document.getElementById('hosp-call-btn');
+        callBtn.href = `tel:${hosp.phone}`;
+        callBtn.textContent = `📞 โทร ${hosp.phoneDisplay}`;
+
+        const mapBtn = document.getElementById('hosp-map-btn');
+        mapBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hosp.name)}`;
+    }
+
+    function showFallbackHospital(msg = "ระบบกำลังแสดงโรงพยาบาลหลักของกรุงเทพฯ เป็นค่าเริ่มต้น") {
+        // ดึง รพ. จุฬาลงกรณ์ เป็นค่าเริ่มต้นสำหรับ Fallback
+        const fallbackHosp = ALZHEIMER_HOSPITALS[0]; 
+        loadingSec.style.display = 'none';
+        resultSec.style.display = 'block';
+
+        document.getElementById('hosp-name').textContent = fallbackHosp.name;
+        document.getElementById('hosp-distance').textContent = `📍 ${msg}`;
+        document.getElementById('hosp-desc').textContent = fallbackHosp.specialty;
+        document.getElementById('hosp-address').textContent = `ที่อยู่: ${fallbackHosp.address}`;
+
+        const callBtn = document.getElementById('hosp-call-btn');
+        callBtn.href = `tel:${fallbackHosp.phone}`;
+        callBtn.textContent = `📞 โทร ${fallbackHosp.phoneDisplay}`;
+
+        const mapBtn = document.getElementById('hosp-map-btn');
+        mapBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fallbackHosp.name)}`;
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHospitalLocator);
+} else {
+    initHospitalLocator();
+}

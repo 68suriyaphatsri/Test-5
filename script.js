@@ -55,10 +55,12 @@ window.addEventListener('load', async function () {
         // We can optionally set them here if we want dynamic control.
     });
 
+    let liffInitialized = false;
     try {
         // Initialize LIFF
-        // ใส่ LIFF ID ของคุณที่นี่
-        await liff.init({ liffId: "YOUR_LIFF_ID" });
+        const liffId = "2010532474-WfR6f2f3";
+        await liff.init({ liffId: liffId });
+        liffInitialized = true;
         if (liff.isLoggedIn() || liff.isInClient()) {
             isLineLogin = true;
             lineProfile = await liff.getProfile();
@@ -68,6 +70,42 @@ window.addEventListener('load', async function () {
         }
     } catch (err) {
         console.error("LIFF Initialization failed", err);
+    }
+
+    // Bind LINE UI events
+    const lineLoginBtn = document.getElementById('line-login-btn');
+    if (lineLoginBtn) {
+        lineLoginBtn.onclick = function () {
+            if (liffInitialized) {
+                liff.login();
+            } else {
+                alert("ระบบ LINE LIFF ยังไม่พร้อมทำงาน กรุณารอสักครู่หรือลองใหม่อีกครั้ง");
+            }
+        };
+    }
+
+    const lineContinueBtn = document.getElementById('line-continue-btn');
+    if (lineContinueBtn) {
+        lineContinueBtn.onclick = function () {
+            const linePage = document.getElementById('line-login-page');
+            if (linePage) linePage.style.display = 'none';
+            showIntroPage();
+        };
+    }
+
+    const lineLogoutBtn = document.getElementById('line-logout-btn');
+    if (lineLogoutBtn) {
+        lineLogoutBtn.onclick = function (e) {
+            e.preventDefault();
+            if (liffInitialized && liff.isLoggedIn()) {
+                liff.logout();
+            }
+            isLineLogin = false;
+            lineProfile = null;
+            localStorage.removeItem('memory_garden_user_id');
+            updateLineLoginUI();
+            location.reload();
+        };
     }
 
     clearInterval(fakeLoadingInterval);
@@ -82,6 +120,7 @@ window.addEventListener('load', async function () {
 
             setTimeout(() => {
                 if (loaderWrapper) loaderWrapper.style.display = 'none';
+                updateLineLoginUI();
                 goToLogin();
                 fadeOverlay.style.opacity = '0';
                 setTimeout(() => { fadeOverlay.style.display = 'none'; }, 600);
@@ -90,23 +129,33 @@ window.addEventListener('load', async function () {
     }, 500);
 });
 
+// ฟังก์ชันปรับปรุงการแสดงผล UI LINE
+function updateLineLoginUI() {
+    const unauthSec = document.getElementById('line-unauth-section');
+    const authSec = document.getElementById('line-auth-section');
+    const avatar = document.getElementById('line-user-avatar');
+    const nameDisp = document.getElementById('line-user-name');
+
+    if (isLineLogin && lineProfile) {
+        if (unauthSec) unauthSec.style.display = 'none';
+        if (authSec) authSec.style.display = 'block';
+        if (avatar) avatar.src = lineProfile.pictureUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+        if (nameDisp) nameDisp.textContent = lineProfile.displayName || 'LINE User';
+    } else {
+        if (unauthSec) unauthSec.style.display = 'block';
+        if (authSec) authSec.style.display = 'none';
+    }
+}
+
 // --- 3. ฟังก์ชันพื้นฐาน (Typewriter & Navigation) ---
 const scriptURL = 'https://script.google.com/macros/s/AKfycby_G-6fHIB8FgYwSpa__TbTO7EV8HP9F8aSF3589ZDpuj7lx9nQi_jmPic50eTYkm0Z/exec';
 const MAX_USERS = 100;
 
 async function goToLogin() {
-    const login = document.getElementById('login-container');
-    const introPage = document.getElementById('intro-page');
+    const linePage = document.getElementById('line-login-page');
     try {
         // ยังคงเช็คจำนวนผู้ใช้สูงสุดจาก Supabase
         const count = await MemoryGardenTools.getUserCount();
-        
-        // ถ้าไม่มี userId ใน localStorage ให้สร้างใหม่แบบ Sequential (กรณีไม่ได้ผ่าน LINE)
-        if (!userId) {
-            userId = String(count + 1).padStart(3, '0'); // เช่น 001, 002
-            localStorage.setItem('memory_garden_user_id', userId);
-            console.log("Generated Sequential User ID:", userId);
-        }
 
         if (count >= MAX_USERS) {
             if (loaderWrapper) loaderWrapper.style.display = 'none';
@@ -116,11 +165,23 @@ async function goToLogin() {
     } catch (e) {
         console.warn('เช็คจำนวนสูงสุดไม่ได้:', e);
     }
+
+    // แสดงหน้า LINE Login เป็นหน้าแรก
+    if (linePage) {
+        linePage.style.display = 'flex';
+    }
+}
+
+function showIntroPage() {
+    const introPage = document.getElementById('intro-page');
+    const login = document.getElementById('login-container');
+
     if (introPage) {
         introPage.style.display = 'flex';
     }
+
     document.getElementById('intro-start-btn').onclick = function () {
-        introPage.style.display = 'none';
+        if (introPage) introPage.style.display = 'none';
         if (login) {
             login.style.display = 'flex';
             login.style.opacity = '1';
@@ -160,11 +221,11 @@ function typeWriter(text, elementId, speed, callback) {
     function typing() {
         if (i < characters.length) {
             let char = characters[i];
-            
+
             // ตรวจสอบว่าเป็นสระหรือวรรณยุกต์ที่ต้องอยู่บน/ล่างตัวอักษรก่อนหน้าหรือไม่
             // ช่วงรหัสสระ/วรรณยุกต์ไทย: \u0E31, \u0E34-\u0E3A, \u0E47-\u0E4E
-            while (i + 1 < characters.length && 
-                   /[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/.test(characters[i + 1])) {
+            while (i + 1 < characters.length &&
+                /[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/.test(characters[i + 1])) {
                 char += characters[i + 1];
                 i++;
             }
@@ -195,9 +256,16 @@ if (infoForm) {
             if (isLineLogin) {
                 // ถ้าล็อกอินผ่าน LINE ข้ามหน้ารหัสประจำตัวไปเลย
                 const welcomePage = document.getElementById('welcome-garden-page');
-                if (welcomePage) welcomePage.style.display = 'flex';
-                typeWriter(`สวัสดีคุณ ${lineProfile.displayName || 'ผู้ใช้งาน'} ยินดีต้อนรับเข้าสู่สวนแห่งความทรงจำ...`, "welcome-text", 50, () => {
-                    document.getElementById('start-journey-btn').style.display = 'inline-block';
+                if (welcomePage) {
+                    welcomePage.style.display = 'flex';
+                    welcomePage.style.opacity = '1';
+                }
+                typeWriter(`สวัสดีคุณ ${lineProfile ? (lineProfile.displayName || 'ผู้ใช้งาน') : 'ผู้ใช้งาน'} ยินดีต้อนรับเข้าสู่สวนแห่งความทรงจำ...`, "typing-text", 50, () => {
+                    const btn = document.getElementById('start-journey-btn');
+                    if (btn) {
+                        btn.style.display = 'inline-block';
+                        setTimeout(() => { btn.style.opacity = '1'; }, 100);
+                    }
                 });
             } else {
                 // แสดงหน้า User ID แบบปกติ
@@ -370,7 +438,7 @@ function setupClockGame() {
         resetBtn.onclick = function () {
             const currentPile = document.getElementById('numbers-pile');
             const zones = document.querySelectorAll('.drop-zone');
-            
+
             zones.forEach(zone => {
                 zone.querySelectorAll('.draggable-number').forEach(num => {
                     currentPile.appendChild(num);
@@ -379,7 +447,7 @@ function setupClockGame() {
                 });
                 zone.classList.remove('filled');
             });
-            
+
             checkClockState();
         };
     }
@@ -439,7 +507,7 @@ function makeElementDraggable(el) {
             document.removeEventListener('mouseup', stopDrag);
             document.removeEventListener('touchmove', onMouseMove);
             document.removeEventListener('touchend', stopDrag);
-            
+
             const endX = ev.clientX || (ev.changedTouches && ev.changedTouches[0].clientX) || startX;
             const endY = ev.clientY || (ev.changedTouches && ev.changedTouches[0].clientY) || startY;
             const distMoved = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
@@ -533,7 +601,7 @@ function checkDrop(el) {
             // Case 2: The zone is occupied by another number
             else if (zone.children.length === 1 && zone.children[0] !== el) {
                 const existingEl = zone.children[0];
-                
+
                 // If we dragged from another zone, swap them
                 if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
                     oldParentZone.appendChild(existingEl);
@@ -542,7 +610,7 @@ function checkDrop(el) {
                     existingEl.style.top = '50%';
                     existingEl.style.transform = 'translate(-50%, -50%)';
                     oldParentZone.classList.add('filled');
-                    
+
                     zone.appendChild(el);
                     zone.classList.add('filled');
                     el.style.position = 'absolute';
@@ -556,7 +624,7 @@ function checkDrop(el) {
                     document.getElementById('numbers-pile').appendChild(existingEl);
                     existingEl.style.position = 'static';
                     existingEl.style.transform = 'none';
-                    
+
                     zone.appendChild(el);
                     zone.classList.add('filled');
                     el.style.position = 'absolute';

@@ -132,6 +132,30 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
     transition: 0.3s;
 }
 
+.line-btn:hover {
+    background-color: #05b34c !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(6, 199, 85, 0.45) !important;
+}
+
+.line-btn:active {
+    transform: translateY(0);
+}
+
+#line-continue-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(130, 149, 75, 0.45) !important;
+}
+
+#line-continue-btn:active {
+    transform: translateY(0);
+}
+
+#line-logout-btn:hover {
+    color: #c9302c !important;
+    text-decoration: underline !important;
+}
+
 
 /* --- 4. Welcome Garden --- */
 

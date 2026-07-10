@@ -576,74 +576,46 @@ function checkClockState() {
 
 function checkDrop(el) {
     const zones = document.querySelectorAll('.drop-zone');
-    let dropped = false;
-    const oldParentZone = el.parentElement;
+    let closestZone = null;
+    let minDist = Infinity;
+    const r1 = el.getBoundingClientRect();
 
     zones.forEach(zone => {
-        const r1 = el.getBoundingClientRect(),
-            r2 = zone.getBoundingClientRect();
+        const r2 = zone.getBoundingClientRect();
         const dist = Math.sqrt(Math.pow((r1.left + r1.width / 2) - (r2.left + r2.width / 2), 2) + Math.pow((r1.top + r1.height / 2) - (r2.top + r2.height / 2), 2));
-
-        if (dist < 45) {
-            // Case 1: The zone is empty
-            if (zone.children.length === 0) {
-                if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
-                    oldParentZone.classList.remove('filled');
-                }
-                zone.appendChild(el);
-                zone.classList.add('filled');
-                el.style.position = 'absolute';
-                el.style.left = '50%';
-                el.style.top = '50%';
-                el.style.transform = 'translate(-50%, -50%)';
-                dropped = true;
-            }
-            // Case 2: The zone is occupied by another number
-            else if (zone.children.length === 1 && zone.children[0] !== el) {
-                const existingEl = zone.children[0];
-
-                // If we dragged from another zone, swap them
-                if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
-                    oldParentZone.appendChild(existingEl);
-                    existingEl.style.position = 'absolute';
-                    existingEl.style.left = '50%';
-                    existingEl.style.top = '50%';
-                    existingEl.style.transform = 'translate(-50%, -50%)';
-                    oldParentZone.classList.add('filled');
-
-                    zone.appendChild(el);
-                    zone.classList.add('filled');
-                    el.style.position = 'absolute';
-                    el.style.left = '50%';
-                    el.style.top = '50%';
-                    el.style.transform = 'translate(-50%, -50%)';
-                    dropped = true;
-                }
-                // If dragged from the pile, swap (existingEl back to pile)
-                else {
-                    document.getElementById('numbers-pile').appendChild(existingEl);
-                    existingEl.style.position = 'static';
-                    existingEl.style.transform = 'none';
-
-                    zone.appendChild(el);
-                    zone.classList.add('filled');
-                    el.style.position = 'absolute';
-                    el.style.left = '50%';
-                    el.style.top = '50%';
-                    el.style.transform = 'translate(-50%, -50%)';
-                    dropped = true;
-                }
-            }
-            // Case 3: We dragged it but let go in its own zone
-            else if (zone.children[0] === el) {
-                el.style.position = 'absolute';
-                el.style.left = '50%';
-                el.style.top = '50%';
-                el.style.transform = 'translate(-50%, -50%)';
-                dropped = true;
-            }
+        if (dist < minDist) {
+            minDist = dist;
+            closestZone = zone;
         }
     });
+
+    const oldParentZone = el.parentElement;
+    let dropped = false;
+
+    if (closestZone && minDist < 45) {
+        const zone = closestZone;
+        // Case 1: The zone is empty
+        if (zone.children.length === 0) {
+            if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
+                oldParentZone.classList.remove('filled');
+            }
+            zone.appendChild(el);
+            zone.classList.add('filled');
+            el.style.position = 'absolute';
+            el.style.left = '50%';
+            el.style.top = '50%';
+            el.style.transform = 'translate(-50%, -50%)';
+            dropped = true;
+        }
+        // Case 2: We dragged it but let go in its own zone
+        else if (zone.children.length === 1 && zone.children[0] === el) {
+            el.style.position = 'absolute';
+            el.style.left = '50%';
+            el.style.top = '50%';
+            el.style.transform = 'translate(-50%, -50%)';
+            dropped = true;
+        }
+    }
 
     if (!dropped) {
         if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
@@ -652,6 +624,8 @@ function checkDrop(el) {
         document.getElementById('numbers-pile').appendChild(el);
         el.style.position = 'static';
         el.style.transform = 'none';
+        el.style.left = '';
+        el.style.top = '';
     }
 
     checkClockState();

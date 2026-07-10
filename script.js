@@ -406,6 +406,7 @@ function setupClockGame() {
     const centerX = size / 2;
     const centerY = size / 2;
 
+    // สร้าง drop-zone ทั้ง 12 ตำแหน่งบนหน้าปัดก่อน
     for (let i = 1; i <= 12; i++) {
         const angle = (i * 30 - 90) * (Math.PI / 180);
         const x = centerX + radius * Math.cos(angle);
@@ -417,14 +418,23 @@ function setupClockGame() {
         zone.style.left = x + 'px';
         zone.style.top = y + 'px';
         face.appendChild(zone);
+    }
 
+    // สร้างตัวเลข 1–12 แล้วสลับลำดับก่อนใส่ใน pile
+    const numbers = Array.from({ length: 12 }, (_, k) => k + 1);
+    for (let i = numbers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+    }
+
+    numbers.forEach(i => {
         const num = document.createElement('div');
         num.className = 'draggable-number';
         num.innerText = i;
         num.id = `num-${i}`;
         makeElementDraggable(num);
         pile.appendChild(num);
-    }
+    });
 
     // Reset clock hands transform rotation
     const hrHand = document.getElementById('hour-hand');
@@ -609,6 +619,29 @@ function checkDrop(el) {
         }
         // Case 2: We dragged it but let go in its own zone
         else if (zone.children.length === 1 && zone.children[0] === el) {
+            el.style.position = 'absolute';
+            el.style.left = '50%';
+            el.style.top = '50%';
+            el.style.transform = 'translate(-50%, -50%)';
+            dropped = true;
+        }
+        // Case 3: The zone has a different number — send that number back to pile
+        else if (zone.children.length === 1 && zone.children[0] !== el) {
+            const displaced = zone.children[0];
+            // ถ้าเลขที่ลากมาอยู่ใน zone อื่น ให้ล้าง zone นั้นก่อน
+            if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
+                oldParentZone.classList.remove('filled');
+            }
+            // ส่งเลขเดิมกลับไป pile
+            const pile = document.getElementById('numbers-pile');
+            pile.appendChild(displaced);
+            displaced.style.position = 'static';
+            displaced.style.transform = 'none';
+            displaced.style.left = '';
+            displaced.style.top = '';
+            // วางเลขใหม่ลงช่อง
+            zone.appendChild(el);
+            zone.classList.add('filled');
             el.style.position = 'absolute';
             el.style.left = '50%';
             el.style.top = '50%';

@@ -451,9 +451,7 @@ function setupClockGame() {
 
             zones.forEach(zone => {
                 zone.querySelectorAll('.draggable-number').forEach(num => {
-                    currentPile.appendChild(num);
-                    num.style.position = 'static';
-                    num.style.transform = 'none';
+                    returnToPile(num);
                 });
                 zone.classList.remove('filled');
             });
@@ -463,6 +461,33 @@ function setupClockGame() {
     }
 
     checkClockState();
+}
+
+function returnToPile(el) {
+    const pile = document.getElementById('numbers-pile');
+    if (!pile) return;
+
+    const val = parseInt(el.innerText);
+    const numbersInPile = Array.from(pile.querySelectorAll('.draggable-number'));
+
+    let inserted = false;
+    for (let i = 0; i < numbersInPile.length; i++) {
+        const currentVal = parseInt(numbersInPile[i].innerText);
+        if (val < currentVal) {
+            pile.insertBefore(el, numbersInPile[i]);
+            inserted = true;
+            break;
+        }
+    }
+
+    if (!inserted) {
+        pile.appendChild(el);
+    }
+
+    el.style.position = 'static';
+    el.style.transform = 'none';
+    el.style.left = '';
+    el.style.top = '';
 }
 
 function makeElementDraggable(el) {
@@ -526,11 +551,7 @@ function makeElementDraggable(el) {
                 const parentZone = el.parentElement;
                 if (parentZone && parentZone.classList.contains('drop-zone')) {
                     parentZone.classList.remove('filled');
-                    document.getElementById('numbers-pile').appendChild(el);
-                    el.style.position = 'static';
-                    el.style.transform = 'none';
-                    el.style.left = '';
-                    el.style.top = '';
+                    returnToPile(el);
                     checkClockState();
                     return;
                 }
@@ -633,12 +654,7 @@ function checkDrop(el) {
                 oldParentZone.classList.remove('filled');
             }
             // ส่งเลขเดิมกลับไป pile
-            const pile = document.getElementById('numbers-pile');
-            pile.appendChild(displaced);
-            displaced.style.position = 'static';
-            displaced.style.transform = 'none';
-            displaced.style.left = '';
-            displaced.style.top = '';
+            returnToPile(displaced);
             // วางเลขใหม่ลงช่อง
             zone.appendChild(el);
             zone.classList.add('filled');
@@ -654,11 +670,7 @@ function checkDrop(el) {
         if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
             oldParentZone.classList.remove('filled');
         }
-        document.getElementById('numbers-pile').appendChild(el);
-        el.style.position = 'static';
-        el.style.transform = 'none';
-        el.style.left = '';
-        el.style.top = '';
+        returnToPile(el);
     }
 
     checkClockState();

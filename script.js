@@ -79,7 +79,7 @@ window.addEventListener('load', async function () {
             if (liffInitialized) {
                 liff.login();
             } else {
-                alert("ระบบ LINE LIFF ยังไม่พร้อมทำงาน กรุณารอสักครู่หรือลองใหม่อีกครั้ง");
+                showCustomPopup("ระบบ LINE LIFF ยังไม่พร้อมทำงาน กรุณารอสักครู่หรือลองใหม่อีกครั้ง");
             }
         };
     }
@@ -236,6 +236,54 @@ function typeWriter(text, elementId, speed, callback) {
         } else { if (callback) callback(); }
     }
     typing();
+}
+
+// --- Custom Premium Popup Modal Functions ---
+function showCustomPopup(message, icon = "⚠️", isConfirm = false) {
+    const modal = document.getElementById('custom-alert-modal');
+    const msgEl = document.getElementById('custom-alert-message');
+    const iconEl = document.getElementById('custom-alert-icon');
+    const okBtn = document.getElementById('custom-alert-ok-btn');
+    const cancelBtn = document.getElementById('custom-alert-cancel-btn');
+    const card = modal.querySelector('div');
+
+    msgEl.innerText = message;
+    iconEl.innerText = icon;
+
+    if (isConfirm) {
+        cancelBtn.style.display = 'inline-block';
+    } else {
+        cancelBtn.style.display = 'none';
+    }
+
+    modal.style.display = 'flex';
+    modal.style.opacity = '0';
+    card.style.transform = 'scale(0.85)';
+
+    // force reflow
+    modal.offsetHeight;
+
+    modal.style.opacity = '1';
+    card.style.transform = 'scale(1)';
+
+    return new Promise((resolve) => {
+        okBtn.onclick = () => {
+            modal.style.opacity = '0';
+            card.style.transform = 'scale(0.85)';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                resolve(true);
+            }, 250);
+        };
+        cancelBtn.onclick = () => {
+            modal.style.opacity = '0';
+            card.style.transform = 'scale(0.85)';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                resolve(false);
+            }, 250);
+        };
+    });
 }
 
 // --- 4. หน้า Login & เริ่มต้นเดินทาง ---
@@ -401,31 +449,22 @@ function setupClockGame() {
     pile.innerHTML = "";
     face.querySelectorAll('.drop-zone').forEach(z => z.remove());
 
-    const size = face.offsetWidth;
-    const radius = size * 0.39;
-    const centerX = size / 2;
-    const centerY = size / 2;
-
-    // สร้าง drop-zone ทั้ง 12 ตำแหน่งบนหน้าปัดก่อน
+    // สร้าง drop-zone ทั้ง 12 ตำแหน่งบนหน้าปัดก่อน (ใช้ % เพื่อให้ Responsive บนหน้าจอทุกขนาด)
     for (let i = 1; i <= 12; i++) {
         const angle = (i * 30 - 90) * (Math.PI / 180);
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY + radius * Math.sin(angle);
+        const x = 50 + 39 * Math.cos(angle);
+        const y = 50 + 39 * Math.sin(angle);
 
         const zone = document.createElement('div');
         zone.className = 'drop-zone';
         zone.id = `zone-${i}`;
-        zone.style.left = x + 'px';
-        zone.style.top = y + 'px';
+        zone.style.left = x + '%';
+        zone.style.top = y + '%';
         face.appendChild(zone);
     }
 
-    // สร้างตัวเลข 1–12 แล้วสลับลำดับก่อนใส่ใน pile
+    // สร้างตัวเลข 1–12 ใส่ใน pile
     const numbers = Array.from({ length: 12 }, (_, k) => k + 1);
-    for (let i = numbers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-    }
 
     numbers.forEach(i => {
         const num = document.createElement('div');
@@ -709,12 +748,36 @@ document.getElementById('clock-submit-btn').onclick = function () {
 };
 
 // --- 7. ด่านที่ 3: ระบบคำนวณ (Math Test) ---
+let mathStartValue = 100;
+let mathSubtractor = 7;
+
 function startMathTest() {
     const mathPage = document.getElementById('math-test-page');
-    mathCurrentValue = 100;
+    
+    // สุ่มชุดโจทย์สำหรับทำแบบทดสอบ (เพื่อให้เหมาะสมกับสมาธิ)
+    const mathPool = [
+        { start: 100, step: 7 },
+        { start: 100, step: 3 },
+        { start: 90, step: 7 },
+        { start: 90, step: 3 },
+        { start: 95, step: 5 },
+        { start: 80, step: 7 },
+        { start: 80, step: 5 }
+    ];
+    
+    const chosen = mathPool[Math.floor(Math.random() * mathPool.length)];
+    mathStartValue = chosen.start;
+    mathSubtractor = chosen.step;
+    
+    mathCurrentValue = mathStartValue;
     mathStep = 1;
     mathCorrectCount = 0;
     mathScore = 0;
+    
+    // อัปเดตตัวเลขลบในหน้าจอ HTML
+    const subEl = document.getElementById('math-subtractor');
+    if (subEl) subEl.innerText = mathSubtractor;
+    
     mathPage.style.display = 'flex';
     setTimeout(() => {
         document.getElementById('math-caption').style.opacity = "1";
@@ -736,9 +799,12 @@ function updateMathUI() {
 
 document.getElementById('math-next-btn').onclick = function () {
     const userAnswer = parseInt(document.getElementById('math-answer').value);
-    if (isNaN(userAnswer)) { alert("กรุณาใส่คำตอบ"); return; }
-    if (userAnswer === (mathCurrentValue - 7)) mathCorrectCount++;
-    mathCurrentValue -= 7;
+    if (isNaN(userAnswer)) { 
+        showCustomPopup("กรุณาใส่คำตอบก่อนนะคะ"); 
+        return; 
+    }
+    if (userAnswer === (mathCurrentValue - mathSubtractor)) mathCorrectCount++;
+    mathCurrentValue -= mathSubtractor;
     mathStep++;
     if (mathStep <= 5) updateMathUI();
     else {
@@ -891,10 +957,10 @@ function startRecallTest() {
 }
 
 // --- Multi-stage Progressive Hint System ---
-document.getElementById('recall-hint-btn').onclick = function () {
+document.getElementById('recall-hint-btn').onclick = async function () {
     // Stage 0 → 1: แสดงคำเตือนก่อนครั้งแรก
     if (recallHintStage === 0) {
-        const confirmed = confirm("⚠️ คำเตือน\n\nการดูคำใบ้จะทำให้คะแนนส่วนนี้เป็น 0\n\nยืนยันจะดูคำใบ้ระดับที่ 1 (Pattern) ไหม?");
+        const confirmed = await showCustomPopup("การขอรับคำใบ้จะส่งผลให้คะแนนในหมวดความจำระยะสั้นเป็น 0 คะแนน\n\nคุณแน่ใจหรือไม่ว่าต้องการดูคำใบ้?", "⚠️", true);
         if (!confirmed) return;
         recallHintUsed = true;
     }
@@ -1148,7 +1214,7 @@ document.getElementById('ori-next-btn').onclick = function () {
     const province = document.getElementById('ori-province-value').value;
 
     if (!d || !m || !y || dayVal === '' || !province) {
-        alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+        showCustomPopup("กรุณากรอกข้อมูลให้ครบถ้วน");
         return;
     }
 

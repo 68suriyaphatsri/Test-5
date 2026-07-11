@@ -368,7 +368,7 @@
             style="text-align: center; width: 85%; max-width: 450px; padding: 50px 30px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 30px solid #ffcfcf;">
             <div id="math-question-container" style="opacity: 0;">
                 <div id="math-display" style="font-size: 4rem; font-weight: bold; color: #333; margin-bottom: 20px;">
-                    <span id="current-num">100</span> - 7
+                    <span id="current-num">100</span> - <span id="math-subtractor">7</span>
                 </div>
                 <div style="font-size: 2rem; color: #333; margin-bottom: 30px;">= ?</div>
                 <input type="number" id="math-answer" placeholder="คำตอบ"
@@ -577,6 +577,22 @@
             <div class="footer-icons">☘️ 🌸 🧠</div>
         </div>
         <!-- end inner wrapper -->
+    </div>
+
+    <!-- Custom Premium Popup Modal -->
+    <div id="custom-alert-modal"
+        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.25s ease;">
+        <div style="background: white; max-width: 420px; width: 90%; padding: 32px 24px; border-radius: 28px; text-align: center; box-shadow: 0 20px 45px rgba(0,0,0,0.2); transform: scale(0.85); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); border: 2px dashed rgba(130, 149, 75, 0.25);">
+            <div id="custom-alert-icon" style="font-size: 3.5rem; margin-bottom: 16px;">⚠️</div>
+            <h3 id="custom-alert-title" style="font-size: 1.3rem; color: #4a5d23; margin: 0 0 10px 0; font-weight: bold;">แจ้งเตือน</h3>
+            <p id="custom-alert-message" style="font-size: 1rem; color: #555; line-height: 1.6; margin: 0 0 26px 0; white-space: pre-line; word-break: break-word;"></p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="custom-alert-cancel-btn"
+                    style="display: none; padding: 12px 28px; background: #e0e0e0; color: #555; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">ยกเลิก</button>
+                <button id="custom-alert-ok-btn"
+                    style="padding: 12px 36px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(130,149,75,0.35);">ตกลง</button>
+            </div>
+        </div>
     </div>
 
     <script src="mcp.js"></script>

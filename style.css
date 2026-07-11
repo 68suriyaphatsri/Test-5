@@ -1134,6 +1134,36 @@ body.show-result {
     .drop-zone { width: 40px; height: 40px; }
 }
 
+/* --- Height-based queries for small mobile screens (e.g. iPhone SE, short viewports) --- */
+@media (max-height: 740px) {
+    #clock-test-page { gap: 8px !important; padding: 10px 6px !important; }
+    #clock-instruction-box { padding: 8px 12px !important; margin-bottom: 2px !important; }
+    #clock-instruction { font-size: 0.85rem !important; line-height: 1.3 !important; }
+    #numbers-pile { gap: 4px !important; padding: 6px !important; max-width: 280px !important; }
+    .draggable-number { width: 30px !important; height: 30px !important; font-size: 0.75rem !important; }
+    .drop-zone { width: 34px !important; height: 34px !important; }
+    #clock-face { width: 200px !important; height: 200px !important; }
+    #hour-hand { height: 48px !important; }
+    #minute-hand { height: 68px !important; }
+    #btn-hour, #btn-minute { font-size: 0.8rem !important; padding: 8px 10px !important; min-width: 100px !important; }
+    #clock-hand-btns { gap: 6px !important; }
+    #clock-submit-btn { padding: 10px 28px !important; font-size: 0.88rem !important; }
+}
+
+@media (max-height: 620px) {
+    #clock-test-page { gap: 4px !important; padding: 6px 4px !important; }
+    #clock-instruction-box { padding: 6px 10px !important; }
+    #clock-instruction { font-size: 0.8rem !important; }
+    #numbers-pile { gap: 3px !important; padding: 4px !important; max-width: 250px !important; }
+    .draggable-number { width: 26px !important; height: 26px !important; font-size: 0.7rem !important; }
+    .drop-zone { width: 30px !important; height: 30px !important; }
+    #clock-face { width: 170px !important; height: 170px !important; }
+    #hour-hand { height: 40px !important; }
+    #minute-hand { height: 55px !important; }
+    #btn-hour, #btn-minute { font-size: 0.75rem !important; padding: 6px 8px !important; min-width: 90px !important; }
+    #clock-submit-btn { padding: 8px 20px !important; font-size: 0.8rem !important; }
+}
+
 /* --- Result Test Page --- */
 #result-page {
     background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%203.png') center center / cover no-repeat;
@@ -1193,3 +1223,28 @@ body.show-result {
     from { transform: scale(0.9); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
+
+/* --- Premium Button Global Styles --- */
+button, .btn-advice {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    outline: none;
+}
+
+button:hover, .btn-advice:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(130, 149, 75, 0.3) !important;
+    filter: brightness(1.08);
+}
+
+button:active, .btn-advice:active {
+    transform: translateY(1px) scale(0.97) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+#close-hospital-modal:hover {
+    transform: scale(1.15) !important;
+}
+

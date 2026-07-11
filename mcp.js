@@ -139,8 +139,26 @@ const MemoryGardenTools = {
             }
         }
         localStorage.setItem('pending_updates', JSON.stringify(remaining));
+    },
+
+    // ---------- 8. ดึงประวัติผลการทดสอบของผู้ใช้ ----------
+    async getUserHistory(userId) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('test_results')
+                .select('id, total_score, risk_level, details, created_at, age, gender, education')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.warn('[MCP] getUserHistory failed:', err.message);
+            return [];
+        }
     }
 };
+
 
 // Retry pending updates เมื่อกลับมาออนไลน์
 window.addEventListener('online', () => {

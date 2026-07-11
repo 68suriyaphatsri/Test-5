@@ -16,12 +16,18 @@ body,
 html {
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow-x: hidden; /* เปลี่ยนจาก hidden เป็น overflow-x:hidden เพื่อให้ scroll แนวตั้งได้ */
     background-color: #fcfcfc;
     font-size: 16px;
     line-height: 1.7;
     color: #333;
     -webkit-font-smoothing: antialiased;
+}
+
+/* ตั้ง CSS variable สำหรับ mobile viewport height ที่ถูกต้อง (exclude address bar) */
+:root {
+    --vh: 1vh;
+    --full-height: 100vh;
 }
 
 h1, h2, h3 { font-weight: 700; line-height: 1.4; color: #111; }
@@ -40,6 +46,7 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
     left: 0;
     width: 100vw;
     height: 100vh;
+    height: var(--full-height);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -84,10 +91,12 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 /* --- 3. Login Section --- */
 
 #login-container {
-    height: 100vh;
+    min-height: 100vh;
+    min-height: var(--full-height);
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow-y: auto; /* เพิ่ม scroll เผื่อ form ยาวบนจอเล็ก */
     background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif') center 40% / cover no-repeat;
     animation: fadeInUp 1s ease;
 }
@@ -169,11 +178,13 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
     left: 0;
     width: 100vw;
     height: 100vh;
+    height: var(--full-height);
     display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 500;
+    overflow-y: auto; /* สำหรับมือถือหน้าจอเล็ก */
     background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif') center 40% / cover no-repeat;
 }
 
@@ -227,12 +238,14 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 
 #clock-test-page {
     width: 100vw;
-    height: 100vh;
+    min-height: 100vh;
+    min-height: var(--full-height);
     background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%205.png') center center / cover no-repeat;
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    overflow-y: auto; /* สำหรับมือถือหน้าจอเล็ก */
     touch-action: none;
     gap: 16px;
 }
@@ -432,6 +445,122 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
     }
 }
 
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* --- History Card Styles --- */
+.history-card {
+    background: #fafafa;
+    border-radius: 18px;
+    padding: 18px 16px;
+    border: 1.5px solid #eee;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.history-card:hover {
+    border-color: #82954b;
+    box-shadow: 0 4px 16px rgba(130, 149, 75, 0.12);
+    transform: translateY(-1px);
+}
+
+.history-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.history-card-date {
+    font-size: 0.82rem;
+    color: #888;
+    font-weight: 500;
+}
+
+.history-risk-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.history-risk-badge.normal {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+
+.history-risk-badge.mci {
+    background: #fff8e1;
+    color: #f57f17;
+    border: 1px solid #ffe082;
+}
+
+.history-risk-badge.high {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.history-score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.history-total-score {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #2d2d2d;
+    line-height: 1;
+}
+
+.history-total-score span {
+    font-size: 1rem;
+    color: #888;
+    font-weight: 400;
+}
+
+.history-score-bar-wrap {
+    flex: 1;
+    margin-left: 14px;
+    background: #eee;
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.history-score-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.history-detail-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.history-detail-chip {
+    background: #f0f0f0;
+    border-radius: 10px;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+
+
 .hint-animate {
     animation: hintBounce 0.6s ease-out;
 }
@@ -475,6 +604,7 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
     left: 0;
     width: 100vw;
     height: 100vh;
+    height: var(--full-height);
     background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep.gif') center center / cover no-repeat;
     z-index: 9999;
     flex-direction: column;
@@ -757,6 +887,16 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 
 body.show-result {
     overflow-y: auto !important;
+}
+
+/* เพิ่ม padding-bottom สำหรับสังเกตใน safe-area (notch phones) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    #farewell-page {
+        padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    }
+    #result-page {
+        padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    }
 }
 
 

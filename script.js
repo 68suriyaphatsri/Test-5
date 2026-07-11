@@ -1,3 +1,16 @@
+// --- 0. Mobile Viewport Height Fix ---
+// แก้ปัญหา 100vh บนมือถือ (Chrome/LINE browser มี address bar ทำให้ content ตก)
+function setMobileVH() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    document.documentElement.style.setProperty('--full-height', `${window.innerHeight}px`);
+}
+setMobileVH();
+window.addEventListener('resize', setMobileVH);
+window.addEventListener('orientationchange', () => {
+    setTimeout(setMobileVH, 300); // รอให้ orientation เปลี่ยนเสร็จก่อน
+});
+
 // --- 1. ตั้งค่าตัวแปรเริ่มต้น ---
 let widthValue = 0;
 
@@ -59,14 +72,25 @@ window.addEventListener('load', async function () {
     try {
         // Initialize LIFF
         const liffId = "2010532474-WfR6f2f3";
-        await liff.init({ liffId: liffId });
+        await liff.init({
+            liffId: liffId,
+            withLoginOnExternalBrowser: false // ป้องกันการ redirect ออก browser ภายนอก
+        });
         liffInitialized = true;
-        if (liff.isLoggedIn() || liff.isInClient()) {
+        // เช็ค isInClient ก่อน: ถ้าอยู่ใน LINE app อยู่แล้ว ดึงข้อมูลได้เลย
+        if (liff.isInClient()) {
             isLineLogin = true;
             lineProfile = await liff.getProfile();
             userId = lineProfile.userId;
             localStorage.setItem('memory_garden_user_id', userId);
-            console.log("Logged in via LINE. User ID:", userId);
+            console.log("Logged in via LINE in-app browser. User ID:", userId);
+        } else if (liff.isLoggedIn()) {
+            // เปิดใน external browser แต่ login ไว้แล้ว
+            isLineLogin = true;
+            lineProfile = await liff.getProfile();
+            userId = lineProfile.userId;
+            localStorage.setItem('memory_garden_user_id', userId);
+            console.log("Logged in via LINE (external browser). User ID:", userId);
         }
     } catch (err) {
         console.error("LIFF Initialization failed", err);
@@ -77,7 +101,13 @@ window.addEventListener('load', async function () {
     if (lineLoginBtn) {
         lineLoginBtn.onclick = function () {
             if (liffInitialized) {
-                liff.login();
+                // ถ้าอยู่ใน LINE app (isInClient) ให้ login ภายใน ไม่เปิด browser ใหม่
+                if (liff.isInClient()) {
+                    liff.login(); // ใน LINE in-app จะไม่เด้งออก browser นอก
+                } else {
+                    // อยู่นอก LINE app ค่อย login ปกติ
+                    liff.login();
+                }
             } else {
                 showCustomPopup("ระบบ LINE LIFF ยังไม่พร้อมทำงาน กรุณารอสักครู่หรือลองใหม่อีกครั้ง");
             }
@@ -146,6 +176,180 @@ function updateLineLoginUI() {
         if (authSec) authSec.style.display = 'none';
     }
 }
+
+// =====================================================
+// ระบบดูประวัติผลการทดสอบ
+// =====================================================
+
+// ผูกปุ่ม History
+const lineHistoryBtn = document.getElementById('line-history-btn');
+if (lineHistoryBtn) {
+    lineHistoryBtn.onclick = function () {
+        showHistoryPage();
+    };
+}
+
+// ปุ่มปิดหน้าประวัติ
+const closeHistoryBtn = document.getElementById('close-history-btn');
+if (closeHistoryBtn) {
+    closeHistoryBtn.onclick = function () {
+        const hp = document.getElementById('history-page');
+        if (hp) {
+            hp.style.opacity = '0';
+            setTimeout(() => { hp.style.display = 'none'; hp.style.opacity = ''; }, 250);
+        }
+    };
+}
+
+// ปุ่มทำแบบทดสอบใหม่จากหน้าประวัติ
+const historyStartBtn = document.getElementById('history-start-btn');
+if (historyStartBtn) {
+    historyStartBtn.onclick = function () {
+        const hp = document.getElementById('history-page');
+        if (hp) hp.style.display = 'none';
+        // ซ่อนหน้า LINE Login แล้วไปหน้าแนะนำ
+        const linePage = document.getElementById('line-login-page');
+        if (linePage) linePage.style.display = 'none';
+        showIntroPage();
+    };
+}
+
+// ปิดเมื่อคลิกนอก modal
+const historyPage = document.getElementById('history-page');
+if (historyPage) {
+    historyPage.addEventListener('click', function (e) {
+        if (e.target === historyPage) {
+            historyPage.style.opacity = '0';
+            setTimeout(() => { historyPage.style.display = 'none'; historyPage.style.opacity = ''; }, 250);
+        }
+    });
+}
+
+// ฟังก์ชันแสดงหน้าประวัติ
+async function showHistoryPage() {
+    const histPage = document.getElementById('history-page');
+    const histLoading = document.getElementById('history-loading');
+    const histEmpty = document.getElementById('history-empty');
+    const histList = document.getElementById('history-list');
+    const histUsername = document.getElementById('history-username');
+    const histAvatar = document.getElementById('history-avatar');
+    const histTotalCount = document.getElementById('history-total-count');
+    const histBestScore = document.getElementById('history-best-score');
+    const histLastScore = document.getElementById('history-last-score');
+
+    if (!histPage) return;
+
+    // แสดง modal
+    histPage.style.display = 'flex';
+    histPage.style.opacity = '0';
+    setTimeout(() => { histPage.style.opacity = '1'; histPage.style.transition = 'opacity 0.25s ease'; }, 10);
+
+    // ใส่ข้อมูล profile
+    if (lineProfile) {
+        if (histUsername) histUsername.textContent = lineProfile.displayName || 'LINE User';
+        if (histAvatar) histAvatar.src = lineProfile.pictureUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+    } else {
+        if (histUsername) histUsername.textContent = userId || 'ผู้ใช้งาน';
+        if (histAvatar) histAvatar.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+    }
+
+    // รีเซ็ตสถานะ
+    if (histLoading) histLoading.style.display = 'block';
+    if (histEmpty) histEmpty.style.display = 'none';
+    if (histList) { histList.style.display = 'none'; histList.innerHTML = ''; }
+    if (histTotalCount) histTotalCount.textContent = '-';
+    if (histBestScore) histBestScore.textContent = '-';
+    if (histLastScore) histLastScore.textContent = '-';
+
+    // ดึงข้อมูลจาก Supabase
+    const records = await MemoryGardenTools.getUserHistory(userId);
+    if (histLoading) histLoading.style.display = 'none';
+
+    if (!records || records.length === 0) {
+        if (histEmpty) histEmpty.style.display = 'block';
+        return;
+    }
+
+    // คำนวณ stats
+    const scores = records.map(r => r.total_score || 0);
+    const best = Math.max(...scores);
+    const last = scores[0];
+    if (histTotalCount) histTotalCount.textContent = records.length + ' ครั้ง';
+    if (histBestScore) histBestScore.textContent = best + '/15';
+    if (histLastScore) histLastScore.textContent = last + '/15';
+
+    // Render รายการ
+    if (histList) {
+        histList.style.display = 'flex';
+        histList.innerHTML = records.map((r, idx) => renderHistoryCard(r, idx)).join('');
+
+        // Animate bars หลัง render
+        setTimeout(() => {
+            histList.querySelectorAll('.history-score-bar-fill').forEach(bar => {
+                bar.style.width = bar.dataset.width;
+            });
+        }, 100);
+    }
+}
+
+// ฟังก์ชัน render card แต่ละครั้ง
+function renderHistoryCard(record, index) {
+    const score = record.total_score || 0;
+    const risk = record.risk_level || 'ไม่ระบุ';
+    const details = record.details || {};
+    const memory = details.memory ?? '-';
+    const focus = details.focus ?? '-';
+    const awareness = details.awareness ?? '-';
+    const pct = Math.round((score / 15) * 100);
+
+    // สีแถบและ badge
+    let barColor = '#82954b'; // เขียว
+    let badgeClass = 'normal';
+    let badgeIcon = '✅';
+    if (risk.includes('MCI') || risk.includes('บกพร่อง')) {
+        barColor = '#f5a623'; badgeClass = 'mci'; badgeIcon = '⚠️';
+    } else if (risk.includes('พิเศษ') || risk.includes('เสี่ยง') || risk.includes('ดูแล')) {
+        barColor = '#e06666'; badgeClass = 'high'; badgeIcon = '🆘';
+    }
+
+    // แปลงวันที่
+    let dateStr = '';
+    if (record.created_at) {
+        const d = new Date(record.created_at);
+        dateStr = d.toLocaleDateString('th-TH', {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+    }
+
+    const isLatest = index === 0;
+
+    return `
+    <div class="history-card" style="${isLatest ? 'border-color: #82954b; background: #f8fbf3;' : ''}">
+        <div class="history-card-header">
+            <div>
+                ${isLatest ? '<span style="font-size:0.7rem;color:#82954b;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">ล่าสุด</span><br>' : ''}
+                <span class="history-card-date">📅 ${dateStr}</span>
+            </div>
+            <span class="history-risk-badge ${badgeClass}">${badgeIcon} ${risk}</span>
+        </div>
+        <div class="history-score-row">
+            <div class="history-total-score">${score}<span>/15</span></div>
+            <div class="history-score-bar-wrap">
+                <div class="history-score-bar-fill"
+                    style="width: 0%; background: linear-gradient(90deg, ${barColor}, ${barColor}88);"
+                    data-width="${pct}%"></div>
+            </div>
+            <div style="margin-left: 10px; font-size: 0.85rem; color: #888; min-width: 36px; text-align: right;">${pct}%</div>
+        </div>
+        <div class="history-detail-row">
+            <div class="history-detail-chip">🧠 ความจำ: <strong>${memory}/3</strong></div>
+            <div class="history-detail-chip">🎯 สมาธิ: <strong>${focus}/9</strong></div>
+            <div class="history-detail-chip">🗓️ รับรู้: <strong>${awareness}/3</strong></div>
+        </div>
+    </div>`;
+}
+
 
 // --- 3. ฟังก์ชันพื้นฐาน (Typewriter & Navigation) ---
 const scriptURL = 'https://script.google.com/macros/s/AKfycby_G-6fHIB8FgYwSpa__TbTO7EV8HP9F8aSF3589ZDpuj7lx9nQi_jmPic50eTYkm0Z/exec';

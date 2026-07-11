@@ -4,8 +4,12 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Anuphan', 'Prompt', sans-serif;
+    font-family: 'Prompt', 'Anuphan', sans-serif !important;
     font-weight: 400;
+}
+
+body, html, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, div, a, label {
+    font-family: 'Prompt', 'Anuphan', sans-serif !important;
 }
 
 body,

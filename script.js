@@ -1522,7 +1522,7 @@ function calculateAndShowResult() {
     const userData = {
         timestamp: new Date().toLocaleString('th-TH'),
         userId: userId,
-        name: document.getElementById('user-name')?.value || "Anonymous",
+        name: (isLineLogin && lineProfile) ? lineProfile.displayName : (document.getElementById('user-name')?.value || "Anonymous"),
         age: document.getElementById('user-age').value,
         gender: document.getElementById('user-gender').value,
         education: document.getElementById('user-education').value,

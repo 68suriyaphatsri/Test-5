@@ -1159,18 +1159,18 @@ function startRecallTest() {
     inputCon.style.opacity = '0';
     recallPage.style.display = 'flex';
 
+    // แสดงข้อความทันที ไม่ใช้ typeWriter
+    const captionEl = document.getElementById('recall-caption');
+    if (captionEl) captionEl.textContent = "เมื่อคืนเราฝันอะไรก็ไม่รู้ แต่จำลางๆ ได้ว่ามีของ 3 อย่างอยู่ด้วย คุณช่วยเรานึกออกมาได้มั้ย?";
+
     // โหลด progress bar แบบ real-time
     updateProgressBar();
 
     setTimeout(() => {
-        typeWriter("เมื่อคืนเราฝันอะไรก็ไม่รู้แต่พอจำลางๆได้ว่ามีของ3อย่างนั้นอยู่ด้วยคุณช่วยเรานึกออกมาได้มั้ย?", "recall-caption", 50, () => {
-            setTimeout(() => {
-                inputCon.style.transition = "opacity 1s ease";
-                inputCon.style.opacity = "1";
-                document.getElementById('recall-1').focus();
-            }, 800);
-        });
-    }, 500);
+        inputCon.style.transition = "opacity 0.8s ease";
+        inputCon.style.opacity = "1";
+        document.getElementById('recall-1').focus();
+    }, 400);
 }
 
 // --- Multi-stage Progressive Hint System ---

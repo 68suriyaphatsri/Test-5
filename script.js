@@ -589,12 +589,7 @@ document.getElementById('userid-next-btn').onclick = function () {
 const startJourneyBtn = document.getElementById('start-journey-btn');
 if (startJourneyBtn) {
     startJourneyBtn.addEventListener('click', async function () {
-        PageTransition.wipe(() => {
-            document.getElementById('welcome-garden-page').style.display = 'none';
-            document.getElementById('memory-test-page').style.display = 'flex';
-        });
-
-        // ดึงคำจาก Supabase ผ่าน MCP Tool (พร้อม offline fallback)
+        // ดึงคำจาก Supabase ก่อน แล้วค่อย transition
         let wordsData = await MemoryGardenTools.fetchRecallSet(userId, 3);
 
         const FALLBACK_POOL = [
@@ -605,7 +600,6 @@ if (startJourneyBtn) {
             { id: null, word: 'ดอกไม้', definition: '', example_sentence: 'ฉันชอบกลิ่นหอมของ[.....]ในตอนเช้า' },
         ];
 
-        // ถ้าได้มาไม่ครบ 3 คำ (อาจจะยังไม่มีคำที่ต้องทบทวนเพิ่ม) ให้เอา fallback มาเติมให้ครบ
         if (!wordsData) wordsData = [];
         if (wordsData.length < 3) {
             const currentWords = wordsData.map(w => w.word);
@@ -620,22 +614,28 @@ if (startJourneyBtn) {
         secretWordsData = wordsData;
         secretWords = wordsData.map(w => w.word);
 
-        document.getElementById('memory-words-display').innerText = secretWords.join('   ');
+        // transition แล้วค่อยแสดงเนื้อหา
+        PageTransition.wipe(() => {
+            document.getElementById('welcome-garden-page').style.display = 'none';
+            document.getElementById('memory-test-page').style.display = 'flex';
 
-        typeWriter("ขอให้ทุกท่านลองจำคำต่อไปนี้ดูนะ...", "instruction-text", 50, () => {
-            setTimeout(() => {
-                const words = document.getElementById('words-container');
-                words.style.display = 'block';
-                setTimeout(() => { words.style.opacity = "1"; }, 100);
+            document.getElementById('memory-words-display').innerText = secretWords.join('   ');
 
+            typeWriter("ขอให้ทุกท่านลองจำคำต่อไปนี้ดูนะ...", "instruction-text", 50, () => {
                 setTimeout(() => {
-                    words.style.opacity = "0";
+                    const words = document.getElementById('words-container');
+                    words.style.display = 'block';
+                    setTimeout(() => { words.style.opacity = "1"; }, 100);
+
                     setTimeout(() => {
-                        words.style.display = 'none';
-                        goToClockPage();
-                    }, 300);
-                }, 4500);
-            }, 1000);
+                        words.style.opacity = "0";
+                        setTimeout(() => {
+                            words.style.display = 'none';
+                            goToClockPage();
+                        }, 300);
+                    }, 4500);
+                }, 1000);
+            });
         });
     });
 }
@@ -652,29 +652,26 @@ let targetHour = 0, targetMinute = 0;
 let correctHourAngle = 0, correctMinuteAngle = 0;
 
 function goToClockPage() {
-    // สุ่มเวลา
     const pick = CLOCK_TIME_POOL[Math.floor(Math.random() * CLOCK_TIME_POOL.length)];
     targetHour = pick.h;
     targetMinute = pick.m;
 
-    // คำนวณ angle ที่ถูกต้อง
-    // เข็มนาที: 1 นาที = 6°
     correctMinuteAngle = targetMinute * 6;
-    // เข็มชั่วโมง: 1 ชั่วโมง = 30°, บวก offset จากนาที (1 นาที = 0.5°)
     correctHourAngle = ((targetHour % 12) * 30 + targetMinute * 0.5) % 360;
-    // ปัดเป็น step 30° ที่ใกล้ที่สุด (เพราะ user หมุนทีละ 30°)
     correctHourAngle = Math.round(correctHourAngle / 30) * 30 % 360;
 
-    // reset angle
     hourAngle = 0;
     minuteAngle = 0;
-    document.getElementById('clock-hand-btns').style.display = 'none';
 
     const timeStr = `${targetHour}:${String(targetMinute).padStart(2, '0')}`;
-    document.getElementById('memory-test-page').style.display = 'none';
-    document.getElementById('clock-test-page').style.display = 'flex';
-    typeWriter(`อรุณสวัสดิ์ ตอนนี้คุณพึ่งตื่นนอนแต่นาฬิกาคุณดันกลับมาพังซะได้ คุณช่วยซ่อมนาฬิกาให้หน่อยได้มั้ย ตอนนี้ ${timeStr}`, "clock-instruction", 50, () => {
-        setupClockGame();
+
+    PageTransition.white(() => {
+        document.getElementById('memory-test-page').style.display = 'none';
+        document.getElementById('clock-hand-btns').style.display = 'none';
+        document.getElementById('clock-test-page').style.display = 'flex';
+        typeWriter(`อรุณสวัสดิ์ ตอนนี้คุณพึ่งตื่นนอนแต่นาฬิกาคุณดันกลับมาพังซะได้ คุณช่วยซ่อมนาฬิกาให้หน่อยได้มั้ย ตอนนี้ ${timeStr}`, "clock-instruction", 50, () => {
+            setupClockGame();
+        });
     });
 }
 

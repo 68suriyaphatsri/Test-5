@@ -178,10 +178,8 @@ window.addEventListener('load', async function () {
     if (lineContinueBtn) {
         lineContinueBtn.onclick = function () {
             const linePage = document.getElementById('line-login-page');
-            PageTransition.slideUp(() => {
-                if (linePage) linePage.style.display = 'none';
-                showIntroPage();
-            });
+            if (linePage) linePage.style.display = 'none';
+            showIntroPage();
         };
     }
 
@@ -207,11 +205,9 @@ window.addEventListener('load', async function () {
     if (progressBar) progressBar.style.width = '100%';
 
     setTimeout(() => {
-        PageTransition.nature(() => {
-            if (loaderWrapper) loaderWrapper.style.display = 'none';
-            updateLineLoginUI();
-            goToLogin();
-        });
+        if (loaderWrapper) loaderWrapper.style.display = 'none';
+        updateLineLoginUI();
+        goToLogin();
     }, 500);
 });
 
@@ -441,13 +437,11 @@ function showIntroPage() {
     }
 
     document.getElementById('intro-start-btn').onclick = function () {
-        PageTransition.slideUp(() => {
-            if (introPage) introPage.style.display = 'none';
-            if (login) {
-                login.style.display = 'flex';
-                login.style.opacity = '1';
-            }
-        });
+        if (introPage) introPage.style.display = 'none';
+        if (login) {
+            login.style.display = 'flex';
+            login.style.opacity = '1';
+        }
     };
 }
 
@@ -552,37 +546,33 @@ function showCustomPopup(message, icon = "⚠️", isConfirm = false) {
 if (infoForm) {
     infoForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        PageTransition.slideUp(() => {
-            document.getElementById('login-container').style.display = 'none';
-            if (isLineLogin) {
-                const welcomePage = document.getElementById('welcome-garden-page');
-                if (welcomePage) { welcomePage.style.display = 'flex'; welcomePage.style.opacity = '1'; }
-                typeWriter(`สวัสดีคุณ ${lineProfile ? (lineProfile.displayName || 'ผู้ใช้งาน') : 'ผู้ใช้งาน'} ยินดีต้อนรับเข้าสู่สวนแห่งความทรงจำ...`, "typing-text", 50, () => {
-                    const btn = document.getElementById('start-journey-btn');
-                    if (btn) { btn.style.display = 'inline-block'; setTimeout(() => { btn.style.opacity = '1'; }, 100); }
-                });
-            } else {
-                document.getElementById('userid-display').innerText = userId;
-                document.getElementById('userid-page').style.display = 'flex';
-            }
-        });
+        document.getElementById('login-container').style.display = 'none';
+        if (isLineLogin) {
+            const welcomePage = document.getElementById('welcome-garden-page');
+            if (welcomePage) { welcomePage.style.display = 'flex'; welcomePage.style.opacity = '1'; }
+            typeWriter(`สวัสดีคุณ ${lineProfile ? (lineProfile.displayName || 'ผู้ใช้งาน') : 'ผู้ใช้งาน'} ยินดีต้อนรับเข้าสู่สวนแห่งความทรงจำ...`, "typing-text", 50, () => {
+                const btn = document.getElementById('start-journey-btn');
+                if (btn) { btn.style.display = 'inline-block'; setTimeout(() => { btn.style.opacity = '1'; }, 100); }
+            });
+        } else {
+            document.getElementById('userid-display').innerText = userId;
+            document.getElementById('userid-page').style.display = 'flex';
+        }
     });
 }
 
 document.getElementById('userid-next-btn').onclick = function () {
-    PageTransition.nature(() => {
-        document.getElementById('userid-page').style.display = 'none';
-        const welcomePage = document.getElementById('welcome-garden-page');
-        welcomePage.style.display = 'flex';
-        welcomePage.style.opacity = '1';
-        setTimeout(() => {
-            typeWriter("ยินดีต้อนรับสู่สวนความจำที่แสนอบอุ่น พวกเราจะนําพาทุกท่านเดินเล่นและทบทวนความทรงจำไปด้วยกัน", "typing-text", 50, () => {
-                const btn = document.getElementById('start-journey-btn');
-                btn.style.display = 'inline-block';
-                setTimeout(() => { btn.style.opacity = '1'; }, 100);
-            });
-        }, 200);
-    });
+    document.getElementById('userid-page').style.display = 'none';
+    const welcomePage = document.getElementById('welcome-garden-page');
+    welcomePage.style.display = 'flex';
+    welcomePage.style.opacity = '1';
+    setTimeout(() => {
+        typeWriter("ยินดีต้อนรับสู่สวนความจำที่แสนอบอุ่น พวกเราจะนําพาทุกท่านเดินเล่นและทบทวนความทรงจำไปด้วยกัน", "typing-text", 50, () => {
+            const btn = document.getElementById('start-journey-btn');
+            btn.style.display = 'inline-block';
+            setTimeout(() => { btn.style.opacity = '1'; }, 100);
+        });
+    }, 200);
 };
 
 // --- 5. ด่านที่ 1: จดจำ 3 คำ (ดึงจาก Supabase) ---
@@ -614,28 +604,24 @@ if (startJourneyBtn) {
         secretWordsData = wordsData;
         secretWords = wordsData.map(w => w.word);
 
-        // transition แล้วค่อยแสดงเนื้อหา
-        PageTransition.wipe(() => {
-            document.getElementById('welcome-garden-page').style.display = 'none';
-            document.getElementById('memory-test-page').style.display = 'flex';
+        document.getElementById('welcome-garden-page').style.display = 'none';
+        document.getElementById('memory-test-page').style.display = 'flex';
+        document.getElementById('memory-words-display').innerText = secretWords.join('   ');
 
-            document.getElementById('memory-words-display').innerText = secretWords.join('   ');
+        typeWriter("ขอให้ทุกท่านลองจำคำต่อไปนี้ดูนะ...", "instruction-text", 50, () => {
+            setTimeout(() => {
+                const words = document.getElementById('words-container');
+                words.style.display = 'block';
+                setTimeout(() => { words.style.opacity = "1"; }, 100);
 
-            typeWriter("ขอให้ทุกท่านลองจำคำต่อไปนี้ดูนะ...", "instruction-text", 50, () => {
                 setTimeout(() => {
-                    const words = document.getElementById('words-container');
-                    words.style.display = 'block';
-                    setTimeout(() => { words.style.opacity = "1"; }, 100);
-
+                    words.style.opacity = "0";
                     setTimeout(() => {
-                        words.style.opacity = "0";
-                        setTimeout(() => {
-                            words.style.display = 'none';
-                            goToClockPage();
-                        }, 300);
-                    }, 4500);
-                }, 1000);
-            });
+                        words.style.display = 'none';
+                        goToClockPage();
+                    }, 300);
+                }, 4500);
+            }, 1000);
         });
     });
 }
@@ -665,13 +651,11 @@ function goToClockPage() {
 
     const timeStr = `${targetHour}:${String(targetMinute).padStart(2, '0')}`;
 
-    PageTransition.white(() => {
-        document.getElementById('memory-test-page').style.display = 'none';
-        document.getElementById('clock-hand-btns').style.display = 'none';
-        document.getElementById('clock-test-page').style.display = 'flex';
-        typeWriter(`อรุณสวัสดิ์ ตอนนี้คุณพึ่งตื่นนอนแต่นาฬิกาคุณดันกลับมาพังซะได้ คุณช่วยซ่อมนาฬิกาให้หน่อยได้มั้ย ตอนนี้ ${timeStr}`, "clock-instruction", 50, () => {
-            setupClockGame();
-        });
+    document.getElementById('memory-test-page').style.display = 'none';
+    document.getElementById('clock-hand-btns').style.display = 'none';
+    document.getElementById('clock-test-page').style.display = 'flex';
+    typeWriter(`อรุณสวัสดิ์ ตอนนี้คุณพึ่งตื่นนอนแต่นาฬิกาคุณดันกลับมาพังซะได้ คุณช่วยซ่อมนาฬิกาให้หน่อยได้มั้ย ตอนนี้ ${timeStr}`, "clock-instruction", 50, () => {
+        setupClockGame();
     });
 }
 
@@ -973,10 +957,8 @@ function enableRotation(id, type) {
 document.getElementById('clock-submit-btn').onclick = function () {
     clockScore = (document.querySelectorAll('.drop-zone .draggable-number').length === 12) ? 1 : 0;
     handsScore = (hourAngle === correctHourAngle && minuteAngle === correctMinuteAngle) ? 1 : 0;
-    PageTransition.flip(() => {
-        document.getElementById('clock-test-page').style.display = 'none';
-        startMathTest();
-    });
+    document.getElementById('clock-test-page').style.display = 'none';
+    startMathTest();
 };
 
 // --- 7. ด่านที่ 3: ระบบคำนวณ (Math Test) ---
@@ -1044,9 +1026,7 @@ document.getElementById('math-next-btn').onclick = function () {
         else if (mathCorrectCount >= 2) mathScore = 2;
         else if (mathCorrectCount === 1) mathScore = 1;
         document.getElementById('math-test-page').style.display = 'none';
-        PageTransition.slideLeft(() => {
-            startNamingTest();
-        });
+        startNamingTest();
     }
 };
 
@@ -1114,10 +1094,8 @@ document.getElementById('naming-submit-btn').onclick = function () {
         if (ans === namingSelectedObjects[i].name) namingScore++;
     });
 
-    PageTransition.zoomOut(() => {
-        document.getElementById('naming-test-page').style.display = 'none';
-        startRecallTest();
-    });
+    document.getElementById('naming-test-page').style.display = 'none';
+    startRecallTest();
 };
 
 
@@ -1304,10 +1282,8 @@ document.getElementById('recall-next-btn').onclick = async function () {
     // อัปเดต progress bar อีกครั้งหลังบันทึก
     await updateProgressBar();
 
-    PageTransition.ripple(() => {
-        document.getElementById('recall-test-page').style.display = 'none';
-        startOrientationTest();
-    });
+    document.getElementById('recall-test-page').style.display = 'none';
+    startOrientationTest();
 };
 
 // --- 9. ด่านสุดท้าย: การรับรู้ (Orientation Test) ---
@@ -1459,23 +1435,17 @@ document.getElementById('ori-next-btn').onclick = function () {
 };
 
 function goToFarewell() {
-    PageTransition.cinematic(() => {
-        document.getElementById('orientation-test-page').style.display = 'none';
-        const farewellPage = document.getElementById('farewell-page');
-        if (farewellPage) farewellPage.style.display = 'flex';
-    });
+    document.getElementById('orientation-test-page').style.display = 'none';
+    const farewellPage = document.getElementById('farewell-page');
+    if (farewellPage) farewellPage.style.display = 'flex';
 
     const msg = "ขอบคุณนะที่ช่วยเหลือเราตลอดและทำให้เรามีรอยยิ้ม แต่ว่ามันคงถึงเวลาที่เราต้องจากกันแล้วละ โชคดีนะ...";
-    setTimeout(() => {
-        typeWriter(msg, "farewell-text", 70, () => {
-            setTimeout(() => {
-                PageTransition.cinematic(() => {
-                    document.getElementById('farewell-page').style.display = 'none';
-                    calculateAndShowResult();
-                });
-            }, 2000);
-        });
-    }, 900); // รอ cinematic overlay เข้าก่อน
+    typeWriter(msg, "farewell-text", 70, () => {
+        setTimeout(() => {
+            document.getElementById('farewell-page').style.display = 'none';
+            calculateAndShowResult();
+        }, 2000);
+    });
 }
 
 function sendDataToSheet(userData) {

@@ -1107,8 +1107,8 @@ body.show-result {
 #orientation-caption {
     position: relative;
     z-index: 1;
-    color: white !important;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    color: #1a1a1a !important;
+    text-shadow: none !important;
 }
 
 /* --- Font Size Fixes --- */
@@ -1404,3 +1404,55 @@ button:active, .btn-advice:active {
     transform: scale(1.15) !important;
 }
 
+
+/* ============================================================
+   PAGE TRANSITION SYSTEM
+   ============================================================ */
+
+/* --- Overlay พื้นฐาน (แทน white-fade) --- */
+#page-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    pointer-events: none;
+    opacity: 0;
+    display: none;
+}
+
+/* --- Themes --- */
+#page-transition-overlay.theme-white    { background: #ffffff; }
+#page-transition-overlay.theme-black    { background: #0a0a0a; }
+#page-transition-overlay.theme-green    { background: radial-gradient(ellipse at center, #c8e6a0 0%, #82954b 100%); }
+#page-transition-overlay.theme-blur     { background: rgba(255,255,255,0.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+#page-transition-overlay.theme-nature   { background: linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 50%, #66bb6a 100%); }
+
+/* --- Animations: Overlay เข้า --- */
+@keyframes tx-fadeIn        { from { opacity:0 } to { opacity:1 } }
+@keyframes tx-slideUpIn     { from { opacity:0; transform: translateY(100%) } to { opacity:1; transform: translateY(0) } }
+@keyframes tx-slideDownIn   { from { opacity:0; transform: translateY(-100%) } to { opacity:1; transform: translateY(0) } }
+@keyframes tx-slideLeftIn   { from { opacity:0; transform: translateX(100%) } to { opacity:1; transform: translateX(0) } }
+@keyframes tx-wipeIn        { from { clip-path: inset(0 100% 0 0) } to { clip-path: inset(0 0% 0 0) } }
+@keyframes tx-scaleIn       { from { opacity:0; transform: scale(1.15) } to { opacity:1; transform: scale(1) } }
+@keyframes tx-flipIn        { from { opacity:0; transform: perspective(600px) rotateY(90deg) } to { opacity:1; transform: perspective(600px) rotateY(0deg) } }
+@keyframes tx-rippleIn      { from { opacity:0; transform: scale(0.3); border-radius:50% } to { opacity:1; transform: scale(1); border-radius:0% } }
+@keyframes tx-zoomOutIn     { from { opacity:0; transform: scale(2) } to { opacity:1; transform: scale(1) } }
+@keyframes tx-cinematicIn  { from { opacity:0 } to { opacity:1 } }
+
+/* --- Animations: Overlay ออก --- */
+@keyframes tx-fadeOut       { from { opacity:1 } to { opacity:0 } }
+@keyframes tx-slideUpOut    { from { opacity:1; transform: translateY(0) } to { opacity:0; transform: translateY(-100%) } }
+@keyframes tx-slideLeftOut  { from { opacity:1; transform: translateX(0) } to { opacity:0; transform: translateX(-100%) } }
+@keyframes tx-wipeOut       { from { clip-path: inset(0 0% 0 0) } to { clip-path: inset(0 0% 0 100%) } }
+@keyframes tx-scaleOut      { from { opacity:1; transform: scale(1) } to { opacity:0; transform: scale(0.85) } }
+@keyframes tx-flipOut       { from { opacity:1; transform: perspective(600px) rotateY(0deg) } to { opacity:0; transform: perspective(600px) rotateY(-90deg) } }
+@keyframes tx-rippleOut     { from { opacity:1; transform: scale(1); border-radius:0% } to { opacity:0; transform: scale(0.3); border-radius:50% } }
+@keyframes tx-zoomOutOut    { from { opacity:1; transform: scale(1) } to { opacity:0; transform: scale(0.5) } }
+@keyframes tx-cinematicOut { from { opacity:1 } to { opacity:0 } }
+
+/* --- Class สำหรับเนื้อหาหน้าที่กำลัง enter --- */
+.page-enter-slideUp   { animation: tx-slideUpIn   0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.page-enter-slideDown { animation: tx-slideDownIn  0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.page-enter-slideLeft { animation: tx-slideLeftIn  0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.page-enter-fade      { animation: tx-fadeIn        0.5s ease both; }
+.page-enter-scale     { animation: tx-scaleIn       0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+.page-enter-zoom      { animation: tx-zoomOutIn     0.4s ease both; }

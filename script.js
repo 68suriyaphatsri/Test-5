@@ -8,8 +8,68 @@ function setMobileVH() {
 setMobileVH();
 window.addEventListener('resize', setMobileVH);
 window.addEventListener('orientationchange', () => {
-    setTimeout(setMobileVH, 300); // รอให้ orientation เปลี่ยนเสร็จก่อน
+    setTimeout(setMobileVH, 300);
 });
+
+// --- 0.5 Page Transition Engine ---
+// ใช้แทน white-fade-overlay ทุกจุด
+// transitionTo(callback, options)
+// options: { theme, animIn, animOut, duration, enterClass }
+const PageTransition = (() => {
+    const DEFAULTS = {
+        theme: 'white',
+        animIn: 'tx-fadeIn',
+        animOut: 'tx-fadeOut',
+        duration: 400,   // ms สำหรับ overlay fade in
+        hold: 100,       // ms ค้างไว้ก่อน fade out
+        enterClass: null // class ที่จะใส่ให้ target element หลังเปลี่ยน
+    };
+
+    function run(callback, opts = {}) {
+        const o = Object.assign({}, DEFAULTS, opts);
+        const overlay = document.getElementById('page-transition-overlay');
+        // ลบ theme เก่า
+        overlay.className = '';
+        overlay.classList.add(`theme-${o.theme}`);
+        overlay.style.display = 'block';
+        overlay.style.animation = `${o.animIn} ${o.duration}ms cubic-bezier(0.4,0,0.2,1) both`;
+
+        setTimeout(() => {
+            // เรียก callback เปลี่ยนหน้า
+            if (callback) callback();
+            setTimeout(() => {
+                overlay.style.animation = `${o.animOut} ${o.duration}ms cubic-bezier(0.4,0,0.2,1) both`;
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    overlay.style.animation = '';
+                    overlay.className = '';
+                }, o.duration);
+            }, o.hold);
+        }, o.duration);
+    }
+
+    // Presets สำหรับแต่ละ transition
+    return {
+        // ขาวธรรมดา (fallback)
+        white:     (cb) => run(cb, { theme: 'white',  animIn: 'tx-fadeIn',     animOut: 'tx-fadeOut',    duration: 350 }),
+        // เขียว — ธรรมชาติ สำหรับหน้าต้อนรับ
+        nature:    (cb) => run(cb, { theme: 'nature',  animIn: 'tx-scaleIn',    animOut: 'tx-scaleOut',   duration: 400 }),
+        // slide ขึ้น
+        slideUp:   (cb) => run(cb, { theme: 'white',  animIn: 'tx-slideUpIn',  animOut: 'tx-slideUpOut', duration: 380 }),
+        // slide ซ้าย
+        slideLeft: (cb) => run(cb, { theme: 'white',  animIn: 'tx-slideLeftIn', animOut: 'tx-slideLeftOut', duration: 360 }),
+        // flip แนวนอน
+        flip:      (cb) => run(cb, { theme: 'white',  animIn: 'tx-flipIn',     animOut: 'tx-flipOut',    duration: 380 }),
+        // zoom ออก
+        zoomOut:   (cb) => run(cb, { theme: 'blur',   animIn: 'tx-zoomOutIn',  animOut: 'tx-zoomOutOut', duration: 380 }),
+        // ripple วงกลม
+        ripple:    (cb) => run(cb, { theme: 'green',  animIn: 'tx-rippleIn',   animOut: 'tx-rippleOut',  duration: 400 }),
+        // cinematic ดำ — สำหรับ farewell
+        cinematic: (cb) => run(cb, { theme: 'black',  animIn: 'tx-cinematicIn', animOut: 'tx-cinematicOut', duration: 500, hold: 200 }),
+        // wipe จากซ้ายไปขวา
+        wipe:      (cb) => run(cb, { theme: 'nature', animIn: 'tx-wipeIn',     animOut: 'tx-wipeOut',    duration: 380 }),
+    };
+})();
 
 // --- 1. ตั้งค่าตัวแปรเริ่มต้น ---
 let widthValue = 0;
@@ -118,8 +178,10 @@ window.addEventListener('load', async function () {
     if (lineContinueBtn) {
         lineContinueBtn.onclick = function () {
             const linePage = document.getElementById('line-login-page');
-            if (linePage) linePage.style.display = 'none';
-            showIntroPage();
+            PageTransition.slideUp(() => {
+                if (linePage) linePage.style.display = 'none';
+                showIntroPage();
+            });
         };
     }
 
@@ -145,19 +207,11 @@ window.addEventListener('load', async function () {
     if (progressBar) progressBar.style.width = '100%';
 
     setTimeout(() => {
-        const fadeOverlay = document.getElementById('white-fade-overlay');
-        if (fadeOverlay) {
-            fadeOverlay.style.display = 'block';
-            fadeOverlay.style.opacity = '1';
-
-            setTimeout(() => {
-                if (loaderWrapper) loaderWrapper.style.display = 'none';
-                updateLineLoginUI();
-                goToLogin();
-                fadeOverlay.style.opacity = '0';
-                setTimeout(() => { fadeOverlay.style.display = 'none'; }, 600);
-            }, 600);
-        }
+        PageTransition.nature(() => {
+            if (loaderWrapper) loaderWrapper.style.display = 'none';
+            updateLineLoginUI();
+            goToLogin();
+        });
     }, 500);
 });
 
@@ -387,11 +441,13 @@ function showIntroPage() {
     }
 
     document.getElementById('intro-start-btn').onclick = function () {
-        if (introPage) introPage.style.display = 'none';
-        if (login) {
-            login.style.display = 'flex';
-            login.style.opacity = '1';
-        }
+        PageTransition.slideUp(() => {
+            if (introPage) introPage.style.display = 'none';
+            if (login) {
+                login.style.display = 'flex';
+                login.style.opacity = '1';
+            }
+        });
     };
 }
 
@@ -493,72 +549,50 @@ function showCustomPopup(message, icon = "⚠️", isConfirm = false) {
 }
 
 // --- 4. หน้า Login & เริ่มต้นเดินทาง ---
-const infoForm = document.getElementById('info-form');
 if (infoForm) {
     infoForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const fade = document.getElementById('white-fade-overlay');
-
-        if (fade) {
-            fade.style.display = 'block';
-            fade.style.opacity = '1';
-        }
-
-        setTimeout(() => {
+        PageTransition.slideUp(() => {
             document.getElementById('login-container').style.display = 'none';
-
             if (isLineLogin) {
-                // ถ้าล็อกอินผ่าน LINE ข้ามหน้ารหัสประจำตัวไปเลย
                 const welcomePage = document.getElementById('welcome-garden-page');
-                if (welcomePage) {
-                    welcomePage.style.display = 'flex';
-                    welcomePage.style.opacity = '1';
-                }
+                if (welcomePage) { welcomePage.style.display = 'flex'; welcomePage.style.opacity = '1'; }
                 typeWriter(`สวัสดีคุณ ${lineProfile ? (lineProfile.displayName || 'ผู้ใช้งาน') : 'ผู้ใช้งาน'} ยินดีต้อนรับเข้าสู่สวนแห่งความทรงจำ...`, "typing-text", 50, () => {
                     const btn = document.getElementById('start-journey-btn');
-                    if (btn) {
-                        btn.style.display = 'inline-block';
-                        setTimeout(() => { btn.style.opacity = '1'; }, 100);
-                    }
+                    if (btn) { btn.style.display = 'inline-block'; setTimeout(() => { btn.style.opacity = '1'; }, 100); }
                 });
             } else {
-                // แสดงหน้า User ID แบบปกติ
                 document.getElementById('userid-display').innerText = userId;
                 document.getElementById('userid-page').style.display = 'flex';
             }
-
-            if (fade) fade.style.opacity = '0';
-            setTimeout(() => { if (fade) fade.style.display = 'none'; }, 600);
-        }, 600);
+        });
     });
 }
 
 document.getElementById('userid-next-btn').onclick = function () {
-    const fade = document.getElementById('white-fade-overlay');
-    fade.style.display = 'block';
-    fade.style.opacity = '1';
-    setTimeout(() => {
+    PageTransition.nature(() => {
         document.getElementById('userid-page').style.display = 'none';
         const welcomePage = document.getElementById('welcome-garden-page');
         welcomePage.style.display = 'flex';
         welcomePage.style.opacity = '1';
-        fade.style.opacity = '0';
         setTimeout(() => {
             typeWriter("ยินดีต้อนรับสู่สวนความจำที่แสนอบอุ่น พวกเราจะนําพาทุกท่านเดินเล่นและทบทวนความทรงจำไปด้วยกัน", "typing-text", 50, () => {
                 const btn = document.getElementById('start-journey-btn');
                 btn.style.display = 'inline-block';
                 setTimeout(() => { btn.style.opacity = '1'; }, 100);
             });
-        }, 500);
-    }, 600);
+        }, 200);
+    });
 };
 
 // --- 5. ด่านที่ 1: จดจำ 3 คำ (ดึงจาก Supabase) ---
 const startJourneyBtn = document.getElementById('start-journey-btn');
 if (startJourneyBtn) {
     startJourneyBtn.addEventListener('click', async function () {
-        document.getElementById('welcome-garden-page').style.display = 'none';
-        document.getElementById('memory-test-page').style.display = 'flex';
+        PageTransition.wipe(() => {
+            document.getElementById('welcome-garden-page').style.display = 'none';
+            document.getElementById('memory-test-page').style.display = 'flex';
+        });
 
         // ดึงคำจาก Supabase ผ่าน MCP Tool (พร้อม offline fallback)
         let wordsData = await MemoryGardenTools.fetchRecallSet(userId, 3);
@@ -942,15 +976,10 @@ function enableRotation(id, type) {
 document.getElementById('clock-submit-btn').onclick = function () {
     clockScore = (document.querySelectorAll('.drop-zone .draggable-number').length === 12) ? 1 : 0;
     handsScore = (hourAngle === correctHourAngle && minuteAngle === correctMinuteAngle) ? 1 : 0;
-    const overlay = document.getElementById('white-fade-overlay');
-    overlay.style.display = 'block';
-    overlay.style.opacity = '1';
-    setTimeout(() => {
+    PageTransition.flip(() => {
         document.getElementById('clock-test-page').style.display = 'none';
         startMathTest();
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.style.display = 'none', 500);
-    }, 800);
+    });
 };
 
 // --- 7. ด่านที่ 3: ระบบคำนวณ (Math Test) ---
@@ -1018,7 +1047,9 @@ document.getElementById('math-next-btn').onclick = function () {
         else if (mathCorrectCount >= 2) mathScore = 2;
         else if (mathCorrectCount === 1) mathScore = 1;
         document.getElementById('math-test-page').style.display = 'none';
-        startNamingTest();
+        PageTransition.slideLeft(() => {
+            startNamingTest();
+        });
     }
 };
 
@@ -1086,15 +1117,10 @@ document.getElementById('naming-submit-btn').onclick = function () {
         if (ans === namingSelectedObjects[i].name) namingScore++;
     });
 
-    const overlay = document.getElementById('white-fade-overlay');
-    overlay.style.display = 'block';
-    overlay.style.opacity = '1';
-    setTimeout(() => {
+    PageTransition.zoomOut(() => {
         document.getElementById('naming-test-page').style.display = 'none';
         startRecallTest();
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.style.display = 'none', 500);
-    }, 800);
+    });
 };
 
 
@@ -1281,15 +1307,10 @@ document.getElementById('recall-next-btn').onclick = async function () {
     // อัปเดต progress bar อีกครั้งหลังบันทึก
     await updateProgressBar();
 
-    const overlay = document.getElementById('white-fade-overlay');
-    overlay.style.display = 'block';
-    overlay.style.opacity = '1';
-    setTimeout(() => {
+    PageTransition.ripple(() => {
         document.getElementById('recall-test-page').style.display = 'none';
         startOrientationTest();
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.style.display = 'none', 500);
-    }, 800);
+    });
 };
 
 // --- 9. ด่านสุดท้าย: การรับรู้ (Orientation Test) ---
@@ -1372,15 +1393,14 @@ function startOrientationTest() {
     getUserProvince();
 
     setTimeout(() => {
-        // ใช้ Unicode Escape เพื่อป้องกันปัญหาเรื่อง Encoding ของไฟล์
-        const msg = "\u0E02\u0E2D\u0E1A\u0E04\u0E38\u0E13\u0E21\u0E32\u0E01\u0E04\u0E23\u0E31\u0E1A\u0E17\u0E35\u0E48\u0E0a\u0E48\u0E27\u0E22\u0E40\u0E23\u0E32\u0E21\u0E32\u0E15\u0E25\u0E2D\u0E14 \u0E40\u0E2B\u0E25\u0E37\u0E2D\u0E04\u0E33\u0E16\u0E32\u0E21\u0E2A\u0E38\u0E14\u0E17\u0E49\u0E32\u0E22\u0E41\u0E25\u0E49\u0E27\u0E04\u0E23\u0E31\u0E1A \u0E40\u0E23\u0E32\u0E22\u0E32\u0E01\u0E17\u0E23\u0E32\u0E1A\u0E27\u0E48\u0E32\u0E43\u0E19\u0E42\u0E25\u0E01\u0E02\u0E2D\u0E07\u0E04\u0E38\u0E13 \u0E27\u0E31\u0E19\u0E19\u0E35\u0E49\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E40\u0E17\u0E48\u0E32\u0E44\u0E2B\u0E23\u0E48 \u0E40\u0E14\u0E37\u0E2D\u0E19\u0E2D\u0E30\u0E44\u0E23 \u0E1B\u0E35\u0E2D\u0E30\u0E44\u0E23 \u0E27\u0E31\u0E19\u0E2D\u0E30\u0E44\u0E23\u0E43\u0E19\u0E2A\u0E31\u0E1B\u0E14\u0E32\u0E2B\u0E4C \u0E41\u0E25\u0E30\u0E04\u0E38\u0E13\u0E2D\u0E22\u0E39\u0E48\u0E17\u0E35\u0E48\u0E08\u0E31\u0E07\u0E2B\u0E27\u0E31\u0E14\u0E2D\u0E30\u0E44\u0E23\u0E04\u0E23\u0E31\u0E1A";
-        typeWriter(msg, "orientation-caption", 50, () => {
-            setTimeout(() => {
-                inputCon.style.transition = "opacity 1s ease";
-                inputCon.style.opacity = "1";
-                document.getElementById('ori-date').focus();
-            }, 800);
-        });
+        const msg = "ขอบคุณมากครับที่ช่วยเรามาตลอด เหลือคำถามสุดท้ายแล้วครับ เราอยากทราบว่าในโลกของคุณ วันนี้วันที่เท่าไหร่ เดือนอะไร ปีอะไร วันอะไรในสัปดาห์ และคุณอยู่ที่จังหวัดอะไรครับ";
+        const captionEl = document.getElementById('orientation-caption');
+        if (captionEl) captionEl.textContent = msg;
+        setTimeout(() => {
+            inputCon.style.transition = "opacity 1s ease";
+            inputCon.style.opacity = "1";
+            document.getElementById('ori-date').focus();
+        }, 600);
     }, 500);
 }
 
@@ -1442,22 +1462,23 @@ document.getElementById('ori-next-btn').onclick = function () {
 };
 
 function goToFarewell() {
-    // ปิดหน้าเก่า เปิดหน้าใหม่
-    document.getElementById('orientation-test-page').style.display = 'none';
-    const farewellPage = document.getElementById('farewell-page');
-
-    if (farewellPage) {
-        farewellPage.style.display = 'flex'; // CSS จะจัดการสีดำและการจัดวางให้เอง
-    }
+    PageTransition.cinematic(() => {
+        document.getElementById('orientation-test-page').style.display = 'none';
+        const farewellPage = document.getElementById('farewell-page');
+        if (farewellPage) farewellPage.style.display = 'flex';
+    });
 
     const msg = "ขอบคุณนะที่ช่วยเหลือเราตลอดและทำให้เรามีรอยยิ้ม แต่ว่ามันคงถึงเวลาที่เราต้องจากกันแล้วละ โชคดีนะ...";
-
-    // เรียกใช้ Typewriter ตามปกติ
-    typeWriter(msg, "farewell-text", 70, () => {
-        setTimeout(() => {
-            calculateAndShowResult();
-        }, 3000);
-    });
+    setTimeout(() => {
+        typeWriter(msg, "farewell-text", 70, () => {
+            setTimeout(() => {
+                PageTransition.cinematic(() => {
+                    document.getElementById('farewell-page').style.display = 'none';
+                    calculateAndShowResult();
+                });
+            }, 2000);
+        });
+    }, 900); // รอ cinematic overlay เข้าก่อน
 }
 
 function sendDataToSheet(userData) {

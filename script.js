@@ -123,6 +123,8 @@ window.addEventListener('load', async function () {
         };
     }
 
+
+
     const lineLogoutBtn = document.getElementById('line-logout-btn');
     if (lineLogoutBtn) {
         lineLogoutBtn.onclick = function (e) {

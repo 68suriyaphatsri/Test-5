@@ -1020,57 +1020,56 @@ document.getElementById('math-next-btn').onclick = function () {
     }
 };
 
-// --- 8. ด่านที่ 3.5: การบอกชื่อสิ่งของ (Naming Test) ---
-const OBJECT_POOL = [
-    { emoji: '🐱', name: 'แมว' },
-    { emoji: '🌳', name: 'ต้นไม้' },
-    { emoji: '🏠', name: 'บ้าน' },
-    { emoji: '🌸', name: 'ดอกไม้' },
-    { emoji: '🐟', name: 'ปลา' },
-    { emoji: '🐦', name: 'นก' },
-    { emoji: '🍎', name: 'แอปเปิ้ล' },
-    { emoji: '🚲', name: 'รถจักรยาน' },
-];
+// --- 8. ด่านที่ 3.5: การบอกชื่อสิ่งของ (Naming Test) — ดึงรูปสัตว์จาก Supabase Storage ---
 let namingScore = 0;
 let namingSelectedObjects = [];
 
-function startNamingTest() {
+async function startNamingTest() {
     const page = document.getElementById('naming-test-page');
     const container = document.getElementById('naming-cards-container');
     page.style.display = 'flex';
-    container.innerHTML = '';
+    container.innerHTML = '<p style="color:#82954b;font-size:1rem;text-align:center;">กำลังโหลดรูปภาพ...</p>';
     namingScore = 0;
 
-    // สุ่มเลือก 2 สิ่งของ
-    const shuffled = [...OBJECT_POOL].sort(() => Math.random() - 0.5);
-    namingSelectedObjects = shuffled.slice(0, 2);
+    // ดึงรายการสัตว์จาก Supabase (naming_pool) พร้อม fallback อัตโนมัติ
+    namingSelectedObjects = await MemoryGardenTools.fetchNamingItems(2);
 
+    container.innerHTML = '';
     namingSelectedObjects.forEach((obj, i) => {
         const card = document.createElement('div');
         card.style.cssText = 'width:100%;background:#fff;border-radius:16px;padding:14px 18px;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:flex;flex-direction:row;align-items:center;gap:16px;box-sizing:border-box;border:1.5px solid #e8ede0;';
 
-        const emojiDiv = document.createElement('div');
-        emojiDiv.setAttribute('role', 'img');
-        emojiDiv.setAttribute('aria-label', obj.name);
-        emojiDiv.style.cssText = 'font-size:64px;line-height:1;width:80px;height:80px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#f5f8f0;border-radius:12px;';
-        emojiDiv.textContent = obj.emoji;
+        // แสดงรูปจริงจาก Supabase Storage
+        const imgWrapper = document.createElement('div');
+        imgWrapper.style.cssText = 'width:90px;height:90px;flex-shrink:0;background:#f5f8f0;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;';
+
+        const img = document.createElement('img');
+        img.src = obj.image_url;
+        img.alt = '?';  // ไม่เผย alt เพื่อไม่บอกคำตอบ
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+        img.onerror = () => {
+            // ถ้าโหลดรูปไม่ได้ แสดง emoji แทน
+            imgWrapper.innerHTML = '<span style="font-size:52px;">🐾</span>';
+        };
+
+        imgWrapper.appendChild(img);
 
         const rightDiv = document.createElement('div');
         rightDiv.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;';
 
         const label = document.createElement('label');
-        label.textContent = `ชื่อสิ่งของที่ ${i + 1}`;
+        label.textContent = `ชื่อสัตว์ที่ ${i + 1}`;
         label.style.cssText = 'font-size:0.9rem;color:#82954b;font-weight:bold;';
 
         const input = document.createElement('input');
         input.type = 'text';
         input.id = `naming-answer-${i}`;
-        input.placeholder = 'พิมพ์ชื่อสิ่งของ';
+        input.placeholder = 'พิมพ์ชื่อสัตว์ในภาพ';
         input.style.cssText = 'width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:1rem;outline:none;box-sizing:border-box;font-family:\'Anuphan\',sans-serif;';
 
         rightDiv.appendChild(label);
         rightDiv.appendChild(input);
-        card.appendChild(emojiDiv);
+        card.appendChild(imgWrapper);
         card.appendChild(rightDiv);
         container.appendChild(card);
     });
@@ -1095,6 +1094,7 @@ document.getElementById('naming-submit-btn').onclick = function () {
         setTimeout(() => overlay.style.display = 'none', 500);
     }, 800);
 };
+
 
 // --- Helper: สร้าง Pattern Hint (Stage 1) ---
 // "Sustainable" → "S _ _ _ _ _ _ _ e"

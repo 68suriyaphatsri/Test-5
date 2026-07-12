@@ -428,11 +428,15 @@
     </div>
 
     <div id="orientation-test-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2900; padding: 40px 20px; overflow-y: auto; box-sizing: border-box;">
+        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2900; padding: 24px 20px 32px; overflow-y: auto; box-sizing: border-box; gap: 20px;">
+        <!-- Caption อยู่บนสุด เห็นง่าย ไม่ตก -->
+        <p id="orientation-caption"
+            style="color: #ffffff; font-weight: 500; text-align: center; width: 90%; max-width: 480px; line-height: 1.9; text-shadow: 0 2px 12px rgba(0,0,0,0.6); font-family:'Anuphan', sans-serif; font-size: 1.25rem; margin: 0; flex-shrink: 0;">
+        </p>
         <div
-            style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%;">
+            style="width: 100%; max-width: 420px; flex-shrink: 0;">
             <div id="orientation-input-container"
-                style="opacity: 0; width: 100%; max-width: 420px; text-align: center; background: rgba(255,255,255,0.95); padding: 30px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
+                style="opacity: 0; width: 100%; text-align: center; background: rgba(255,255,255,0.95); padding: 30px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
                 <p style="color: #82954b; font-weight: bold; margin-bottom: 25px; font-size: 1.2rem;">
                     ขอข้อมูลเพิ่มเติมอีกนิดนะครับ</p>
                 <input type="number" id="ori-date" placeholder="โปรดระบุวันที่ (เช่น 9)"
@@ -478,10 +482,8 @@
                     style="width: 100%; padding: 16px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(130, 149, 75, 0.3);">ส่งคำตอบ</button>
             </div>
         </div>
-        <p id="orientation-caption"
-            style="color: #ffffff; font-weight: 400; text-align: center; max-width: 80%; line-height: 1.8; text-shadow: 0 2px 10px rgba(0,0,0,0.5); font-family:'Anuphan', sans-serif; font-size: 1.1rem; margin-top: 30px;">
-        </p>
     </div>
+
 
     <div id="farewell-page">
         <p id="farewell-text"></p>

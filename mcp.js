@@ -156,7 +156,37 @@ const MemoryGardenTools = {
             console.warn('[MCP] getUserHistory failed:', err.message);
             return [];
         }
-    }
+    },
+
+    // ---------- 9. ดึงรายการสัตว์สำหรับ Naming Test จาก naming_pool ----------
+    async fetchNamingItems(limit = 2) {
+        // Fallback: URL รูปตรงจาก Supabase Storage (ใช้กรณีตารางยังไม่ถูกสร้าง)
+        const FALLBACK_NAMING = [
+            { id: null, name: 'หมา',     image_url: `${SUPABASE_URL}/storage/v1/object/public/animal/dog.jpg` },
+            { id: null, name: 'แมว',     image_url: `${SUPABASE_URL}/storage/v1/object/public/animal/cat.jpg` },
+            { id: null, name: 'ผีเสื้อ', image_url: `${SUPABASE_URL}/storage/v1/object/public/animal/butterfly.jpg` },
+            { id: null, name: 'เสือ',    image_url: `${SUPABASE_URL}/storage/v1/object/public/animal/tiger.jpg` },
+            { id: null, name: 'อูฐ',     image_url: `${SUPABASE_URL}/storage/v1/object/public/animal/camel.jpg` },
+            { id: null, name: 'ตั๊กแตน', image_url: `${SUPABASE_URL}/storage/v1/object/public/animal/grasshopper.jpg` },
+        ];
+        try {
+            const { data, error } = await supabaseClient
+                .from('naming_pool')
+                .select('id, name, image_url');
+            if (error) throw error;
+            if (data && data.length >= limit) {
+                // สุ่มเลือก limit ตัวจากทั้งหมด
+                const shuffled = [...data].sort(() => Math.random() - 0.5);
+                return shuffled.slice(0, limit);
+            }
+            throw new Error('ข้อมูลใน naming_pool ไม่เพียงพอ');
+        } catch (err) {
+            console.warn('[MCP] fetchNamingItems failed, using fallback:', err.message);
+            // ใช้ fallback และสุ่มเลือก limit ตัว
+            const shuffled = [...FALLBACK_NAMING].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, limit);
+        }
+    },
 };
 
 

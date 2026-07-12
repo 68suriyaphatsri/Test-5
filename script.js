@@ -436,13 +436,18 @@ function showIntroPage() {
         introPage.style.display = 'flex';
     }
 
-    document.getElementById('intro-start-btn').onclick = function () {
-        if (introPage) introPage.style.display = 'none';
-        if (login) {
-            login.style.display = 'flex';
-            login.style.opacity = '1';
-        }
-    };
+    // ใช้ addEventListener แทน onclick เพื่อไม่ให้ผูกซ้ำ
+    const startBtn = document.getElementById('intro-start-btn');
+    if (startBtn && !startBtn.dataset.bound) {
+        startBtn.dataset.bound = 'true';
+        startBtn.addEventListener('click', function () {
+            if (introPage) introPage.style.display = 'none';
+            if (login) {
+                login.style.display = 'flex';
+                login.style.opacity = '1';
+            }
+        });
+    }
 }
 
 function showFullPage() {
@@ -543,6 +548,7 @@ function showCustomPopup(message, icon = "⚠️", isConfirm = false) {
 }
 
 // --- 4. หน้า Login & เริ่มต้นเดินทาง ---
+const infoForm = document.getElementById('info-form');
 if (infoForm) {
     infoForm.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -638,6 +644,10 @@ let targetHour = 0, targetMinute = 0;
 let correctHourAngle = 0, correctMinuteAngle = 0;
 
 function goToClockPage() {
+    // reset scores ทุกครั้งที่เริ่มใหม่
+    clockScore = 0;
+    handsScore = 0;
+
     const pick = CLOCK_TIME_POOL[Math.floor(Math.random() * CLOCK_TIME_POOL.length)];
     targetHour = pick.h;
     targetMinute = pick.m;
@@ -1011,7 +1021,7 @@ function updateMathUI() {
     input.focus();
 }
 
-document.getElementById('math-next-btn').onclick = function () {
+document.getElementById('math-next-btn').onclick = async function () {
     const userAnswer = parseInt(document.getElementById('math-answer').value);
     if (isNaN(userAnswer)) { 
         showCustomPopup("กรุณาใส่คำตอบก่อนนะคะ"); 
@@ -1026,7 +1036,7 @@ document.getElementById('math-next-btn').onclick = function () {
         else if (mathCorrectCount >= 2) mathScore = 2;
         else if (mathCorrectCount === 1) mathScore = 1;
         document.getElementById('math-test-page').style.display = 'none';
-        startNamingTest();
+        await startNamingTest();
     }
 };
 
@@ -1352,7 +1362,6 @@ function startOrientationTest() {
     document.getElementById('ori-year').value = '';
     document.getElementById('ori-day').value = '';
     document.getElementById('ori-province-search').value = '';
-    document.getElementById('ori-province-search').value = '';
     document.getElementById('ori-province-value').value = '';
     document.getElementById('orientation-input-container').style.opacity = '0';
     detectedProvince = null;
@@ -1489,6 +1498,12 @@ function openSatisfactionForm() {
 }
 
 function calculateAndShowResult() {
+    // ถ้ายังไม่มี userId ให้สร้าง anonymous ID
+    if (!userId) {
+        userId = 'anon_' + Date.now();
+        localStorage.setItem('memory_garden_user_id', userId);
+    }
+
     let memoryScoreFinal = recallScore;
     let focusScoreFinal = (clockScore + handsScore + mathScore);
     let orientScoreFinal = orientationScore;

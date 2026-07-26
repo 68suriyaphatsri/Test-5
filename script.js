@@ -770,6 +770,14 @@ function setupClockGame() {
                 selectedNumberElement = null;
             }
 
+            // Reset เข็มนาฬิกากลับตำแหน่งเริ่มต้น
+            hourAngle = 0;
+            minuteAngle = 0;
+            const hrHand = document.getElementById('hour-hand');
+            const mnHand = document.getElementById('minute-hand');
+            if (hrHand) hrHand.style.transform = `translateX(-50%) rotate(0deg)`;
+            if (mnHand) mnHand.style.transform = `translateX(-50%) rotate(0deg)`;
+
             checkClockState();
         };
     }
@@ -1027,7 +1035,8 @@ document.getElementById('naming-submit-btn').onclick = function () {
 
     namingScore = 0;
     answers.forEach((ans, i) => {
-        if (ans === namingSelectedObjects[i].name) namingScore++;
+        const correct = namingSelectedObjects[i].name.trim().toLowerCase();
+        if (ans.toLowerCase() === correct) namingScore++;
     });
 
     document.getElementById('naming-test-page').style.display = 'none';
@@ -1187,9 +1196,11 @@ document.getElementById('recall-next-btn').onclick = async function () {
     const r3 = document.getElementById('recall-3').value.trim();
     const answers = [r1, r2, r3];
 
-    if (r1 === "" || r2 === "" || r3 === "") {
-        showCustomPopup("กรุณากรอกคำตอบให้ครบทั้ง 3 ช่องก่อนไปต่อค่ะ\n(หากนึกไม่ออก สามารถลองเดาคำตอบ หรือกดขอรับคำใบ้ด้านบนได้ค่ะ)", "⚠️");
-        return;
+    // อนุญาตให้ผ่านได้แม้จำไม่ได้ทุกคำ เพื่อไม่บิดเบือนผลทางคลินิก
+    // แต่ต้องกรอกอย่างน้อย 1 ช่อง หรือยืนยันว่าจำไม่ได้
+    if (r1 === "" && r2 === "" && r3 === "") {
+        const confirmed = await showCustomPopup("คุณยังไม่ได้กรอกคำตอบเลย\n\nหากจำไม่ได้จริงๆ กดยืนยันเพื่อไปต่อ (คะแนนความจำจะเป็น 0)", "⚠️", true);
+        if (!confirmed) return;
     }
 
     recallScore = 0;

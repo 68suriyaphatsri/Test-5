@@ -399,32 +399,34 @@
     </div>
 
     <div id="recall-test-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2800; padding: 20px; overflow-y: auto; box-sizing: border-box;">
-        <div id="recall-progress-container" style="width: 100%; max-width: 400px; margin-top: 30px;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px;">
-                <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">💭 ทดสอบการระลึกถึง (ความจำ)</span>
-                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบระลึกคำศัพท์:\n\nพิมพ์คำศัพท์ 3 คำที่ท่านได้จำไว้จากช่วงต้นของการทดสอบ หากนึกไม่ออกมีปุ่มคำใบ้ช่วยเหลือ (แต่จะไม่ได้คะแนนในข้อนั้น)', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
-            </div>
-        </div>
-        <p id="recall-caption" style="color: #1a1a1a; font-weight: bold; text-align: center; margin-top: 16px; margin-bottom: 0; font-size: 1.1rem; max-width: 400px; padding: 0 8px;"></p>
-        <div
-            style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%;">
-            <div id="recall-input-container" style="opacity: 0; width: 100%; max-width: 400px; text-align: center;">
-                <input type="text" id="recall-1" placeholder="คำที่ 1" class="recall-in"
-                    style="width:100%; padding:15px; margin-bottom:10px; border-radius:10px; border:1px solid #ccc;">
-                <input type="text" id="recall-2" placeholder="คำที่ 2" class="recall-in"
-                    style="width:100%; padding:15px; margin-bottom:10px; border-radius:10px; border:1px solid #ccc;">
-                <input type="text" id="recall-3" placeholder="คำที่ 3" class="recall-in"
-                    style="width:100%; padding:15px; margin-bottom:16px; border-radius:10px; border:1px solid #ccc;">
-                <button id="recall-hint-btn"
-                    style="width:100%; padding:12px; margin-bottom:16px; background:transparent; color:#82954b; border:2px solid #82954b; border-radius:50px; font-size:1rem; cursor:pointer;">💡
-                    ขอคำใบ้ (จะได้ 0 คะแนน)</button>
-                <div id="recall-hint-box"
-                    style="display:none; background:#fffbe6; border:1px solid #f0c040; border-radius:12px; padding:14px; margin-bottom:16px; text-align:left;">
-                    <p style="margin:0; color:#7a6000; font-size:0.95rem;" id="recall-hint-text"></p>
+        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2800; padding: 20px 20px 32px; overflow-y: auto; box-sizing: border-box;">
+        <div style="width: 100%; max-width: 420px; margin-top: 30px;">
+            <div id="recall-card"
+                style="width: 100%; text-align: center; background: rgba(255,255,255,0.97); padding: 28px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); backdrop-filter: blur(10px); box-sizing: border-box;">
+                <div id="recall-progress-container" style="width: 100%; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">💭 ทดสอบการระลึกถึง (ความจำ)</span>
+                        <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบระลึกคำศัพท์:\n\nพิมพ์คำศัพท์ 3 คำที่ท่านได้จำไว้จากช่วงต้นของการทดสอบ หากนึกไม่ออกมีปุ่มคำใบ้ช่วยเหลือ (แต่จะไม่ได้คะแนนในข้อนั้น)', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
+                    </div>
                 </div>
-                <button id="recall-next-btn"
-                    style="padding: 15px 80px; background: #82954b; color: white; border: none; border-radius: 50px;">ไปต่อ</button>
+                <p id="recall-caption" style="color: #1a1a1a; font-weight: bold; text-align: center; margin-top: 16px; margin-bottom: 22px; font-size: 1.1rem; padding: 0 8px; line-height: 1.6;"></p>
+                <div id="recall-input-container" style="opacity: 0; width: 100%; text-align: center;">
+                    <input type="text" id="recall-1" placeholder="คำที่ 1" class="recall-in"
+                        style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; border:1px solid #ddd; font-family:'Anuphan', sans-serif; box-sizing:border-box;">
+                    <input type="text" id="recall-2" placeholder="คำที่ 2" class="recall-in"
+                        style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; border:1px solid #ddd; font-family:'Anuphan', sans-serif; box-sizing:border-box;">
+                    <input type="text" id="recall-3" placeholder="คำที่ 3" class="recall-in"
+                        style="width:100%; padding:15px; margin-bottom:16px; border-radius:12px; border:1px solid #ddd; font-family:'Anuphan', sans-serif; box-sizing:border-box;">
+                    <button id="recall-hint-btn"
+                        style="width:100%; padding:12px; margin-bottom:16px; background:transparent; color:#82954b; border:2px solid #82954b; border-radius:50px; font-size:1rem; cursor:pointer; font-family:'Anuphan', sans-serif;">💡
+                        ขอคำใบ้ (จะได้ 0 คะแนน)</button>
+                    <div id="recall-hint-box"
+                        style="display:none; background:#fffbe6; border:1px solid #f0c040; border-radius:12px; padding:14px; margin-bottom:16px; text-align:left;">
+                        <p style="margin:0; color:#7a6000; font-size:0.95rem;" id="recall-hint-text"></p>
+                    </div>
+                    <button id="recall-next-btn"
+                        style="width:100%; padding: 15px; background: #82954b; color: white; border: none; border-radius: 50px; font-size:1.05rem; font-weight:bold; cursor:pointer; font-family:'Anuphan', sans-serif; box-sizing:border-box;">ไปต่อ</button>
+                </div>
             </div>
         </div>
     </div>

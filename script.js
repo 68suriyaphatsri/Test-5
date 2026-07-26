@@ -1019,6 +1019,12 @@ document.getElementById('naming-submit-btn').onclick = function () {
     const answers = namingSelectedObjects.map((_, i) =>
         document.getElementById(`naming-answer-${i}`).value.trim()
     );
+
+    if (answers.some(ans => ans === "")) {
+        showCustomPopup("กรุณากรอกคำตอบให้ครบถ้วนก่อนส่งคำตอบค่ะ", "⚠️");
+        return;
+    }
+
     namingScore = 0;
     answers.forEach((ans, i) => {
         if (ans === namingSelectedObjects[i].name) namingScore++;
@@ -1180,6 +1186,11 @@ document.getElementById('recall-next-btn').onclick = async function () {
     const r2 = document.getElementById('recall-2').value.trim();
     const r3 = document.getElementById('recall-3').value.trim();
     const answers = [r1, r2, r3];
+
+    if (r1 === "" || r2 === "" || r3 === "") {
+        showCustomPopup("กรุณากรอกคำตอบให้ครบทั้ง 3 ช่องก่อนไปต่อค่ะ\n(หากนึกไม่ออก สามารถลองเดาคำตอบ หรือกดขอรับคำใบ้ด้านบนได้ค่ะ)", "⚠️");
+        return;
+    }
 
     recallScore = 0;
     if (!recallHintUsed) {

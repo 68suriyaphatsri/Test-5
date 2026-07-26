@@ -961,6 +961,18 @@ body.show-result {
     z-index: 1;
 }
 
+#memory-test-page {
+    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%202.gif') center center / cover no-repeat;
+}
+
+#memory-test-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
 
 /* --- Math Test Page --- */
 

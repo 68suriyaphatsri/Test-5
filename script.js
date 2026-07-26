@@ -1170,18 +1170,17 @@ function startRecallTest() {
     inputCon.style.opacity = '0';
     recallPage.style.display = 'flex';
 
-    // แสดงข้อความทันที ไม่ใช้ typeWriter
-    const captionEl = document.getElementById('recall-caption');
-    if (captionEl) captionEl.textContent = "เมื่อคืนเราฝันอะไรก็ไม่รู้ แต่จำลางๆ ได้ว่ามีของ 3 อย่างอยู่ด้วย คุณช่วยเรานึกออกมาได้มั้ย?";
+    // แสดงข้อความด้วย typeWriter ให้ตัวหนังสือค่อยๆ พิมพ์
+    typeWriter("เมื่อคืนเราฝันอะไรก็ไม่รู้ แต่จำลางๆ ได้ว่ามีของ 3 อย่างอยู่ด้วย คุณช่วยเรานึกออกมาได้มั้ย?", "recall-caption", 50, () => {
+        setTimeout(() => {
+            inputCon.style.transition = "opacity 0.8s ease";
+            inputCon.style.opacity = "1";
+            document.getElementById('recall-1').focus();
+        }, 300);
+    });
 
     // โหลด progress bar แบบ real-time
     updateProgressBar();
-
-    setTimeout(() => {
-        inputCon.style.transition = "opacity 0.8s ease";
-        inputCon.style.opacity = "1";
-        document.getElementById('recall-1').focus();
-    }, 400);
 }
 
 // --- Multi-stage Progressive Hint System ---
@@ -1385,16 +1384,14 @@ function startOrientationTest() {
 
     getUserProvince();
 
-    setTimeout(() => {
-        const msg = "ขอบคุณมากครับที่ช่วยเรามาตลอด เหลือคำถามสุดท้ายแล้วครับ เราอยากทราบว่าในโลกของคุณ วันนี้วันที่เท่าไหร่ เดือนอะไร ปีอะไร วันอะไรในสัปดาห์ และคุณอยู่ที่จังหวัดอะไรครับ";
-        const captionEl = document.getElementById('orientation-caption');
-        if (captionEl) captionEl.textContent = msg;
+    const msg = "ขอบคุณมากครับที่ช่วยเรามาตลอด เหลือคำถามสุดท้ายแล้วครับ เราอยากทราบว่าในโลกของคุณ วันนี้วันที่เท่าไหร่ เดือนอะไร ปีอะไร วันอะไรในสัปดาห์ และคุณอยู่ที่จังหวัดอะไรครับ";
+    typeWriter(msg, "orientation-caption", 40, () => {
         setTimeout(() => {
             inputCon.style.transition = "opacity 1s ease";
             inputCon.style.opacity = "1";
             document.getElementById('ori-date').focus();
-        }, 600);
-    }, 500);
+        }, 300);
+    });
 }
 
 // จังหวัดที่ได้จาก GPS (ประกาศไว้ด้านบนสุดแล้ว)

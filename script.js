@@ -653,6 +653,7 @@ const CLOCK_TIME_POOL = [
 ];
 let targetHour = 0, targetMinute = 0;
 let correctHourAngle = 0, correctMinuteAngle = 0;
+let selectedNumberElement = null;
 
 function goToClockPage() {
     // reset scores ทุกครั้งที่เริ่มใหม่
@@ -686,12 +687,16 @@ function setupClockGame() {
     if (!pile || !face) return;
 
     const hint = document.getElementById('clock-hint');
-    if (hint) hint.style.display = 'block';
+    if (hint) {
+        hint.innerHTML = "💡 แตะตัวเลขที่กองด้านล่างแล้ว<b>แตะช่องบนหน้าปัดนาฬิกา</b>เพื่อวาง หรือแตะเลขบนหน้าปัดเพื่อนำกลับลงมา";
+        hint.style.display = 'block';
+    }
 
     pile.innerHTML = "";
     face.querySelectorAll('.drop-zone').forEach(z => z.remove());
+    selectedNumberElement = null;
 
-    // สร้าง drop-zone ทั้ง 12 ตำแหน่งบนหน้าปัดก่อน (ใช้ % เพื่อให้ Responsive บนหน้าจอทุกขนาด)
+    // สร้าง drop-zone ทั้ง 12 ตำแหน่งบนหน้าปัดก่อน
     for (let i = 1; i <= 12; i++) {
         const angle = (i * 30 - 90) * (Math.PI / 180);
         const x = 50 + 39 * Math.cos(angle);
@@ -702,6 +707,30 @@ function setupClockGame() {
         zone.id = `zone-${i}`;
         zone.style.left = x + '%';
         zone.style.top = y + '%';
+
+        zone.addEventListener('click', () => {
+            if (selectedNumberElement) {
+                // ถ้ามีตัวเลขวางอยู่ในช่องนี้แล้ว ให้ส่งกลับคืน pile ก่อน
+                if (zone.children.length > 0) {
+                    const displaced = zone.children[0];
+                    returnToPile(displaced);
+                }
+
+                const el = selectedNumberElement;
+                el.classList.remove('selected');
+                selectedNumberElement = null;
+
+                zone.appendChild(el);
+                zone.classList.add('filled');
+                el.style.position = 'absolute';
+                el.style.left = '50%';
+                el.style.top = '50%';
+                el.style.transform = 'translate(-50%, -50%)';
+
+                checkClockState();
+            }
+        });
+
         face.appendChild(zone);
     }
 
@@ -727,7 +756,6 @@ function setupClockGame() {
     const resetBtn = document.getElementById('clock-reset-btn');
     if (resetBtn) {
         resetBtn.onclick = function () {
-            const currentPile = document.getElementById('numbers-pile');
             const zones = document.querySelectorAll('.drop-zone');
 
             zones.forEach(zone => {
@@ -736,6 +764,11 @@ function setupClockGame() {
                 });
                 zone.classList.remove('filled');
             });
+
+            if (selectedNumberElement) {
+                selectedNumberElement.classList.remove('selected');
+                selectedNumberElement = null;
+            }
 
             checkClockState();
         };
@@ -772,88 +805,35 @@ function returnToPile(el) {
 }
 
 function makeElementDraggable(el) {
-    let isDragging = false;
-    let hasMoved = false;
-    let startX = 0, startY = 0;
-    let originalLeft = el.style.left;
-    let originalTop = el.style.top;
-    let originalPosition = el.style.position;
-    let originalTransform = el.style.transform;
+    el.addEventListener('click', (e) => {
+        e.stopPropagation();
 
-    const startDrag = (e) => {
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        startX = clientX;
-        startY = clientY;
-        isDragging = true;
-        hasMoved = false;
-
-        originalLeft = el.style.left;
-        originalTop = el.style.top;
-        originalPosition = el.style.position;
-        originalTransform = el.style.transform;
-
-        const moveAt = (ev) => {
-            const cx = ev.clientX || (ev.touches && ev.touches[0].clientX);
-            const cy = ev.clientY || (ev.touches && ev.touches[0].clientY);
-            el.style.left = cx - el.offsetWidth / 2 + 'px';
-            el.style.top = cy - el.offsetHeight / 2 + 'px';
-        };
-
-        const onMouseMove = (ev) => {
-            if (!isDragging) return;
-            const cx = ev.clientX || (ev.touches && ev.touches[0].clientX);
-            const cy = ev.clientY || (ev.touches && ev.touches[0].clientY);
-            const dist = Math.sqrt(Math.pow(cx - startX, 2) + Math.pow(cy - startY, 2));
-
-            if (!hasMoved && dist > 5) {
-                hasMoved = true;
-                el.style.position = 'fixed';
-                el.style.transform = 'none';
+        const parentZone = el.parentElement;
+        if (parentZone && parentZone.classList.contains('drop-zone')) {
+            // ถ้าอยู่บนหน้าปัดนาฬิกา แตะเพื่อนำกลับไปที่กองเดิม
+            parentZone.classList.remove('filled');
+            returnToPile(el);
+            if (selectedNumberElement === el) {
+                el.classList.remove('selected');
+                selectedNumberElement = null;
             }
-
-            if (hasMoved) {
-                moveAt(ev);
-            }
-        };
-
-        const stopDrag = (ev) => {
-            isDragging = false;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', stopDrag);
-            document.removeEventListener('touchmove', onMouseMove);
-            document.removeEventListener('touchend', stopDrag);
-
-            const endX = ev.clientX || (ev.changedTouches && ev.changedTouches[0].clientX) || startX;
-            const endY = ev.clientY || (ev.changedTouches && ev.changedTouches[0].clientY) || startY;
-            const distMoved = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-
-            if (distMoved < 15 && !hasMoved) {
-                const parentZone = el.parentElement;
-                if (parentZone && parentZone.classList.contains('drop-zone')) {
-                    parentZone.classList.remove('filled');
-                    returnToPile(el);
-                    checkClockState();
-                    return;
-                }
-            }
-
-            if (hasMoved) {
-                checkDrop(el);
+            checkClockState();
+        } else {
+            // ถ้าอยู่ในกองตัวเลข
+            if (selectedNumberElement === el) {
+                // ยกเลิกการเลือก
+                el.classList.remove('selected');
+                selectedNumberElement = null;
             } else {
-                el.style.position = originalPosition;
-                el.style.left = originalLeft;
-                el.style.top = originalTop;
-                el.style.transform = originalTransform;
+                // เลือกตัวเลขนี้
+                if (selectedNumberElement) {
+                    selectedNumberElement.classList.remove('selected');
+                }
+                el.classList.add('selected');
+                selectedNumberElement = el;
             }
-        };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', stopDrag);
-        document.addEventListener('touchmove', onMouseMove, { passive: false });
-        document.addEventListener('touchend', stopDrag);
-    };
-    el.onmousedown = startDrag;
-    el.ontouchstart = startDrag;
+        }
+    });
 }
 
 function checkClockState() {
@@ -884,77 +864,6 @@ function checkClockState() {
         if (handBtns) handBtns.style.display = 'none';
         if (submitBtn) submitBtn.style.display = 'none';
     }
-}
-
-function checkDrop(el) {
-    const zones = document.querySelectorAll('.drop-zone');
-    let closestZone = null;
-    let minDist = Infinity;
-    const r1 = el.getBoundingClientRect();
-
-    zones.forEach(zone => {
-        const r2 = zone.getBoundingClientRect();
-        const dist = Math.sqrt(Math.pow((r1.left + r1.width / 2) - (r2.left + r2.width / 2), 2) + Math.pow((r1.top + r1.height / 2) - (r2.top + r2.height / 2), 2));
-        if (dist < minDist) {
-            minDist = dist;
-            closestZone = zone;
-        }
-    });
-
-    const oldParentZone = el.parentElement;
-    let dropped = false;
-
-    if (closestZone && minDist < 45) {
-        const zone = closestZone;
-        // Case 1: The zone is empty
-        if (zone.children.length === 0) {
-            if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
-                oldParentZone.classList.remove('filled');
-            }
-            zone.appendChild(el);
-            zone.classList.add('filled');
-            el.style.position = 'absolute';
-            el.style.left = '50%';
-            el.style.top = '50%';
-            el.style.transform = 'translate(-50%, -50%)';
-            dropped = true;
-        }
-        // Case 2: We dragged it but let go in its own zone
-        else if (zone.children.length === 1 && zone.children[0] === el) {
-            el.style.position = 'absolute';
-            el.style.left = '50%';
-            el.style.top = '50%';
-            el.style.transform = 'translate(-50%, -50%)';
-            dropped = true;
-        }
-        // Case 3: The zone has a different number — send that number back to pile
-        else if (zone.children.length === 1 && zone.children[0] !== el) {
-            const displaced = zone.children[0];
-            // ถ้าเลขที่ลากมาอยู่ใน zone อื่น ให้ล้าง zone นั้นก่อน
-            if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
-                oldParentZone.classList.remove('filled');
-            }
-            // ส่งเลขเดิมกลับไป pile
-            returnToPile(displaced);
-            // วางเลขใหม่ลงช่อง
-            zone.appendChild(el);
-            zone.classList.add('filled');
-            el.style.position = 'absolute';
-            el.style.left = '50%';
-            el.style.top = '50%';
-            el.style.transform = 'translate(-50%, -50%)';
-            dropped = true;
-        }
-    }
-
-    if (!dropped) {
-        if (oldParentZone && oldParentZone.classList.contains('drop-zone')) {
-            oldParentZone.classList.remove('filled');
-        }
-        returnToPile(el);
-    }
-
-    checkClockState();
 }
 
 function enableRotation(id, type) {

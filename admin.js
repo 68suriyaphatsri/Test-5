@@ -319,6 +319,8 @@ function renderCharts(allRecords, paperRecords) {
         }
     });
 
+} // end renderCharts
+
 // --- Render Table ---
 function renderTable(results) {
     const tbody = document.getElementById("results-table-body");

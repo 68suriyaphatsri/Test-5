@@ -407,8 +407,8 @@ function renderHistoryCard(record, index) {
         </div>
         <div class="history-detail-row">
             <div class="history-detail-chip">🧠 ความจำ: <strong>${memory}/3</strong></div>
-            <div class="history-detail-chip">🎯 สมาธิ: <strong>${focus}/9</strong></div>
-            <div class="history-detail-chip">🗓️ รับรู้: <strong>${awareness}/3</strong></div>
+            <div class="history-detail-chip">🎯 สมาธิ: <strong>${focus}/5</strong></div>
+            <div class="history-detail-chip">🗓️ รับรู้: <strong>${awareness}/7</strong></div>
         </div>
     </div>`;
 }

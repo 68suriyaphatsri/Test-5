@@ -137,8 +137,19 @@ window.addEventListener('load', async function () {
             withLoginOnExternalBrowser: false // ป้องกันการ redirect ออก browser ภายนอก
         });
         liffInitialized = true;
-        // เช็ค isInClient ก่อน: ถ้าอยู่ใน LINE app อยู่แล้ว ดึงข้อมูลได้เลย
+        // เช็ค isInClient ก่อน: ถ้าอยู่ใน LINE app
         if (liff.isInClient()) {
+            // บังคับเด้งออกไปเปิดใน External Browser (Chrome / Safari) ทันที
+            const currentUrl = window.location.href;
+            if (currentUrl.indexOf('openExternalBrowser=1') === -1) {
+                const connector = currentUrl.indexOf('?') > -1 ? '&' : '?';
+                const targetUrl = currentUrl + connector + 'openExternalBrowser=1';
+                liff.openWindow({
+                    url: targetUrl,
+                    external: true
+                });
+                return;
+            }
             isLineLogin = true;
             lineProfile = await liff.getProfile();
             userId = lineProfile.userId;

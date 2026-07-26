@@ -9,10 +9,12 @@
             var isLine = ua.indexOf('Line') > -1 || ua.indexOf('LINE') > -1;
             if (isLine) {
                 var currentUrl = window.location.href;
-                // ถ้ายังไม่มี openExternalBrowser=1 ให้ redirect ใหม่
                 if (currentUrl.indexOf('openExternalBrowser=1') === -1) {
                     var connector = currentUrl.indexOf('?') > -1 ? '&' : '?';
-                    window.location.href = currentUrl + connector + 'openExternalBrowser=1';
+                    var targetUrl = currentUrl + connector + 'openExternalBrowser=1';
+                    
+                    // สั่งเปิดผ่าน External Browser ของ LINE
+                    window.location.href = targetUrl;
                 }
             }
         })();

@@ -1385,13 +1385,14 @@ function startOrientationTest() {
     getUserProvince();
 
     const msg = "ขอบคุณมากครับที่ช่วยเรามาตลอด เหลือคำถามสุดท้ายแล้วครับ เราอยากทราบว่าในโลกของคุณ วันนี้วันที่เท่าไหร่ เดือนอะไร ปีอะไร วันอะไรในสัปดาห์ และคุณอยู่ที่จังหวัดอะไรครับ";
-    typeWriter(msg, "orientation-caption", 40, () => {
-        setTimeout(() => {
-            inputCon.style.transition = "opacity 1s ease";
-            inputCon.style.opacity = "1";
-            document.getElementById('ori-date').focus();
-        }, 300);
-    });
+    const captionEl = document.getElementById('orientation-caption');
+    if (captionEl) captionEl.textContent = msg;
+
+    setTimeout(() => {
+        inputCon.style.transition = "opacity 0.6s ease";
+        inputCon.style.opacity = "1";
+        document.getElementById('ori-date').focus();
+    }, 200);
 }
 
 // จังหวัดที่ได้จาก GPS (ประกาศไว้ด้านบนสุดแล้ว)

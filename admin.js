@@ -1,0 +1,410 @@
+// =====================================================
+// Admin Dashboard Logic & Percentile Analytics Engine
+// Username: Sunnysun | Password: Sunny13082552
+// =====================================================
+
+const ADMIN_USER = "Sunnysun";
+const ADMIN_PASS = "Sunny13082552";
+
+let rawTestResults = [];
+let scatterChartInstance = null;
+let curveChartInstance = null;
+let activeModalResult = null;
+
+// --- Initialize Page & Event Listeners ---
+document.addEventListener("DOMContentLoaded", () => {
+    checkAdminSession();
+    bindAdminEvents();
+});
+
+function checkAdminSession() {
+    const isAuth = sessionStorage.getItem("admin_authenticated");
+    if (isAuth === "true") {
+        document.getElementById("admin-login-screen").style.display = "none";
+        document.getElementById("admin-dashboard-container").style.display = "block";
+        loadDashboardData();
+    } else {
+        document.getElementById("admin-login-screen").style.display = "flex";
+        document.getElementById("admin-dashboard-container").style.display = "none";
+    }
+}
+
+function bindAdminEvents() {
+    // Form Login
+    const loginForm = document.getElementById("admin-login-form");
+    if (loginForm) {
+        loginForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const u = document.getElementById("admin-username").value.trim();
+            const p = document.getElementById("admin-password").value.trim();
+
+            if (u === ADMIN_USER && p === ADMIN_PASS) {
+                sessionStorage.setItem("admin_authenticated", "true");
+                document.getElementById("admin-login-screen").style.display = "none";
+                document.getElementById("admin-dashboard-container").style.display = "block";
+                loadDashboardData();
+            } else {
+                alert("ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง");
+            }
+        });
+    }
+
+    // Logout Button
+    const logoutBtn = document.getElementById("admin-logout-btn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+            sessionStorage.removeItem("admin_authenticated");
+            location.reload();
+        });
+    }
+
+    // Search Box Filter
+    const searchBox = document.getElementById("table-search");
+    if (searchBox) {
+        searchBox.addEventListener("input", (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            filterTableData(query);
+        });
+    }
+
+    // Modal Cancel Button
+    const cancelModalBtn = document.getElementById("btn-cancel-modal");
+    if (cancelModalBtn) {
+        cancelModalBtn.addEventListener("click", closePaperModal);
+    }
+
+    // Paper Score Form Submit
+    const paperForm = document.getElementById("paper-score-form");
+    if (paperForm) {
+        paperForm.addEventListener("submit", handlePaperScoreSubmit);
+    }
+}
+
+// --- Load Data & Compute Percentiles ---
+async function loadDashboardData() {
+    try {
+        rawTestResults = await MemoryGardenTools.getAllTestResults();
+        computePercentilesAndStats();
+    } catch (err) {
+        console.error("Error loading dashboard data:", err);
+    }
+}
+
+// --- Percentile Rank Algorithm & Math ---
+// Formula: Percentile Rank = ((B + 0.5 * E) / N) * 100
+function computePercentilesAndStats() {
+    if (!rawTestResults || rawTestResults.length === 0) {
+        renderMetrics(0, 0, 0, 0);
+        renderTable([]);
+        return;
+    }
+
+    const N = rawTestResults.length;
+
+    // 1. Calculate App Percentiles for all records
+    rawTestResults.forEach((record) => {
+        const appScore = record.total_score || 0;
+        const B = rawTestResults.filter((r) => (r.total_score || 0) < appScore).length;
+        const E = rawTestResults.filter((r) => (r.total_score || 0) === appScore).length;
+        record.app_percentile = Math.round(((B + 0.5 * E) / N) * 100 * 10) / 10;
+    });
+
+    // 2. Filter records that have paper scores to calculate Paper Percentiles
+    const paperRecords = rawTestResults.filter((r) => r.paper_score !== null && r.paper_score !== undefined);
+    const N_paper = paperRecords.length;
+
+    if (N_paper > 0) {
+        paperRecords.forEach((record) => {
+            const paperScore = record.paper_score;
+            const B = paperRecords.filter((r) => r.paper_score < paperScore).length;
+            const E = paperRecords.filter((r) => r.paper_score === paperScore).length;
+            record.paper_percentile = Math.round(((B + 0.5 * E) / N_paper) * 100 * 10) / 10;
+
+            // Accuracy % = 100 - |Paper Percentile - App Percentile|
+            const diff = Math.abs(record.paper_percentile - record.app_percentile);
+            record.percentile_accuracy = Math.max(0, Math.round((100 - diff) * 10) / 10);
+        });
+    }
+
+    // 3. Compute Metrics
+    const paperCount = N_paper;
+    const paperPct = Math.round((paperCount / N) * 100);
+
+    let avgAccuracy = 0;
+    let correlationR2 = 0;
+
+    if (N_paper > 0) {
+        const sumAcc = paperRecords.reduce((sum, r) => sum + (r.percentile_accuracy || 0), 0);
+        avgAccuracy = Math.round((sumAcc / N_paper) * 10) / 10;
+        correlationR2 = calculateR2(paperRecords);
+    }
+
+    renderMetrics(N, paperCount, paperPct, correlationR2, avgAccuracy);
+    renderCharts(rawTestResults, paperRecords);
+    renderTable(rawTestResults);
+}
+
+// Pearson Correlation Coefficient R^2
+function calculateR2(paperRecords) {
+    if (paperRecords.length < 2) return 0;
+    const x = paperRecords.map((r) => r.app_percentile);
+    const y = paperRecords.map((r) => r.paper_percentile);
+
+    const n = x.length;
+    const sumX = x.reduce((a, b) => a + b, 0);
+    const sumY = y.reduce((a, b) => a + b, 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+    const sumX2 = x.reduce((sum, val) => sum + val * val, 0);
+    const sumY2 = y.reduce((sum, val) => sum + val * val, 0);
+
+    const numerator = n * sumXY - sumX * sumY;
+    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+    if (denominator === 0) return 0;
+    const r = numerator / denominator;
+    return Math.round(r * r * 100) / 100;
+}
+
+// --- Render Metrics Cards ---
+function renderMetrics(totalUsers, paperCount, paperPct, r2, avgAccuracy) {
+    document.getElementById("metric-total-users").textContent = totalUsers;
+    document.getElementById("metric-paper-count").textContent = paperCount;
+    document.getElementById("metric-paper-pct").textContent = `${paperPct}% ของผู้ทดสอบทั้งหมด`;
+    document.getElementById("metric-correlation").textContent = r2.toFixed(2);
+    document.getElementById("metric-avg-accuracy").textContent = `${avgAccuracy.toFixed(1)}%`;
+}
+
+// --- Render Charts ---
+function renderCharts(allRecords, paperRecords) {
+    // 1. Scatter Plot: App Percentile vs Paper Percentile
+    const scatterCtx = document.getElementById("scatterChart").getContext("2d");
+    if (scatterChartInstance) scatterChartInstance.destroy();
+
+    const scatterData = paperRecords.map((r) => ({
+        x: r.app_percentile,
+        y: r.paper_percentile,
+        name: r.name || r.user_id
+    }));
+
+    scatterChartInstance = new Chart(scatterCtx, {
+        type: "scatter",
+        data: {
+            datasets: [
+                {
+                    label: "ผู้รับการประเมิน (Percentile Rank)",
+                    data: scatterData,
+                    backgroundColor: "#82954b",
+                    pointRadius: 6,
+                    pointHoverRadius: 9
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: { display: true, text: "Percentile แอป (App Rank %)" },
+                    min: 0,
+                    max: 100
+                },
+                y: {
+                    title: { display: true, text: "Percentile กระดาษ (Paper Rank %)" },
+                    min: 0,
+                    max: 100
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const pt = ctx.raw;
+                            return `${pt.name}: แอป P${pt.x}% vs กระดาษ P${pt.y}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 2. Cumulative Curve Chart
+    const curveCtx = document.getElementById("curveChart").getContext("2d");
+    if (curveChartInstance) curveChartInstance.destroy();
+
+    // Prepare Sorted App Scores & Paper Scores Cumulative Data
+    const appScoresSorted = [...allRecords].map((r) => r.total_score || 0).sort((a, b) => a - b);
+    const paperScoresSorted = paperRecords.map((r) => r.paper_score).sort((a, b) => a - b);
+
+    const labels = Array.from({ length: 31 }, (_, i) => i); // 0 to 30
+
+    // Cumulative percentages for Paper (0-30)
+    const paperCumulative = labels.map((val) => {
+        if (paperScoresSorted.length === 0) return 0;
+        const count = paperScoresSorted.filter((s) => s <= val).length;
+        return Math.round((count / paperScoresSorted.length) * 100);
+    });
+
+    // Cumulative percentages for App (0-15 scaled to 0-30)
+    const appCumulative = labels.map((val) => {
+        if (appScoresSorted.length === 0) return 0;
+        // Scale App score (15) to (30) for comparison
+        const count = appScoresSorted.filter((s) => s * 2 <= val).length;
+        return Math.round((count / appScoresSorted.length) * 100);
+    });
+
+    curveChartInstance = new Chart(curveCtx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: "เส้นสะสมแอป (App Cumulative %)",
+                    data: appCumulative,
+                    borderColor: "#82954b",
+                    backgroundColor: "rgba(130, 149, 75, 0.1)",
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: "เส้นสะสมกระดาษ (Paper Cumulative %)",
+                    data: paperCumulative,
+                    borderColor: "#e06666",
+                    backgroundColor: "rgba(224, 102, 102, 0.1)",
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: "ระดับคะแนน (Scaled 0-30)" } },
+                y: { title: { display: true, text: "เปอร์เซ็นต์สะสม (%)" }, min: 0, max: 100 }
+            }
+        }
+    });
+}
+
+// --- Render Table ---
+function renderTable(results) {
+    const tbody = document.getElementById("results-table-body");
+    tbody.innerHTML = "";
+
+    if (!results || results.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#888;">ไม่พบข้อมูลผลการทดสอบ</td></tr>`;
+        return;
+    }
+
+    results.forEach((record) => {
+        const tr = document.createElement("tr");
+
+        const dateStr = record.created_at
+            ? new Date(record.created_at).toLocaleDateString("th-TH", {
+                  day: "numeric",
+                  month: "short",
+                  year: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit"
+              })
+            : "-";
+
+        const appScore = record.total_score !== undefined ? `${record.total_score} / 15` : "-";
+        const appP = record.app_percentile !== undefined ? `P<sub>${record.app_percentile}%</sub>` : "-";
+        const paperScore = record.paper_score !== null && record.paper_score !== undefined ? `${record.paper_score} / 30` : "<span style='color:#bbb;'>ยังไม่ลงคะแนน</span>";
+        const paperP = record.paper_percentile !== undefined && record.paper_score !== null ? `P<sub>${record.paper_percentile}%</sub>` : "-";
+        const accuracy = record.percentile_accuracy !== undefined && record.paper_score !== null ? `<strong>${record.percentile_accuracy}%</strong>` : "-";
+
+        tr.innerHTML = `
+            <td>${dateStr}</td>
+            <td><strong>${record.name || "ไม่ระบุชื่อ"}</strong><br><span style="font-size:0.78rem;color:#888;">ID: ${record.user_id}</span></td>
+            <td>${record.age || "-"}</td>
+            <td><strong style="color:#4a5d23;">${appScore}</strong></td>
+            <td>${appP}</td>
+            <td>${paperScore}</td>
+            <td>${paperP}</td>
+            <td style="color:#2e7d32;">${accuracy}</td>
+            <td>
+                <button class="btn-action" onclick="openPaperModal('${record.id}')">📝 บันทึกคะแนน</button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+}
+
+function filterTableData(query) {
+    if (!query) {
+        renderTable(rawTestResults);
+        return;
+    }
+    const filtered = rawTestResults.filter(
+        (r) =>
+            (r.name && r.name.toLowerCase().includes(query)) ||
+            (r.user_id && r.user_id.toLowerCase().includes(query))
+    );
+    renderTable(filtered);
+}
+
+// --- Paper Score Modal Handlers ---
+function openPaperModal(id) {
+    const record = rawTestResults.find((r) => r.id === id);
+    if (!record) return;
+
+    activeModalResult = record;
+    document.getElementById("modal-result-id").value = record.id;
+    document.getElementById("modal-user-name").textContent = record.name || record.user_id;
+    document.getElementById("modal-user-score").textContent = record.total_score || 0;
+
+    document.getElementById("input-paper-score").value = record.paper_score !== null && record.paper_score !== undefined ? record.paper_score : "";
+    document.getElementById("input-paper-risk").value = record.paper_risk_level || "ปกติ (Normal)";
+    document.getElementById("input-paper-notes").value = record.paper_notes || "";
+
+    const modal = document.getElementById("paper-modal");
+    modal.style.display = "flex";
+}
+
+function closePaperModal() {
+    const modal = document.getElementById("paper-modal");
+    modal.style.display = "none";
+    activeModalResult = null;
+}
+
+async function handlePaperScoreSubmit(e) {
+    e.preventDefault();
+    if (!activeModalResult) return;
+
+    const paperScore = parseInt(document.getElementById("input-paper-score").value);
+    const paperRisk = document.getElementById("input-paper-risk").value;
+    const paperNotes = document.getElementById("input-paper-notes").value.trim();
+
+    if (isNaN(paperScore) || paperScore < 0 || paperScore > 30) {
+        alert("กรุณากรอกคะแนนกระดาษเป็นตัวเลขระหว่าง 0 ถึง 30 คะแนน");
+        return;
+    }
+
+    // Temporary set paper score for calculation
+    activeModalResult.paper_score = paperScore;
+    activeModalResult.paper_risk_level = paperRisk;
+    activeModalResult.paper_notes = paperNotes;
+
+    // Recalculate percentiles for all
+    computePercentilesAndStats();
+
+    // Save to Supabase via MCP
+    const success = await MemoryGardenTools.savePaperScore(activeModalResult.id, {
+        paper_score: paperScore,
+        paper_risk_level: paperRisk,
+        paper_notes: paperNotes,
+        paper_percentile: activeModalResult.paper_percentile,
+        app_percentile: activeModalResult.app_percentile,
+        percentile_accuracy: activeModalResult.percentile_accuracy
+    });
+
+    if (success) {
+        alert("บันทึกคะแนนกระดาษและคำนวณ Percentile สำเร็จ!");
+        closePaperModal();
+    } else {
+        alert("เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Supabase");
+    }
+}

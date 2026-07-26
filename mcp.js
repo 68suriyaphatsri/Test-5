@@ -193,6 +193,46 @@ const MemoryGardenTools = {
             return shuffled.slice(0, limit);
         }
     },
+
+    // ---------- 10. ดึงผลการทดสอบทั้งหมดสำหรับ Admin ----------
+    async getAllTestResults() {
+        try {
+            if (!supabaseClient) throw new Error("Supabase is not initialized");
+            const { data, error } = await supabaseClient
+                .from('test_results')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error('[MCP] getAllTestResults failed:', err.message);
+            return [];
+        }
+    },
+
+    // ---------- 11. อัปเดตคะแนนกระดาษและเปอร์เซ็นต์ความแม่นยำสำหรับ Admin ----------
+    async savePaperScore(id, paperData) {
+        try {
+            if (!supabaseClient) throw new Error("Supabase is not initialized");
+            const { error } = await supabaseClient
+                .from('test_results')
+                .update({
+                    paper_score: paperData.paper_score,
+                    paper_risk_level: paperData.paper_risk_level,
+                    paper_notes: paperData.paper_notes,
+                    paper_percentile: paperData.paper_percentile,
+                    app_percentile: paperData.app_percentile,
+                    percentile_accuracy: paperData.percentile_accuracy
+                })
+                .eq('id', id);
+            if (error) throw error;
+            console.log('[MCP] บันทึกคะแนนกระดาษเรียบร้อย');
+            return true;
+        } catch (err) {
+            console.error('[MCP] savePaperScore failed:', err.message);
+            return false;
+        }
+    }
 };
 
 

@@ -146,8 +146,8 @@
                     style="width: 100%; padding: 12px; background: rgba(130,149,75,0.1); color: #82954b; border: 2px solid rgba(130,149,75,0.35); border-radius: 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <span style="font-size: 1.1rem;">📊</span> ดูประวัติผลการทดสอบ
                 </button>
-                <a href="#" id="line-logout-btn"
-                    style="color: #d9534f; font-size: 0.88rem; text-decoration: none; font-weight: 600; display: inline-block;">ออกจากระบบ</a>
+                <a href="admin.html" target="_blank"
+                    style="color: #4a5d23; font-size: 0.88rem; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 12px; background: rgba(130,149,75,0.12); padding: 8px 18px; border-radius: 50px;">🔐 เข้าสู่ระบบผู้ดูแลระบบ (Admin Dashboard)</a>
             </div>
         </div>
     </div>
@@ -176,8 +176,7 @@
 
             <!-- ขั้นตอนทั้งหมด -->
             <div style="text-align: left; margin-bottom: 14px;">
-                <p style="font-weight: bold; color: #4a5d23; margin-bottom: 10px; font-size: 1rem;">📋
-                    ขั้นตอนการทำแบบประเมิน</p>
+                <p style="font-weight: bold; color: #4a5d23; margin-bottom: 10px; font-size: 1rem;">📋 ขั้นตอนและหมวดการประเมิน (เต็ม 15 คะแนน)</p>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
 
                     <div
@@ -186,8 +185,7 @@
                         <div>
                             <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
                                 กรอกข้อมูลส่วนตัว</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">กรอกอายุ เพศ
-                                ระดับการศึกษา และโรคประจำตัว (ถ้ามี) ข้อมูลนี้ใช้เพื่อคำนวณคะแนนให้แม่นยำขึ้น</p>
+                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">กรอกอายุ เพศ ระดับการศึกษา และโรคประจำตัว ข้อมูลใช้ปรับเทียบการคำนวณคะแนน</p>
                         </div>
                     </div>
 
@@ -196,9 +194,8 @@
                         <span style="font-size: 1.3rem; min-width: 28px;">2️⃣</span>
                         <div>
                             <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                ทดสอบความจำระยะสั้น</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">จะแสดงคำศัพท์ 3
-                                คำให้จำ แล้วซ่อนไป ต้องนึกคำเหล่านั้นกลับมาในขั้นตอนที่ 5</p>
+                                🧠 ด้านความจำ (เต็ม 3 คะแนน)</p>
+                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">จดจำคำศัพท์ 3 คำที่แสดงช่วงแรก แล้วพิมพ์ระลึกกลับมาในภายหลัง (หากใช้คำใบ้จะได้ 0 คะแนน)</p>
                         </div>
                     </div>
 
@@ -207,10 +204,8 @@
                         <span style="font-size: 1.3rem; min-width: 28px;">3️⃣</span>
                         <div>
                             <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                ทดสอบสมาธิและการจดจ่อ</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">แบ่งเป็น 2 ส่วน คือ
-                                วางตัวเลข 1–12 บนหน้าปัดนาฬิกาและปรับเข็มให้ตรงเวลาที่กำหนด และคำนวณ 100 ลบ 7 ไปเรื่อยๆ
-                                5 ครั้ง</p>
+                                🎯 ด้านสมาธิและการคิดคำนวณ (เต็ม 7 คะแนน)</p>
+                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">วางเลขและปรับเข็มนาฬิกา (4 คะแนน) ร่วมกับการคิดเลขลบจำนวนต่อเนื่อง 5 ครั้ง (3 คะแนน)</p>
                         </div>
                     </div>
 
@@ -219,31 +214,8 @@
                         <span style="font-size: 1.3rem; min-width: 28px;">4️⃣</span>
                         <div>
                             <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                ทดสอบการบอกชื่อสิ่งของ</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">จะแสดงภาพสิ่งของ 2
-                                ชิ้น ให้พิมพ์ชื่อสิ่งของที่เห็นในแต่ละภาพ</p>
-                        </div>
-                    </div>
-
-                    <div
-                        style="display: flex; align-items: flex-start; gap: 12px; background: #f9f9f9; border-radius: 12px; padding: 12px 14px; border-left: 4px solid #82954b;">
-                        <span style="font-size: 1.3rem; min-width: 28px;">5️⃣</span>
-                        <div>
-                            <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                ทดสอบการระลึกถึง</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">พิมพ์คำ 3
-                                คำที่จำได้จากขั้นตอนที่ 2 มีปุ่มขอคำใบ้ได้ แต่ถ้ากดจะได้ 0 คะแนนในส่วนนี้</p>
-                        </div>
-                    </div>
-
-                    <div
-                        style="display: flex; align-items: flex-start; gap: 12px; background: #f9f9f9; border-radius: 12px; padding: 12px 14px; border-left: 4px solid #82954b;">
-                        <span style="font-size: 1.3rem; min-width: 28px;">6️⃣</span>
-                        <div>
-                            <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                ทดสอบการรับรู้วันเวลาและสถานที่</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">
-                                ตอบคำถามเกี่ยวกับวันที่ เดือน ปี วันในสัปดาห์ และจังหวัดที่อยู่อาศัยปัจจุบัน</p>
+                                🗺️ ด้านการรับรู้และการบอกชื่อ (เต็ม 5 คะแนน)</p>
+                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">พิมพ์บอกชื่อสัตว์จากภาพ (2 คะแนน) และตอบคำถามวันที่ เดือน ปี วันสัปดาห์ รวมถึงจังหวัด (3 คะแนน)</p>
                         </div>
                     </div>
 
@@ -405,7 +377,7 @@
             style="text-align: center; width: 85%; max-width: 450px; padding: 40px 30px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 30px solid #ffcfcf; position: relative;">
             <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px;">
                 <span style="font-size: 1rem; font-weight: bold; color: #4a5d23;">🔢 ทดสอบลบเลขคณิต</span>
-                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบคำนวณสมาธิ:\n\nเริ่มจาก 100 แล้วลบทีละ 7 ไปเรื่อยๆ 5 ครั้ง กรอกคำตอบทีละข้อแล้วกดปุ่มถัดไปครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
+                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบคำนวณสมาธิ:\n\nระบบจะกำหนดตัวเลขตั้งต้นและตัวเลขลบ ให้ท่านลบเลขต่อเนื่องจำนวน 5 ครั้ง กรอกคำตอบทีละข้อแล้วกดปุ่มถัดไปครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
             </div>
             <div id="math-question-container" style="opacity: 0;">
                 <div id="math-display" style="font-size: 4rem; font-weight: bold; color: #333; margin-bottom: 20px;">
@@ -432,15 +404,6 @@
             <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px;">
                 <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">💭 ทดสอบการระลึกถึง (ความจำ)</span>
                 <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบระลึกคำศัพท์:\n\nพิมพ์คำศัพท์ 3 คำที่ท่านได้จำไว้จากช่วงต้นของการทดสอบ หากนึกไม่ออกมีปุ่มคำใบ้ช่วยเหลือ (แต่จะไม่ได้คะแนนในข้อนั้น)', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
-            </div>
-            <div
-                style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #82954b; font-size: 0.9rem; font-weight: bold;">
-                <span>ความคืบหน้าการทบทวนวันนี้</span>
-                <span id="recall-progress-text">0/0</span>
-            </div>
-            <div style="width: 100%; height: 10px; background: #e0e7d5; border-radius: 10px; overflow: hidden;">
-                <div id="recall-progress-fill"
-                    style="width: 0%; height: 100%; background: #82954b; transition: width 0.5s ease;"></div>
             </div>
         </div>
         <p id="recall-caption" style="color: #1a1a1a; font-weight: bold; text-align: center; margin-top: 16px; margin-bottom: 0; font-size: 1.1rem; max-width: 400px; padding: 0 8px;"></p>

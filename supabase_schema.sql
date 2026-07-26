@@ -116,5 +116,11 @@ CREATE TABLE IF NOT EXISTS test_results (
     details JSONB,
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
+    paper_score INT,
+    paper_risk_level TEXT,
+    paper_notes TEXT,
+    paper_percentile NUMERIC(5,2),
+    app_percentile NUMERIC(5,2),
+    percentile_accuracy NUMERIC(5,2),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Garden - Admin Dashboard & Percentile Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', 'Anuphan', sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f0;
+            color: #2c3e50;
+            min-height: 100vh;
+        }
+
+        /* --- Login Screen --- */
+        #admin-login-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #2d3b1e 0%, #4a5d23 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.96);
+            padding: 40px 36px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .login-box h2 {
+            color: #4a5d23;
+            margin-bottom: 8px;
+            font-size: 1.6rem;
+        }
+
+        .login-box p {
+            color: #777;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #dcdcdc;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #82954b;
+            box-shadow: 0 0 0 3px rgba(130, 149, 75, 0.2);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #82954b, #6a7a3a);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(130, 149, 75, 0.35);
+            transition: 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(130, 149, 75, 0.45);
+        }
+
+        /* --- Header & Layout --- */
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8d5;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand h1 {
+            font-size: 1.25rem;
+            color: #4a5d23;
+            font-weight: 700;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-badge {
+            background: #f0f7e6;
+            color: #4a5d23;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            background: #ffeded;
+            color: #e06666;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: #e06666;
+            color: white;
+        }
+
+        main {
+            padding: 32px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* --- Metrics Row --- */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #eef2e6;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .metric-card .title {
+            font-size: 0.85rem;
+            color: #888;
+            font-weight: 600;
+        }
+
+        .metric-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4a5d23;
+        }
+
+        .metric-card .sub {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* --- Charts Grid --- */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 36px;
+        }
+
+        @media (max-width: 900px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: white;
+            padding: 24px;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #eef2e6;
+        }
+
+        .chart-card h3 {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* --- Data Table Section --- */
+        .table-section {
+            background: white;
+            border-radius: 24px;
+            padding: 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #eef2e6;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .table-header h3 {
+            font-size: 1.2rem;
+            color: #4a5d23;
+        }
+
+        .search-box {
+            padding: 10px 18px;
+            border: 1.5px solid #ddd;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            width: 260px;
+            outline: none;
+        }
+
+        .search-box:focus {
+            border-color: #82954b;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.92rem;
+        }
+
+        th {
+            background: #f8faf4;
+            color: #555;
+            padding: 14px 16px;
+            font-weight: 600;
+            border-bottom: 2px solid #eef2e6;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: #fafcf7;
+        }
+
+        .badge-risk {
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-normal { background: #eaf5ea; color: #2e7d32; }
+        .badge-mci { background: #fff8e1; color: #f57f17; }
+        .badge-high { background: #ffebee; color: #c62828; }
+
+        .btn-action {
+            padding: 8px 16px;
+            background: #82954b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-action:hover {
+            background: #6a7a3a;
+        }
+
+        /* --- Paper Score Modal --- */
+        #paper-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .paper-modal-box {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+
+        .paper-modal-box h3 {
+            color: #4a5d23;
+            margin-bottom: 16px;
+            font-size: 1.3rem;
+        }
+
+        .user-preview-card {
+            background: #f8faf4;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #444;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .btn-secondary {
+            padding: 12px 24px;
+            background: #eee;
+            color: #555;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Admin Login Overlay Screen -->
+    <div id="admin-login-screen">
+        <div class="login-box">
+            <div style="font-size: 3rem; margin-bottom: 8px;">🔐</div>
+            <h2>เข้าสู่ระบบผู้ดูแลระบบ</h2>
+            <p>Admin Control Panel & Percentile Analytics</p>
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label>ชื่อผู้ใช้งาน (Username)</label>
+                    <input type="text" id="admin-username" placeholder="กรอก Username" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>รหัสผ่าน (Password)</label>
+                    <input type="password" id="admin-password" placeholder="กรอก Password" required>
+                </div>
+                <button type="submit" class="btn-login">เข้าสู่ระบบ ➔</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container -->
+    <div id="admin-dashboard-container" style="display: none;">
+        <header>
+            <div class="brand">
+                <span style="font-size: 1.8rem;">🧠</span>
+                <h1>Memory Garden — Admin Analytics Dashboard</h1>
+            </div>
+            <div class="user-info">
+                <span class="user-badge">👤 <span id="admin-user-disp">Sunnysun</span></span>
+                <button id="admin-logout-btn" class="btn-logout">ออกจากระบบ</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Executive Metrics Row -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="title">ผู้เข้ารับการประเมินทั้งหมด</span>
+                    <span class="value" id="metric-total-users">0</span>
+                    <span class="sub">จำนวนผู้ใช้งานในระบบ</span>
+                </div>
+                <div class="metric-card">
+                    <span class="title">ประเมินด้วยกระดาษแล้ว</span>
+                    <span class="value" id="metric-paper-count">0</span>
+                    <span class="sub" id="metric-paper-pct">0% ของผู้ทดสอบทั้งหมด</span>
+                </div>
+                <div class="metric-card">
+                    <span class="title">ความสัมพันธ์ R² (Correlation)</span>
+                    <span class="value" id="metric-correlation">0.00</span>
+                    <span class="sub">ความสอดคล้องระหว่างแอปกับกระดาษ</span>
+                </div>
+                <div class="metric-card">
+                    <span class="title">ความแม่นยำเฉลี่ย (Percentile Accuracy)</span>
+                    <span class="value" id="metric-avg-accuracy" style="color: #82954b;">0.0%</span>
+                    <span class="sub">ความสอดคล้องเชิงเปอร์เซ็นไทล์</span>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <!-- Percentile Scatter Plot -->
+                <div class="chart-card">
+                    <h3>📈 กราฟความสัมพันธ์ Percentile Rank (Paper vs App)</h3>
+                    <div class="chart-container">
+                        <canvas id="scatterChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Cumulative Distribution Curve -->
+                <div class="chart-card">
+                    <h3>📊 กราฟเส้นโค้งเปอร์เซ็นไทล์สะสม (Cumulative Curve)</h3>
+                    <div class="chart-container">
+                        <canvas id="curveChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table Section -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>รายชื่อและผลการทดสอบเปรียบเทียบ</h3>
+                    <input type="text" id="table-search" class="search-box" placeholder="🔍 ค้นหาตามชื่อ หรือ User ID...">
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>วันที่ทำ</th>
+                                <th>ชื่อผู้ทดสอบ / ID</th>
+                                <th>อายุ</th>
+                                <th>คะแนนแอป (15)</th>
+                                <th>Percentile แอป</th>
+                                <th>คะแนนกระดาษ (30)</th>
+                                <th>Percentile กระดาษ</th>
+                                <th>ความแม่นยำ (%)</th>
+                                <th>การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body">
+                            <!-- Populated dynamically via admin.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Paper Score Modal -->
+    <div id="paper-modal">
+        <div class="paper-modal-box">
+            <h3>📝 บันทึกคะแนนแบบทดสอบกระดาษ</h3>
+            <div class="user-preview-card">
+                <p><strong>ชื่อผู้ทดสอบ:</strong> <span id="modal-user-name">-</span></p>
+                <p><strong>คะแนนแอปที่ทำได้:</strong> <span id="modal-user-score" style="color:#82954b; font-weight:bold;">-</span> / 15</p>
+            </div>
+            <form id="paper-score-form">
+                <input type="hidden" id="modal-result-id">
+                <div class="form-group">
+                    <label>คะแนนสอบบนกระดาษ (เต็ม 30 คะแนน)</label>
+                    <input type="number" id="input-paper-score" min="0" max="30" placeholder="เช่น 26" required>
+                </div>
+                <div class="form-group">
+                    <label>ผลการประเมินจากกระดาษ</label>
+                    <select id="input-paper-risk" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #ddd; font-size:1rem;" required>
+                        <option value="ปกติ (Normal)">ปกติ (Normal)</option>
+                        <option value="เสี่ยงบกพร่องเล็กน้อย (MCI)">เสี่ยงบกพร่องเล็กน้อย (MCI)</option>
+                        <option value="ควรได้รับการดูแลพิเศษ">ควรได้รับการดูแลพิเศษ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>บันทึกเพิ่มเติมจากแอดมิน (ถ้ามี)</label>
+                    <input type="text" id="input-paper-notes" placeholder="เช่น แพทย์ประเมินผลเพิ่มเติม...">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-cancel-modal" class="btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn-login" style="width:auto; padding:12px 30px;">บันทึกข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="mcp.js"></script>
+    <script src="admin.js"></script>
+</body>
+
+</html>

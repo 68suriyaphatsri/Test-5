@@ -3,6 +3,20 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        (function() {
+            var ua = navigator.userAgent || navigator.vendor || window.opera;
+            var isLine = ua.indexOf('Line') > -1 || ua.indexOf('LINE') > -1;
+            if (isLine) {
+                var currentUrl = window.location.href;
+                // ถ้ายังไม่มี openExternalBrowser=1 ให้ redirect ใหม่
+                if (currentUrl.indexOf('openExternalBrowser=1') === -1) {
+                    var connector = currentUrl.indexOf('?') > -1 ? '&' : '?';
+                    window.location.href = currentUrl + connector + 'openExternalBrowser=1';
+                }
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Memory Garden - แบบทดสอบความจำ</title>
     <link rel="icon"
@@ -328,7 +342,11 @@
 
     <div id="clock-test-page"
         style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; z-index: 2000;">
-        <div id="clock-instruction-box" style="text-align: center; max-width: 90%; margin-bottom: 8px;">
+        <div id="clock-instruction-box" style="text-align: center; max-width: 90%; margin-bottom: 8px; position: relative;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">🕰️ ทดสอบวาดนาฬิกา</span>
+                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบนาฬิกา:\n\n1. แตะนำตัวเลข 1 ถึง 12 ไปวางบนตำแหน่งของหน้าปัดนาฬิกาให้ถูกต้อง\n2. ปรับเข็มสั้นและเข็มยาวให้ชี้ตรงเวลาที่กำหนดคำสั่งครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
+            </div>
             <p id="clock-instruction"
                 style="font-size: 1rem; color: #444; font-weight: bold; min-height: 2.5em; line-height: 1.5; margin-bottom: 4px;">
             </p>
@@ -363,10 +381,12 @@
 
     <div id="naming-test-page"
         style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2600; padding: 40px 24px; gap: 20px; box-sizing: border-box; overflow-y: auto; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);">
-        <div id="naming-header">
-            <h2 style="font-size: 1.6rem; color: #3a3a3a; text-align: center; margin: 0 0 6px 0;">🌿 การบอกชื่อสิ่งของ
-            </h2>
-            <p style="font-size: 0.95rem; color: #777; margin: 0; text-align: center;">ดูภาพแล้วพิมพ์ชื่อสิ่งของที่เห็น
+        <div id="naming-header" style="position: relative;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+                <h2 style="font-size: 1.6rem; color: #3a3a3a; text-align: center; margin: 0;">🌿 การบอกชื่อสิ่งของ</h2>
+                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบการบอกชื่อสิ่งของ:\n\nจะแสดงรูปภาพสิ่งของ 2 ภาพ ให้สังเกตภาพแล้วพิมพ์ชื่อสิ่งของที่เห็นให้ถูกต้องในช่องพิมพ์ด้านล่างแต่ละภาพครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
+            </div>
+            <p style="font-size: 0.95rem; color: #777; margin: 6px 0 0 0; text-align: center;">ดูภาพแล้วพิมพ์ชื่อสิ่งของที่เห็น
             </p>
         </div>
         <div id="naming-cards-container"
@@ -379,7 +399,11 @@
     <div id="math-test-page"
         style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; z-index: 2500;">
         <div id="math-paper"
-            style="text-align: center; width: 85%; max-width: 450px; padding: 50px 30px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 30px solid #ffcfcf;">
+            style="text-align: center; width: 85%; max-width: 450px; padding: 40px 30px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 30px solid #ffcfcf; position: relative;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="font-size: 1rem; font-weight: bold; color: #4a5d23;">🔢 ทดสอบลบเลขคณิต</span>
+                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบคำนวณสมาธิ:\n\nเริ่มจาก 100 แล้วลบทีละ 7 ไปเรื่อยๆ 5 ครั้ง กรอกคำตอบทีละข้อแล้วกดปุ่มถัดไปครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
+            </div>
             <div id="math-question-container" style="opacity: 0;">
                 <div id="math-display" style="font-size: 4rem; font-weight: bold; color: #333; margin-bottom: 20px;">
                     <span id="current-num">100</span> - <span id="math-subtractor">7</span>
@@ -401,7 +425,11 @@
 
     <div id="recall-test-page"
         style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2800; padding: 20px; overflow-y: auto; box-sizing: border-box;">
-        <div id="recall-progress-container" style="width: 100%; max-width: 400px; margin-top: 40px;">
+        <div id="recall-progress-container" style="width: 100%; max-width: 400px; margin-top: 30px;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">💭 ทดสอบการระลึกถึง (ความจำ)</span>
+                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบระลึกคำศัพท์:\n\nพิมพ์คำศัพท์ 3 คำที่ท่านได้จำไว้จากช่วงต้นของการทดสอบ หากนึกไม่ออกมีปุ่มคำใบ้ช่วยเหลือ (แต่จะไม่ได้คะแนนในข้อนั้น)', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
+            </div>
             <div
                 style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #82954b; font-size: 0.9rem; font-weight: bold;">
                 <span>ความคืบหน้าการทบทวนวันนี้</span>
@@ -440,6 +468,10 @@
         <div style="width: 100%; max-width: 420px;">
             <div id="orientation-input-container"
                 style="opacity: 0; width: 100%; text-align: center; background: rgba(255,255,255,0.97); padding: 28px 28px 28px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); backdrop-filter: blur(10px);">
+                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">🗺️ การรับรู้วันเวลาและสถานที่</span>
+                    <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบการรับรู้วันเวลาและสถานที่:\n\nเลือกและระบุ วันที่, เดือน, ปี, วันในสัปดาห์ปัจจุบัน และพิมพ์เลือกจังหวัดที่ท่านอาศัยอยู่ ณ ปัจจุบันครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
+                </div>
                 <!-- Caption อยู่ในกล่องขาว ไม่ตกออกนอกจอ -->
                 <p id="orientation-caption"
                     style="color: #1a1a1a; font-weight: 600; text-align: center; width: 100%; line-height: 1.8; font-family:'Anuphan', sans-serif; font-size: 1.2rem; margin: 0 0 22px 0; min-height: 2em;">

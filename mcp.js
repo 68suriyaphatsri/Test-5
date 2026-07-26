@@ -7,7 +7,13 @@ const SUPABASE_URL = 'https://wqllezztqhfabpygicuv.supabase.co';       // ← �
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxbGxlenp0cWhmYWJweWdpY3V2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NzAwMDAsImV4cCI6MjA5NDE0NjAwMH0.lSEas5G_SS3tEjONycp-PBFe6bXxPa-PVcoK_vJlccA'; // ← ใส่ Anon Key ของคุณ
 
 // สร้าง client — ใช้ชื่อ supabaseClient เพื่อไม่ชนกับ global `supabase` จาก CDN
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = (typeof window.supabase !== 'undefined' && window.supabase.createClient) 
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
+    : null;
+
+if (!supabaseClient) {
+    console.warn('[MCP] Supabase SDK is not loaded yet or failed to initialize.');
+}
 
 // -------------------------------------------------
 // MCP Tools Object

@@ -232,6 +232,40 @@ const MemoryGardenTools = {
             console.error('[MCP] savePaperScore failed:', err.message);
             return false;
         }
+    },
+
+    // ---------- 12. ลบข้อมูลผลการทดสอบ (Admin) ----------
+    async deleteTestResult(id) {
+        try {
+            if (!supabaseClient) throw new Error("Supabase is not initialized");
+            const { error } = await supabaseClient
+                .from('test_results')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            console.log('[MCP] ลบข้อมูลเรียบร้อย:', id);
+            return true;
+        } catch (err) {
+            console.error('[MCP] deleteTestResult failed:', err.message);
+            return false;
+        }
+    },
+
+    // ---------- 13. แก้ไขข้อมูลผลการทดสอบ (Admin) ----------
+    async updateTestResult(id, updatedData) {
+        try {
+            if (!supabaseClient) throw new Error("Supabase is not initialized");
+            const { error } = await supabaseClient
+                .from('test_results')
+                .update(updatedData)
+                .eq('id', id);
+            if (error) throw error;
+            console.log('[MCP] แก้ไขข้อมูลเรียบร้อย:', id);
+            return true;
+        } catch (err) {
+            console.error('[MCP] updateTestResult failed:', err.message);
+            return false;
+        }
     }
 };
 

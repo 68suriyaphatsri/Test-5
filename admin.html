@@ -332,6 +332,157 @@
             background: #6a7a3a;
         }
 
+        .btn-action-edit {
+            padding: 8px 16px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-right: 6px;
+        }
+
+        .btn-action-edit:hover {
+            background: #1565c0;
+        }
+
+        .btn-action-delete {
+            padding: 8px 16px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-action-delete:hover {
+            background: #b71c1c;
+        }
+
+        .action-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 160px;
+        }
+
+        /* --- Edit Modal --- */
+        #edit-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .edit-modal-box {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 560px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+            margin: auto;
+        }
+
+        .edit-modal-box h3 {
+            color: #4a5d23;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #eef2e6;
+        }
+
+        .edit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 500px) {
+            .edit-grid { grid-template-columns: 1fr; }
+        }
+
+        .edit-grid .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* --- Delete Confirm Modal --- */
+        #delete-confirm-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .delete-modal-box {
+            background: white;
+            border-radius: 24px;
+            padding: 36px 32px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .delete-modal-box .danger-icon {
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+        }
+
+        .delete-modal-box h3 {
+            color: #c62828;
+            margin-bottom: 8px;
+            font-size: 1.3rem;
+        }
+
+        .delete-modal-box p {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .delete-confirm-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-danger {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #e53935, #b71c1c);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(229,57,53,0.35);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(229,57,53,0.45);
+        }
+
         /* --- Paper Score Modal --- */
         #paper-modal {
             display: none;
@@ -528,6 +679,91 @@
                     <button type="submit" class="btn-login" style="width:auto; padding:12px 30px;">บันทึกข้อมูล</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Edit Record Modal -->
+    <div id="edit-modal">
+        <div class="edit-modal-box">
+            <h3>✏️ แก้ไขข้อมูลผลการทดสอบ</h3>
+            <form id="edit-record-form">
+                <input type="hidden" id="edit-record-id">
+                <div class="edit-grid">
+                    <div class="form-group">
+                        <label>ชื่อผู้ทดสอบ</label>
+                        <input type="text" id="edit-name" placeholder="ชื่อ-นามสกุล">
+                    </div>
+                    <div class="form-group">
+                        <label>อายุ</label>
+                        <input type="number" id="edit-age" placeholder="อายุ" min="0" max="120">
+                    </div>
+                    <div class="form-group">
+                        <label>เพศ</label>
+                        <select id="edit-gender" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #ddd; font-size:1rem;">
+                            <option value="male">ชาย</option>
+                            <option value="female">หญิง</option>
+                            <option value="other">อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>ระดับการศึกษา</label>
+                        <select id="edit-education" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #ddd; font-size:1rem;">
+                            <option value="ตํ่ากว่ามัธยมศึกษาปีที่ 6">ต่ำกว่า ม.6</option>
+                            <option value="สูงกว่ามัธยมศึกษาปีที่ 6 หรือเทียบเท่า">สูงกว่า ม.6</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>โรคประจำตัว</label>
+                        <input type="text" id="edit-disease" placeholder="ระบุโรคประจำตัว หรือ ไม่มี">
+                    </div>
+                    <div class="form-group">
+                        <label>คะแนนรวมแอป (เต็ม 15)</label>
+                        <input type="number" id="edit-total-score" placeholder="0" min="0" max="15">
+                    </div>
+                    <div class="form-group">
+                        <label>ระดับความเสี่ยง (แอป)</label>
+                        <select id="edit-risk-level" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #ddd; font-size:1rem;">
+                            <option value="ปกติ (Normal)">ปกติ (Normal)</option>
+                            <option value="เสี่ยงบกพร่องเล็กน้อย (MCI)">เสี่ยงบกพร่องเล็กน้อย (MCI)</option>
+                            <option value="ควรได้รับการดูแลพิเศษ">ควรได้รับการดูแลพิเศษ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>คะแนนกระดาษ (เต็ม 30)</label>
+                        <input type="number" id="edit-paper-score" placeholder="ยังไม่มีคะแนน" min="0" max="30">
+                    </div>
+                    <div class="form-group">
+                        <label>ผลประเมินจากกระดาษ</label>
+                        <select id="edit-paper-risk" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #ddd; font-size:1rem;">
+                            <option value="">— ยังไม่ประเมิน —</option>
+                            <option value="ปกติ (Normal)">ปกติ (Normal)</option>
+                            <option value="เสี่ยงบกพร่องเล็กน้อย (MCI)">เสี่ยงบกพร่องเล็กน้อย (MCI)</option>
+                            <option value="ควรได้รับการดูแลพิเศษ">ควรได้รับการดูแลพิเศษ</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>บันทึกเพิ่มเติมจากแอดมิน</label>
+                        <input type="text" id="edit-paper-notes" placeholder="บันทึกจากแอดมิน (ถ้ามี)">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-cancel-edit" class="btn-secondary">ยกเลิก</button>
+                    <button type="submit" class="btn-login" style="width:auto; padding:12px 30px;">💾 บันทึกการแก้ไข</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal">
+        <div class="delete-modal-box">
+            <div class="danger-icon">🗑️</div>
+            <h3>ยืนยันการลบข้อมูล</h3>
+            <p id="delete-confirm-msg">คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?<br>การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+            <div class="delete-confirm-actions">
+                <button id="btn-cancel-delete" class="btn-secondary">ยกเลิก</button>
+                <button id="btn-confirm-delete" class="btn-danger">ลบข้อมูล</button>
+            </div>
         </div>
     </div>
 

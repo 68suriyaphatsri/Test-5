@@ -10,6 +10,8 @@ let rawTestResults = [];
 let scatterChartInstance = null;
 let curveChartInstance = null;
 let activeModalResult = null;
+let activeEditResult = null;
+let pendingDeleteId = null;
 
 // --- Initialize Page & Event Listeners ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -67,7 +69,7 @@ function bindAdminEvents() {
         });
     }
 
-    // Modal Cancel Button
+    // Paper Modal Cancel
     const cancelModalBtn = document.getElementById("btn-cancel-modal");
     if (cancelModalBtn) {
         cancelModalBtn.addEventListener("click", closePaperModal);
@@ -78,6 +80,44 @@ function bindAdminEvents() {
     if (paperForm) {
         paperForm.addEventListener("submit", handlePaperScoreSubmit);
     }
+
+    // Edit Modal Cancel
+    const cancelEditBtn = document.getElementById("btn-cancel-edit");
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener("click", closeEditModal);
+    }
+
+    // Edit Record Form Submit
+    const editForm = document.getElementById("edit-record-form");
+    if (editForm) {
+        editForm.addEventListener("submit", handleEditSubmit);
+    }
+
+    // Delete Confirm Modal: Cancel
+    const cancelDeleteBtn = document.getElementById("btn-cancel-delete");
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener("click", () => {
+            document.getElementById("delete-confirm-modal").style.display = "none";
+            pendingDeleteId = null;
+        });
+    }
+
+    // Delete Confirm Modal: Confirm
+    const confirmDeleteBtn = document.getElementById("btn-confirm-delete");
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener("click", executeDelete);
+    }
+
+    // Close modals when clicking backdrop
+    document.getElementById("edit-modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("edit-modal")) closeEditModal();
+    });
+    document.getElementById("delete-confirm-modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("delete-confirm-modal")) {
+            document.getElementById("delete-confirm-modal").style.display = "none";
+            pendingDeleteId = null;
+        }
+    });
 }
 
 // --- Load Data & Compute Percentiles ---
@@ -328,7 +368,7 @@ function renderTable(results) {
     tbody.innerHTML = "";
 
     if (!results || results.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:#888;">ไม่พบข้อมูลผลการทดสอบ</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:30px; color:#888;">ไม่พบข้อมูลผลการทดสอบ</td></tr>`;
         return;
     }
 
@@ -347,9 +387,8 @@ function renderTable(results) {
 
         const appScore = record.total_score !== undefined ? `${record.total_score} / 15` : "-";
         const appP = record.app_percentile !== undefined ? `P<sub>${record.app_percentile}%</sub>` : "-";
-        const paperScore = record.paper_score !== null && record.paper_score !== undefined ? `${record.paper_score} / 30` : "<span style='color:#bbb;'>ยังไม่ลงคะแนน</span>";
+        const paperScore = record.paper_score !== null && record.paper_score !== undefined ? `${record.paper_score} / 30` : `<span style='color:#bbb;'>ยังไม่ลงคะแนน</span>`;
         const paperP = record.paper_percentile !== undefined && record.paper_score !== null ? `P<sub>${record.paper_percentile}%</sub>` : "-";
-        // แสดง app_percentile_ingroup ถ้ามี (เปรียบกับกลุ่มเดียวกัน) หรือ fallback เป็น app_percentile
         const compareP = record.app_percentile_ingroup !== undefined && record.paper_score !== null
             ? `P<sub>${record.app_percentile_ingroup}%</sub>`
             : appP;
@@ -366,7 +405,11 @@ function renderTable(results) {
             <td title="เปรียบเทียบ app (ในกลุ่ม) vs กระดาษ">${compareP} → ${paperP}</td>
             <td style="color:#2e7d32;">${accuracy}</td>
             <td>
-                <button class="btn-action" onclick="openPaperModal('${record.id}')">📝 บันทึกคะแนน</button>
+                <div class="action-cell">
+                    <button class="btn-action" onclick="openPaperModal('${record.id}')">📝 บันทึกคะแนน</button>
+                    <button class="btn-action-edit" onclick="openEditModal('${record.id}')">✏️ แก้ไขข้อมูล</button>
+                    <button class="btn-action-delete" onclick="confirmDeleteRecord('${record.id}', '${(record.name || record.user_id).replace(/'/g, "\\'")}')">🗑️ ลบข้อมูล</button>
+                </div>
             </td>
         `;
 
@@ -448,4 +491,162 @@ async function handlePaperScoreSubmit(e) {
     } else {
         alert("เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Supabase");
     }
+}
+
+// =====================================================
+// Edit Record Handlers
+// =====================================================
+
+function openEditModal(id) {
+    const record = rawTestResults.find((r) => r.id === id);
+    if (!record) return;
+
+    activeEditResult = record;
+    document.getElementById("edit-record-id").value = record.id;
+    document.getElementById("edit-name").value = record.name || "";
+    document.getElementById("edit-age").value = record.age || "";
+    document.getElementById("edit-gender").value = record.gender || "male";
+    document.getElementById("edit-education").value = record.education || "";
+    document.getElementById("edit-disease").value = record.disease || "";
+    document.getElementById("edit-total-score").value = record.total_score !== undefined ? record.total_score : "";
+    document.getElementById("edit-risk-level").value = record.risk_level || "ปกติ (Normal)";
+    document.getElementById("edit-paper-score").value = record.paper_score !== null && record.paper_score !== undefined ? record.paper_score : "";
+    document.getElementById("edit-paper-risk").value = record.paper_risk_level || "";
+    document.getElementById("edit-paper-notes").value = record.paper_notes || "";
+
+    document.getElementById("edit-modal").style.display = "flex";
+}
+
+function closeEditModal() {
+    document.getElementById("edit-modal").style.display = "none";
+    activeEditResult = null;
+}
+
+async function handleEditSubmit(e) {
+    e.preventDefault();
+    if (!activeEditResult) return;
+
+    const submitBtn = e.target.querySelector("button[type='submit']");
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "กำลังบันทึก...";
+    submitBtn.disabled = true;
+
+    const paperScoreVal = document.getElementById("edit-paper-score").value;
+    const updatedData = {
+        name: document.getElementById("edit-name").value.trim() || null,
+        age: parseInt(document.getElementById("edit-age").value) || null,
+        gender: document.getElementById("edit-gender").value,
+        education: document.getElementById("edit-education").value,
+        disease: document.getElementById("edit-disease").value.trim() || null,
+        total_score: parseInt(document.getElementById("edit-total-score").value),
+        risk_level: document.getElementById("edit-risk-level").value,
+        paper_score: paperScoreVal !== "" ? parseInt(paperScoreVal) : null,
+        paper_risk_level: document.getElementById("edit-paper-risk").value || null,
+        paper_notes: document.getElementById("edit-paper-notes").value.trim() || null,
+    };
+
+    // Update locally
+    const idx = rawTestResults.findIndex((r) => r.id === activeEditResult.id);
+    if (idx !== -1) {
+        rawTestResults[idx] = { ...rawTestResults[idx], ...updatedData };
+    }
+
+    // Save to Supabase
+    const success = await MemoryGardenTools.updateTestResult(activeEditResult.id, updatedData);
+
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+
+    if (success) {
+        computePercentilesAndStats();
+        closeEditModal();
+        showToast("✅ แก้ไขข้อมูลสำเร็จ!", "success");
+    } else {
+        showToast("❌ เกิดข้อผิดพลาดในการบันทึก", "error");
+    }
+}
+
+// =====================================================
+// Delete Record Handlers
+// =====================================================
+
+function confirmDeleteRecord(id, name) {
+    pendingDeleteId = id;
+    document.getElementById("delete-confirm-msg").innerHTML =
+        `คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลของ<br><strong style="color:#c62828;">${name}</strong>?<br><span style="font-size:0.85rem;">การดำเนินการนี้ไม่สามารถย้อนกลับได้</span>`;
+    document.getElementById("delete-confirm-modal").style.display = "flex";
+}
+
+async function executeDelete() {
+    if (!pendingDeleteId) return;
+
+    const confirmBtn = document.getElementById("btn-confirm-delete");
+    confirmBtn.textContent = "กำลังลบ...";
+    confirmBtn.disabled = true;
+
+    const success = await MemoryGardenTools.deleteTestResult(pendingDeleteId);
+
+    confirmBtn.textContent = "ลบข้อมูล";
+    confirmBtn.disabled = false;
+
+    if (success) {
+        rawTestResults = rawTestResults.filter((r) => r.id !== pendingDeleteId);
+        document.getElementById("delete-confirm-modal").style.display = "none";
+        pendingDeleteId = null;
+        computePercentilesAndStats();
+        showToast("🗑️ ลบข้อมูลสำเร็จ", "success");
+    } else {
+        document.getElementById("delete-confirm-modal").style.display = "none";
+        pendingDeleteId = null;
+        showToast("❌ เกิดข้อผิดพลาดในการลบ", "error");
+    }
+}
+
+// =====================================================
+// Toast Notification Helper
+// =====================================================
+
+function showToast(message, type = "success") {
+    // Remove existing toast
+    const existing = document.getElementById("admin-toast");
+    if (existing) existing.remove();
+
+    const toast = document.createElement("div");
+    toast.id = "admin-toast";
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        z-index: 999999;
+        padding: 14px 24px;
+        border-radius: 50px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: white;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        background: ${type === "success" ? "linear-gradient(135deg, #43a047, #2e7d32)" : "linear-gradient(135deg, #e53935, #b71c1c)"};
+        animation: slideInToast 0.3s ease;
+        font-family: 'Prompt', sans-serif;
+    `;
+
+    // Inject keyframes if not already done
+    if (!document.getElementById("toast-style")) {
+        const style = document.createElement("style");
+        style.id = "toast-style";
+        style.textContent = `
+            @keyframes slideInToast {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.transition = "opacity 0.5s ease";
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
 }

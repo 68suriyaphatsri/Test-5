@@ -253,7 +253,8 @@ function renderCharts(allRecords, paperRecords) {
     const appLabels = Array.from({ length: 16 }, (_, i) => i);  // 0–15
     const paperLabels = Array.from({ length: 31 }, (_, i) => i); // 0–30
 
-    const appScoresSorted = [...allRecords].map((r) => r.total_score || 0).sort((a, b) => a - b);
+    // ใช้เฉพาะ paperRecords — คนที่ยังไม่ได้ใส่คะแนนกระดาษจะไม่ถูกนำมาคำนวณ
+    const appScoresSorted = [...paperRecords].map((r) => r.total_score || 0).sort((a, b) => a - b);
     const paperScoresSorted = paperRecords.map((r) => r.paper_score).sort((a, b) => a - b);
 
     // normalize เป็น % ของ max score เพื่อให้ใช้ x-axis เดียวกัน
@@ -275,7 +276,7 @@ function renderCharts(allRecords, paperRecords) {
             labels: paperLabels, // ใช้ 0-30 เป็น base
             datasets: [
                 {
-                    label: "เส้นสะสมแอป (คะแนน 0-15, แปลงเป็น % ของ max)",
+                    label: "เส้นสะสมแอป (เฉพาะกลุ่มที่มีคะแนนกระดาษแล้ว, 0-15)",
                     data: appLabels.map((v, i) => ({ x: v * 2, y: appCumulative[i] })), // scale to 0-30
                     borderColor: "#82954b",
                     backgroundColor: "rgba(130, 149, 75, 0.1)",

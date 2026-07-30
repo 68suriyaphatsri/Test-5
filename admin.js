@@ -132,104 +132,148 @@ async function loadDashboardData() {
 }
 
 // --- Percentile Rank Algorithm & Math ---
-// Formula: Percentile Rank = ((B + 0.5 * E) / N) * 100
+// Formula: Standard Percentile Rank = ((c_L + 0.5 * f_i) / N) * 100
+// c_L = count of scores less than X
+// f_i = frequency of score X (count of equal scores)
+// N = total sample size
+function calculateStandardPercentileRank(scores, targetScore) {
+    if (!scores || scores.length === 0) return 0;
+    const N = scores.length;
+    const c_L = scores.filter(s => s < targetScore).length;
+    const f_i = scores.filter(s => s === targetScore).length;
+    const rank = ((c_L + 0.5 * f_i) / N) * 100;
+    return Math.round(rank * 10) / 10;
+}
+
 function computePercentilesAndStats() {
     if (!rawTestResults || rawTestResults.length === 0) {
-        renderMetrics(0, 0, 0, 0);
+        renderMetrics(0, 0, 0, 0, 0, null, null, null, null, 0);
         renderTable([]);
         return;
     }
 
     const N = rawTestResults.length;
+    const allAppScores = rawTestResults.map(r => r.total_score || 0);
 
-    // 1. Calculate App Percentiles — using ALL records as reference group
+    // 1. Calculate Standard App Percentiles — using ALL records as reference group
     rawTestResults.forEach((record) => {
         const appScore = record.total_score || 0;
-        const B = rawTestResults.filter((r) => (r.total_score || 0) < appScore).length;
-        const E = rawTestResults.filter((r) => (r.total_score || 0) === appScore).length;
-        record.app_percentile = Math.round(((B + 0.5 * E) / N) * 100 * 10) / 10;
+        record.app_percentile = calculateStandardPercentileRank(allAppScores, appScore);
     });
 
     // 2. Filter records that have paper scores
     const paperRecords = rawTestResults.filter((r) => r.paper_score !== null && r.paper_score !== undefined);
     const N_paper = paperRecords.length;
 
-    if (N_paper > 0) {
-        // คำนวณ paper_percentile เทียบกับกลุ่มเดียวกัน (paperRecords)
-        paperRecords.forEach((record) => {
-            const paperScore = record.paper_score;
-            const B = paperRecords.filter((r) => r.paper_score < paperScore).length;
-            const E = paperRecords.filter((r) => r.paper_score === paperScore).length;
-            record.paper_percentile = Math.round(((B + 0.5 * E) / N_paper) * 100 * 10) / 10;
-
-            // คำนวณ app_percentile เทียบกับกลุ่มเดียวกัน (paperRecords) เพื่อให้ยุติธรรม
-            const appScore = record.total_score || 0;
-            const Bapp = paperRecords.filter((r) => (r.total_score || 0) < appScore).length;
-            const Eapp = paperRecords.filter((r) => (r.total_score || 0) === appScore).length;
-            record.app_percentile_ingroup = Math.round(((Bapp + 0.5 * Eapp) / N_paper) * 100 * 10) / 10;
-
-            // Accuracy: ใช้สัดส่วนความใกล้เคียง (1 - diff/100), ยิ่งใกล้กัน = ยิ่งแม่น
-            const diff = Math.abs(record.paper_percentile - record.app_percentile_ingroup);
-            record.percentile_accuracy = Math.max(0, Math.round((100 - diff) * 10) / 10);
-        });
-    }
-
-    // 3. Compute Metrics
-    const paperCount = N_paper;
-    const paperPct = N > 0 ? Math.round((paperCount / N) * 100) : 0;
-
-    let avgAccuracy = 0;
-    let correlationR2 = 0;
-
+    let spearmanRs = 0;
+    let maePct = 0;
+    let diagnosticAccuracy = 0;
     let sensitivity = null, specificity = null, auc = null, optCutoff = null;
 
     if (N_paper > 0) {
-        const sumAcc = paperRecords.reduce((sum, r) => sum + (r.percentile_accuracy || 0), 0);
-        avgAccuracy = Math.round((sumAcc / N_paper) * 10) / 10;
-        correlationR2 = calculateR2(paperRecords);
+        const groupAppScores = paperRecords.map(r => r.total_score || 0);
+        const groupPaperScores = paperRecords.map(r => r.paper_score);
 
-        // Clinical validity metrics (MoCA cutoff < 26)
+        // คำนวณ percentiles ในกลุ่มที่มีคะแนนกระดาษ
+        paperRecords.forEach((record) => {
+            record.paper_percentile = calculateStandardPercentileRank(groupPaperScores, record.paper_score);
+            record.app_percentile_ingroup = calculateStandardPercentileRank(groupAppScores, record.total_score || 0);
+
+            // Normalized Score comparison (|%App - %Paper|)
+            const normAppPct = ((record.total_score || 0) / 15) * 100;
+            const normPaperPct = (record.paper_score / 30) * 100;
+            record.norm_score_diff = Math.round(Math.abs(normAppPct - normPaperPct) * 10) / 10;
+        });
+
+        // 3. Compute Medical Statistics
+        spearmanRs = calculateSpearman(paperRecords);
+        maePct = calculateMAE(paperRecords);
+
+        // Clinical validity metrics & Optimal Cutoff using Youden's Index
         const best = findOptimalCutoff(paperRecords, 26);
         optCutoff = best.cutoff;
         sensitivity = best.sens;
         specificity = best.spec;
+        diagnosticAccuracy = best.accuracy;
+
         const aucResult = computeAUCROC(paperRecords, 26);
         auc = aucResult.auc;
     }
 
-    renderMetrics(N, paperCount, paperPct, correlationR2, avgAccuracy, sensitivity, specificity, auc, optCutoff);
+    const paperCount = N_paper;
+    const paperPct = N > 0 ? Math.round((paperCount / N) * 100) : 0;
+
+    renderMetrics(N, paperCount, paperPct, spearmanRs, maePct, sensitivity, specificity, auc, optCutoff, diagnosticAccuracy);
     renderCharts(rawTestResults, paperRecords);
     renderTable(rawTestResults);
 }
 
-// Pearson Correlation Coefficient R^2
-function calculateR2(paperRecords) {
+// Spearman's Rank Correlation (r_s) with tied ranks handling
+function calculateSpearman(paperRecords) {
     if (paperRecords.length < 2) return 0;
-    const x = paperRecords.map((r) => r.app_percentile_ingroup);
-    const y = paperRecords.map((r) => r.paper_percentile);
+    const x = paperRecords.map((r) => r.total_score || 0);
+    const y = paperRecords.map((r) => r.paper_score);
 
+    const rank = (arr) => {
+        const sorted = arr.map((val, idx) => ({ val, idx })).sort((a, b) => a.val - b.val);
+        const ranks = new Array(arr.length);
+        let i = 0;
+        while (i < sorted.length) {
+            let j = i;
+            while (j < sorted.length && sorted[j].val === sorted[i].val) {
+                j++;
+            }
+            const meanRank = (i + 1 + j) / 2;
+            for (let k = i; k < j; k++) {
+                ranks[sorted[k].idx] = meanRank;
+            }
+            i = j;
+        }
+        return ranks;
+    };
+
+    const rx = rank(x);
+    const ry = rank(y);
     const n = x.length;
-    const sumX = x.reduce((a, b) => a + b, 0);
-    const sumY = y.reduce((a, b) => a + b, 0);
-    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
-    const sumX2 = x.reduce((sum, val) => sum + val * val, 0);
-    const sumY2 = y.reduce((sum, val) => sum + val * val, 0);
 
-    const numerator = n * sumXY - sumX * sumY;
-    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    const meanRx = rx.reduce((a, b) => a + b, 0) / n;
+    const meanRy = ry.reduce((a, b) => a + b, 0) / n;
 
-    if (denominator === 0) return 0;
-    const r = numerator / denominator;
-    return Math.round(r * r * 100) / 100;
+    let num = 0, denX = 0, denY = 0;
+    for (let i = 0; i < n; i++) {
+        const dx = rx[i] - meanRx;
+        const dy = ry[i] - meanRy;
+        num += dx * dy;
+        denX += dx * dx;
+        denY += dy * dy;
+    }
+
+    if (denX === 0 || denY === 0) return 0;
+    const rs = num / Math.sqrt(denX * denY);
+    return Math.round(rs * 100) / 100;
+}
+
+// Mean Absolute Error (MAE) of Normalized Score (0-100%)
+function calculateMAE(paperRecords) {
+    if (paperRecords.length === 0) return 0;
+    const totalDiff = paperRecords.reduce((sum, r) => {
+        const normAppPct = ((r.total_score || 0) / 15) * 100;
+        const normPaperPct = (r.paper_score / 30) * 100;
+        return sum + Math.abs(normAppPct - normPaperPct);
+    }, 0);
+    return Math.round((totalDiff / paperRecords.length) * 10) / 10;
 }
 
 // --- Render Metrics Cards ---
-function renderMetrics(totalUsers, paperCount, paperPct, r2, avgAccuracy, sensitivity, specificity, auc, optCutoff) {
+function renderMetrics(totalUsers, paperCount, paperPct, spearmanRs, maePct, sensitivity, specificity, auc, optCutoff, diagnosticAccuracy) {
     document.getElementById("metric-total-users").textContent = totalUsers;
     document.getElementById("metric-paper-count").textContent = paperCount;
     document.getElementById("metric-paper-pct").textContent = `${paperPct}% ของผู้ทดสอบทั้งหมด`;
-    document.getElementById("metric-correlation").textContent = r2.toFixed(2);
-    document.getElementById("metric-avg-accuracy").textContent = `${avgAccuracy.toFixed(1)}%`;
+    document.getElementById("metric-correlation").textContent = spearmanRs.toFixed(2);
+    document.getElementById("metric-avg-accuracy").textContent = `${diagnosticAccuracy.toFixed(1)}%`;
+    if (document.getElementById("metric-mae")) {
+        document.getElementById("metric-mae").textContent = `${maePct.toFixed(1)}%`;
+    }
 
     // Clinical metrics
     const fmt = (v) => v !== null ? `${(v * 100).toFixed(1)}%` : `-`;
@@ -241,30 +285,32 @@ function renderMetrics(totalUsers, paperCount, paperPct, r2, avgAccuracy, sensit
 
 // --- Clinical Validity Functions ---
 
-// \u0e04\u0e33\u0e19\u0e27\u0e13 Sensitivity \u0e41\u0e25\u0e30 Specificity \u0e17\u0e35\u0e48 app cutoff \u0e43\u0e14\u0e46
+// คำนวณ Sensitivity, Specificity และ Diagnostic Accuracy ((TP + TN) / N)
 function computeSensSpec(records, appCutoff, paperCutoff = 26) {
     let TP = 0, FP = 0, TN = 0, FN = 0;
     records.forEach(r => {
-        const appPos = (r.total_score || 0) < appCutoff;  // \u0e41\u0e2d\u0e1b\u0e1a\u0e2d\u0e01\u0e27\u0e48\u0e32\u0e40\u0e1b\u0e47\u0e19 MCI
-        const paperPos = r.paper_score < paperCutoff;     // \u0e01\u0e23\u0e30\u0e14\u0e32\u0e29\u0e1a\u0e2d\u0e01\u0e27\u0e48\u0e32\u0e40\u0e1b\u0e47\u0e19 MCI
+        const appPos = (r.total_score || 0) < appCutoff;  // แอปบอกว่าเป็น MCI
+        const paperPos = r.paper_score < paperCutoff;     // กระดาษบอกว่าเป็น MCI
         if (appPos && paperPos)   TP++;
         else if (appPos && !paperPos) FP++;
         else if (!appPos && !paperPos) TN++;
         else FN++;
     });
+    const N = records.length;
     const sensitivity = (TP + FN) > 0 ? TP / (TP + FN) : 0;
     const specificity = (TN + FP) > 0 ? TN / (TN + FP) : 0;
-    return { sensitivity, specificity, TP, FP, TN, FN };
+    const accuracy = N > 0 ? ((TP + TN) / N) * 100 : 0;
+    return { sensitivity, specificity, accuracy, TP, FP, TN, FN };
 }
 
-// \u0e2b\u0e32 cutoff \u0e17\u0e35\u0e48\u0e14\u0e35\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e14\u0e49\u0e27\u0e22 Youden's Index (Sens + Spec - 1)
+// หา cutoff ที่ดีที่สุดด้วย Youden's Index (Sens + Spec - 1)
 function findOptimalCutoff(records, paperCutoff = 26) {
-    let best = { cutoff: 10, youden: -Infinity, sens: 0, spec: 0 };
-    for (let c = 8; c <= 14; c++) {
-        const { sensitivity, specificity } = computeSensSpec(records, c, paperCutoff);
+    let best = { cutoff: 10, youden: -Infinity, sens: 0, spec: 0, accuracy: 0 };
+    for (let c = 1; c <= 15; c++) {
+        const { sensitivity, specificity, accuracy } = computeSensSpec(records, c, paperCutoff);
         const youden = sensitivity + specificity - 1;
         if (youden > best.youden) {
-            best = { cutoff: c, youden, sens: sensitivity, spec: specificity };
+            best = { cutoff: c, youden, sens: sensitivity, spec: specificity, accuracy };
         }
     }
     return best;
@@ -515,7 +561,7 @@ function renderTable(results) {
         const compareP = record.app_percentile_ingroup !== undefined && record.paper_score !== null
             ? `P<sub>${record.app_percentile_ingroup}%</sub>`
             : appP;
-        const accuracy = record.percentile_accuracy !== undefined && record.paper_score !== null ? `<strong>${record.percentile_accuracy}%</strong>` : "-";
+        const normDiff = record.norm_score_diff !== undefined && record.paper_score !== null ? `|Δ| ${record.norm_score_diff}%` : "-";
 
         tr.innerHTML = `
             <td>${dateStr}</td>
@@ -526,7 +572,7 @@ function renderTable(results) {
             <td>${paperScore}</td>
             <td>${paperP}</td>
             <td title="เปรียบเทียบ app (ในกลุ่ม) vs กระดาษ">${compareP} → ${paperP}</td>
-            <td style="color:#2e7d32;">${accuracy}</td>
+            <td style="color:#2e7d32;"><strong>${normDiff}</strong></td>
             <td>
                 <div class="action-cell">
                     <button class="btn-action" onclick="openPaperModal('${record.id}')">📝 บันทึกคะแนน</button>

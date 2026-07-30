@@ -577,6 +577,9 @@
             <!-- Executive Metrics Row -->
             <div class="metrics-grid">
                 <div class="metric-card">
+            <!-- Primary Analytics Overview Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
                     <span class="title">ผู้เข้ารับการประเมินทั้งหมด</span>
                     <span class="value" id="metric-total-users">0</span>
                     <span class="sub">จำนวนผู้ใช้งานในระบบ</span>
@@ -587,14 +590,14 @@
                     <span class="sub" id="metric-paper-pct">0% ของผู้ทดสอบทั้งหมด</span>
                 </div>
                 <div class="metric-card">
-                    <span class="title">ความสัมพันธ์ R² (Correlation)</span>
+                    <span class="title">Spearman Correlation (r<sub>s</sub>)</span>
                     <span class="value" id="metric-correlation">0.00</span>
-                    <span class="sub">ความสอดคล้องระหว่างแอปกับกระดาษ</span>
+                    <span class="sub">ความสัมพันธ์เชิงลำดับยศ</span>
                 </div>
                 <div class="metric-card">
-                    <span class="title">ความแม่นยำเฉลี่ย (Percentile Accuracy)</span>
-                    <span class="value" id="metric-avg-accuracy" style="color: #82954b;">0.0%</span>
-                    <span class="sub">ความสอดคล้องเชิงเปอร์เซ็นไทล์</span>
+                    <span class="title">Diagnostic Accuracy (%)</span>
+                    <span class="value" id="metric-avg-accuracy" style="color: #2e7d32;">0.0%</span>
+                    <span class="sub">จำแนกถูกต้อง (TP+TN)/N</span>
                 </div>
             </div>
 
@@ -619,6 +622,11 @@
                     <span class="title">⚡ Optimal App Cutoff</span>
                     <span class="value" id="metric-opt-cutoff" style="color: #e65100;">-</span>
                     <span class="sub">Youden's Index (คะแนนที่ดีที่สุด)</span>
+                </div>
+                <div class="metric-card" style="border-left: 4px solid #d81b60;">
+                    <span class="title">📏 Normalized Score MAE</span>
+                    <span class="value" id="metric-mae" style="color: #d81b60;">-</span>
+                    <span class="sub">ผลต่างเฉลี่ย |%App - %Paper|</span>
                 </div>
             </div>
 
@@ -668,7 +676,7 @@
                                 <th>คะแนนกระดาษ (30)</th>
                                 <th>Percentile กระดาษ</th>
                                 <th>Percentile แอป (กลุ่มเดียวกัน) → กระดาษ</th>
-                                <th>ความแม่นยำ (%)</th>
+                                <th>Normalized Diff (|%App - %Paper|)</th>
                                 <th>การจัดการ</th>
                             </tr>
                         </thead>

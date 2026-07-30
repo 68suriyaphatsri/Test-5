@@ -9,6 +9,7 @@ const ADMIN_PASS = "Sunny13082552";
 let rawTestResults = [];
 let scatterChartInstance = null;
 let curveChartInstance = null;
+let rocChartInstance = null;
 let activeModalResult = null;
 let activeEditResult = null;
 let pendingDeleteId = null;
@@ -180,13 +181,23 @@ function computePercentilesAndStats() {
     let avgAccuracy = 0;
     let correlationR2 = 0;
 
+    let sensitivity = null, specificity = null, auc = null, optCutoff = null;
+
     if (N_paper > 0) {
         const sumAcc = paperRecords.reduce((sum, r) => sum + (r.percentile_accuracy || 0), 0);
         avgAccuracy = Math.round((sumAcc / N_paper) * 10) / 10;
         correlationR2 = calculateR2(paperRecords);
+
+        // Clinical validity metrics (MoCA cutoff < 26)
+        const best = findOptimalCutoff(paperRecords, 26);
+        optCutoff = best.cutoff;
+        sensitivity = best.sens;
+        specificity = best.spec;
+        const aucResult = computeAUCROC(paperRecords, 26);
+        auc = aucResult.auc;
     }
 
-    renderMetrics(N, paperCount, paperPct, correlationR2, avgAccuracy);
+    renderMetrics(N, paperCount, paperPct, correlationR2, avgAccuracy, sensitivity, specificity, auc, optCutoff);
     renderCharts(rawTestResults, paperRecords);
     renderTable(rawTestResults);
 }
@@ -213,12 +224,72 @@ function calculateR2(paperRecords) {
 }
 
 // --- Render Metrics Cards ---
-function renderMetrics(totalUsers, paperCount, paperPct, r2, avgAccuracy) {
+function renderMetrics(totalUsers, paperCount, paperPct, r2, avgAccuracy, sensitivity, specificity, auc, optCutoff) {
     document.getElementById("metric-total-users").textContent = totalUsers;
     document.getElementById("metric-paper-count").textContent = paperCount;
     document.getElementById("metric-paper-pct").textContent = `${paperPct}% ของผู้ทดสอบทั้งหมด`;
     document.getElementById("metric-correlation").textContent = r2.toFixed(2);
     document.getElementById("metric-avg-accuracy").textContent = `${avgAccuracy.toFixed(1)}%`;
+
+    // Clinical metrics
+    const fmt = (v) => v !== null ? `${(v * 100).toFixed(1)}%` : `-`;
+    document.getElementById("metric-sensitivity").textContent = fmt(sensitivity);
+    document.getElementById("metric-specificity").textContent = fmt(specificity);
+    document.getElementById("metric-auc").textContent = auc !== null ? auc.toFixed(3) : `-`;
+    document.getElementById("metric-opt-cutoff").textContent = optCutoff !== null ? `< ${optCutoff}/15` : `-`;
+}
+
+// --- Clinical Validity Functions ---
+
+// \u0e04\u0e33\u0e19\u0e27\u0e13 Sensitivity \u0e41\u0e25\u0e30 Specificity \u0e17\u0e35\u0e48 app cutoff \u0e43\u0e14\u0e46
+function computeSensSpec(records, appCutoff, paperCutoff = 26) {
+    let TP = 0, FP = 0, TN = 0, FN = 0;
+    records.forEach(r => {
+        const appPos = (r.total_score || 0) < appCutoff;  // \u0e41\u0e2d\u0e1b\u0e1a\u0e2d\u0e01\u0e27\u0e48\u0e32\u0e40\u0e1b\u0e47\u0e19 MCI
+        const paperPos = r.paper_score < paperCutoff;     // \u0e01\u0e23\u0e30\u0e14\u0e32\u0e29\u0e1a\u0e2d\u0e01\u0e27\u0e48\u0e32\u0e40\u0e1b\u0e47\u0e19 MCI
+        if (appPos && paperPos)   TP++;
+        else if (appPos && !paperPos) FP++;
+        else if (!appPos && !paperPos) TN++;
+        else FN++;
+    });
+    const sensitivity = (TP + FN) > 0 ? TP / (TP + FN) : 0;
+    const specificity = (TN + FP) > 0 ? TN / (TN + FP) : 0;
+    return { sensitivity, specificity, TP, FP, TN, FN };
+}
+
+// \u0e2b\u0e32 cutoff \u0e17\u0e35\u0e48\u0e14\u0e35\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e14\u0e49\u0e27\u0e22 Youden's Index (Sens + Spec - 1)
+function findOptimalCutoff(records, paperCutoff = 26) {
+    let best = { cutoff: 10, youden: -Infinity, sens: 0, spec: 0 };
+    for (let c = 8; c <= 14; c++) {
+        const { sensitivity, specificity } = computeSensSpec(records, c, paperCutoff);
+        const youden = sensitivity + specificity - 1;
+        if (youden > best.youden) {
+            best = { cutoff: c, youden, sens: sensitivity, spec: specificity };
+        }
+    }
+    return best;
+}
+
+// \u0e04\u0e33\u0e19\u0e27\u0e13 AUC-ROC \u0e14\u0e49\u0e27\u0e22 Trapezoidal Rule
+function computeAUCROC(records, paperCutoff = 26) {
+    const points = [];
+    for (let c = 0; c <= 16; c++) {
+        const { sensitivity, specificity } = computeSensSpec(records, c, paperCutoff);
+        points.push({ fpr: 1 - specificity, tpr: sensitivity, cutoff: c });
+    }
+    // \u0e40\u0e23\u0e35\u0e22\u0e07\u0e15\u0e32\u0e21 FPR \u0e08\u0e32\u0e01\u0e19\u0e49\u0e2d\u0e22\u0e44\u0e1b\u0e2b\u0e32\u0e21\u0e32\u0e01
+    points.sort((a, b) => a.fpr - b.fpr || a.tpr - b.tpr);
+    // \u0e40\u0e1e\u0e34\u0e48\u0e21 (0,0) \u0e41\u0e25\u0e30 (1,1) \u0e16\u0e49\u0e32\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35
+    if (!points.find(p => p.fpr === 0 && p.tpr === 0)) points.unshift({ fpr: 0, tpr: 0 });
+    if (!points.find(p => p.fpr === 1 && p.tpr === 1)) points.push({ fpr: 1, tpr: 1 });
+
+    let auc = 0;
+    for (let i = 1; i < points.length; i++) {
+        const dx = points[i].fpr - points[i - 1].fpr;
+        const avgY = (points[i].tpr + points[i - 1].tpr) / 2;
+        auc += dx * avgY;
+    }
+    return { auc: Math.max(0, Math.min(1, auc)), rocPoints: points };
 }
 
 // --- Render Charts ---
@@ -285,81 +356,133 @@ function renderCharts(allRecords, paperRecords) {
         }
     });
 
-    // Cumulative Chart — แสดง 2 กราฟแยก scale (แอป 0-15, กระดาษ 0-30)
-    const curveCtx = document.getElementById("curveChart").getContext("2d");
+    // --- Cumulative Distribution Chart ---
+    const curveCanvas = document.getElementById("curveChart");
+    const curveCtx = curveCanvas.getContext("2d");
     if (curveChartInstance) curveChartInstance.destroy();
 
-    // App: x-axis 0–15, paper: x-axis 0–30 → normalize ทั้งคู่เป็น percentile (%) บน x-axis เดียวกัน
-    const appLabels = Array.from({ length: 16 }, (_, i) => i);  // 0–15
-    const paperLabels = Array.from({ length: 31 }, (_, i) => i); // 0–30
-
-    // ใช้เฉพาะ paperRecords — คนที่ยังไม่ได้ใส่คะแนนกระดาษจะไม่ถูกนำมาคำนวณ
-    const appScoresSorted = [...paperRecords].map((r) => r.total_score || 0).sort((a, b) => a - b);
-    const paperScoresSorted = paperRecords.map((r) => r.paper_score).sort((a, b) => a - b);
-
-    // normalize เป็น % ของ max score เพื่อให้ใช้ x-axis เดียวกัน
-    const appCumulative = appLabels.map((val) => {
-        if (appScoresSorted.length === 0) return 0;
-        const count = appScoresSorted.filter((s) => s <= val).length;
-        return Math.round((count / appScoresSorted.length) * 100);
-    });
-
-    const paperCumulative = paperLabels.map((val) => {
-        if (paperScoresSorted.length === 0) return 0;
-        const count = paperScoresSorted.filter((s) => s <= val).length;
-        return Math.round((count / paperScoresSorted.length) * 100);
-    });
-
-    curveChartInstance = new Chart(curveCtx, {
-        type: "line",
-        data: {
-            labels: paperLabels, // ใช้ 0-30 เป็น base
-            datasets: [
-                {
-                    label: "เส้นสะสมแอป (เฉพาะกลุ่มที่มีคะแนนกระดาษแล้ว, 0-15)",
-                    data: appLabels.map((v, i) => ({ x: v * 2, y: appCumulative[i] })), // scale to 0-30
-                    borderColor: "#82954b",
-                    backgroundColor: "rgba(130, 149, 75, 0.1)",
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 3
-                },
-                {
-                    label: "เส้นสะสมกระดาษ (คะแนน 0-30)",
-                    data: paperLabels.map((v, i) => ({ x: v, y: paperCumulative[i] })),
-                    borderColor: "#e06666",
-                    backgroundColor: "rgba(224, 102, 102, 0.1)",
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    type: "linear",
-                    title: { display: true, text: "ระดับคะแนน (แอป ×2 / กระดาษ, ช่วง 0-30)" },
-                    min: 0, max: 30
-                },
-                y: {
-                    title: { display: true, text: "เปอร์เซ็นต์สะสม (%)" },
-                    min: 0, max: 100
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        title: (items) => `คะแนน: ${items[0].parsed.x}`,
-                        label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}%`
-                    }
+    if (paperRecords.length === 0) {
+        // แสดงข้อความแทนกราฟเมื่อยังไม่มีข้อมูล
+        curveChartInstance = new Chart(curveCtx, {
+            type: "line",
+            data: { datasets: [] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    title: { display: true, text: "⏳ ยังไม่มีข้อมูลคะแนนกระดาษ — กรุณาบันทึกคะแนนกระดาษก่อน", color: "#888", font: { size: 14 } }
                 }
             }
-        }
-    });
+        });
+    } else {
+        // แสดงเส้นโค้งสะสม
+        // ใช้ % ของคะแนนสูงสุดเป็น x-axis (app: /15, paper: /30) เพื่อให้ทั้งคู่อยู่บน scale 0-100%
+        const appScoresSorted = [...paperRecords].map(r => r.total_score || 0).sort((a, b) => a - b);
+        const paperScoresSorted = paperRecords.map(r => r.paper_score).sort((a, b) => a - b);
 
+        const appPoints = Array.from({ length: 16 }, (_, i) => ({
+            x: Math.round((i / 15) * 100),  // % ของ max 15
+            y: Math.round((appScoresSorted.filter(s => s <= i).length / appScoresSorted.length) * 100)
+        }));
+        const paperPoints = Array.from({ length: 31 }, (_, i) => ({
+            x: Math.round((i / 30) * 100),  // % ของ max 30
+            y: Math.round((paperScoresSorted.filter(s => s <= i).length / paperScoresSorted.length) * 100)
+        }));
+
+        curveChartInstance = new Chart(curveCtx, {
+            type: "scatter",
+            data: {
+                datasets: [
+                    {
+                        label: "แอป (0-15, พิกัดเป็น %)",
+                        data: appPoints,
+                        borderColor: "#82954b",
+                        backgroundColor: "rgba(130,149,75,0.1)",
+                        showLine: true, fill: true, tension: 0.3, pointRadius: 3
+                    },
+                    {
+                        label: "กระดาษ MoCA (0-30)",
+                        data: paperPoints,
+                        borderColor: "#e06666",
+                        backgroundColor: "rgba(224,102,102,0.1)",
+                        showLine: true, fill: true, tension: 0.3, pointRadius: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: "linear", min: 0, max: 100, title: { display: true, text: "% ของคะแนนเต็ม (Normalized)" } },
+                    y: { min: 0, max: 100, title: { display: true, text: "เปอร์เซ็นต์สะสม (%)" } }
+                }
+            }
+        });
+    }
+
+    // 3. ROC Curve Chart
+    const rocCtx = document.getElementById("rocChart");
+    if (rocCtx) {
+        if (rocChartInstance) rocChartInstance.destroy();
+
+        if (paperRecords.length === 0) {
+            rocChartInstance = new Chart(rocCtx.getContext("2d"), {
+                type: "line",
+                data: { datasets: [] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false },
+                        title: { display: true, text: "⏳ ยังไม่มีข้อมูล — บันทึกคะแนนกระดาษเพื่อดู ROC Curve", color: "#888", font: { size: 14 } }
+                    }
+                }
+            });
+        } else {
+            const { rocPoints } = computeAUCROC(paperRecords, 26);
+            const rocData = rocPoints.map(p => ({
+                x: parseFloat(p.fpr.toFixed(4)),
+                y: parseFloat(p.tpr.toFixed(4))
+            }));
+
+            rocChartInstance = new Chart(rocCtx.getContext("2d"), {
+                type: "scatter",
+                data: {
+                    datasets: [
+                        {
+                            label: "ROC Curve (App vs MoCA < 26)",
+                            data: rocData,
+                            borderColor: "#7b5ea7",
+                            backgroundColor: "rgba(123, 94, 167, 0.12)",
+                            showLine: true, fill: true, tension: 0.2,
+                            pointRadius: 4, pointHoverRadius: 7
+                        },
+                        {
+                            label: "\u0e40\u0e2a\u0e49\u0e19\u0e2a\u0e38\u0e48\u0e21 (Random Classifier)",
+                            data: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+                            borderColor: "rgba(180,180,180,0.6)",
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            showLine: true, fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { type: "linear", min: 0, max: 1, title: { display: true, text: "1 - Specificity (False Positive Rate)" } },
+                        y: { min: 0, max: 1, title: { display: true, text: "Sensitivity (True Positive Rate)" } }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const p = ctx.raw;
+                                    return `FPR: ${(p.x * 100).toFixed(1)}%, TPR: ${(p.y * 100).toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
 } // end renderCharts
 
 // --- Render Table ---

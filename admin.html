@@ -598,6 +598,30 @@
                 </div>
             </div>
 
+            <!-- Clinical Validity Metrics Row -->
+            <div class="metrics-grid" style="margin-top: -12px;">
+                <div class="metric-card" style="border-left: 4px solid #2e7d32;">
+                    <span class="title">🔍 Sensitivity (ไวต่อ MCI)</span>
+                    <span class="value" id="metric-sensitivity" style="color: #2e7d32;">-</span>
+                    <span class="sub">Optimal Cutoff (MoCA &lt; 26)</span>
+                </div>
+                <div class="metric-card" style="border-left: 4px solid #1565c0;">
+                    <span class="title">🛡️ Specificity (ไม่หลงว่าปกติเป็น MCI)</span>
+                    <span class="value" id="metric-specificity" style="color: #1565c0;">-</span>
+                    <span class="sub">Optimal Cutoff (MoCA &lt; 26)</span>
+                </div>
+                <div class="metric-card" style="border-left: 4px solid #6a1b9a;">
+                    <span class="title">📈 AUC-ROC</span>
+                    <span class="value" id="metric-auc" style="color: #6a1b9a;">-</span>
+                    <span class="sub">&gt; 0.8 = ดี | &gt; 0.9 = ดีมาก</span>
+                </div>
+                <div class="metric-card" style="border-left: 4px solid #e65100;">
+                    <span class="title">⚡ Optimal App Cutoff</span>
+                    <span class="value" id="metric-opt-cutoff" style="color: #e65100;">-</span>
+                    <span class="sub">Youden's Index (คะแนนที่ดีที่สุด)</span>
+                </div>
+            </div>
+
             <!-- Charts Section -->
             <div class="charts-grid">
                 <!-- Percentile Scatter Plot -->
@@ -614,6 +638,15 @@
                     <div class="chart-container">
                         <canvas id="curveChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <!-- ROC Curve Chart -->
+            <div style="background:white; border-radius:24px; padding:24px; box-shadow:0 4px 20px rgba(0,0,0,0.04); border:1px solid #eef2e6; margin-bottom:24px;">
+                <h3 style="font-size:1.1rem; color:#333; margin-bottom:8px;">&#128200; ROC Curve — ความแม่นยำในการวินิจฉัย MCI (App vs MoCA &lt; 26)</h3>
+                <p style="font-size:0.82rem; color:#888; margin-bottom:16px;">แกน X = False Positive Rate (1-Specificity) | แกน Y = True Positive Rate (Sensitivity) | AUC ยิ่งใกล้ 1 ยิ่งดี</p>
+                <div style="position:relative; height:300px;">
+                    <canvas id="rocChart"></canvas>
                 </div>
             </div>
 

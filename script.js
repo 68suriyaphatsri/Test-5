@@ -433,10 +433,11 @@ async function goToLogin() {
         console.warn('เช็คจำนวนสูงสุดไม่ได้:', e);
     }
 
-    // แสดงหน้า LINE Login เป็นหน้าแรก
+    // ข้ามหน้า LINE Login และเปิดหน้าแนะนำแอป (Intro Page) เป็นหน้าแรก
     if (linePage) {
-        linePage.style.display = 'flex';
+        linePage.style.display = 'none';
     }
+    showIntroPage();
 }
 
 function showIntroPage() {
@@ -584,7 +585,9 @@ document.getElementById('userid-next-btn').onclick = function () {
     welcomePage.style.display = 'flex';
     welcomePage.style.opacity = '1';
     setTimeout(() => {
-        typeWriter("ยินดีต้อนรับสู่สวนความจำที่แสนอบอุ่น พวกเราจะนําพาทุกท่านเดินเล่นและทบทวนความทรงจำไปด้วยกัน", "typing-text", 50, () => {
+        const userNameInput = document.getElementById('user-name')?.value;
+        const greeting = userNameInput ? `สวัสดีคุณ ${userNameInput} ` : '';
+        typeWriter(`${greeting}ยินดีต้อนรับสู่สวนความจำที่แสนอบอุ่น พวกเราจะนําพาทุกท่านเดินเล่นและทบทวนความทรงจำไปด้วยกัน`, "typing-text", 50, () => {
             const btn = document.getElementById('start-journey-btn');
             btn.style.display = 'inline-block';
             setTimeout(() => { btn.style.opacity = '1'; }, 100);

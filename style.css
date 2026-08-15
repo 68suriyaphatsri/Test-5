@@ -1,17 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&family=Prompt:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap');
 
-/* --- 1. Reset & Global Styles --- */
+/* --- 1. Reset & Modern Senior-Friendly Theme --- */
+
+:root {
+    --vh: 1vh;
+    --full-height: 100vh;
+    --primary-green: #4a6b22;
+    --primary-accent: #6b8e23;
+    --nature-gradient: linear-gradient(135deg, #4a6b22 0%, #355115 100%);
+    --card-glass-bg: rgba(255, 255, 255, 0.92);
+    --card-shadow: 0 12px 36px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(74, 107, 34, 0.08);
+    --border-radius-lg: 28px;
+    --border-radius-md: 18px;
+}
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Prompt', 'Anuphan', sans-serif !important;
-    font-weight: 400;
+    font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body, html, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, div, a, label {
-    font-family: 'Prompt', 'Anuphan', sans-serif !important;
+    font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif !important;
 }
 
 button, input[type="button"], input[type="submit"] {
@@ -24,26 +36,21 @@ body,
 html {
     width: 100%;
     height: 100%;
-    overflow-x: hidden; /* เปลี่ยนจาก hidden เป็น overflow-x:hidden เพื่อให้ scroll แนวตั้งได้ */
-    background-color: #fcfcfc;
-    font-size: 16px;
+    overflow-x: hidden;
+    background-color: #f7f9f4;
+    font-size: 17px; /* ปรับขนาดฟอนต์อ่านง่ายสำหรับผู้สูงอายุ */
     line-height: 1.7;
-    color: #333;
+    color: #2b331f;
     -webkit-font-smoothing: antialiased;
 }
 
-/* ตั้ง CSS variable สำหรับ mobile viewport height ที่ถูกต้อง (exclude address bar) */
-:root {
-    --vh: 1vh;
-    --full-height: 100vh;
-}
+h1, h2, h3 { font-weight: 700; line-height: 1.35; color: #23350e; }
+h4, h5, h6 { font-weight: 600; color: #355115; }
+p { font-weight: 400; font-size: 1.05rem; }
+label { font-weight: 600; font-size: 1.1rem; color: #2d3b19; }
+button { font-weight: 600; font-family: 'Anuphan', sans-serif; font-size: 1.1rem; }
+input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; font-size: 1.1rem; }
 
-h1, h2, h3 { font-weight: 700; line-height: 1.4; color: #111; }
-h4, h5, h6 { font-weight: 600; }
-p { font-weight: 400; }
-label { font-weight: 600; }
-button { font-weight: 600; font-family: 'Anuphan', sans-serif; }
-input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 
 
 /* --- 2. Loader Section --- */
@@ -110,48 +117,70 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 }
 
 .login-card {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2.5rem;
-    border-radius: 25px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    max-width: 400px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 2.5rem 2rem;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(74, 107, 34, 0.1);
+    width: 92%;
+    max-width: 440px;
     text-align: center;
 }
 
 .input-group {
     text-align: left;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.4rem;
 }
 
 .input-group label {
     display: block;
-    margin-bottom: 5px;
-    color: #555;
-    font-weight: bold;
+    margin-bottom: 8px;
+    color: #2b3a16;
+    font-weight: 700;
+    font-size: 1.05rem;
 }
 
 .input-group input,
 .input-group select {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    font-size: 16px;
+    padding: 14px 16px;
+    border: 2px solid #d4dec3;
+    background: #fcfdfe;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    color: #1f2812;
     outline: none;
+    transition: all 0.25s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    border-color: #5c802b;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(92, 128, 43, 0.18);
 }
 
 #next-btn {
     width: 100%;
-    padding: 14px;
-    background: #764ba2;
+    padding: 16px;
+    background: linear-gradient(135deg, #4a6b22, #355115);
     color: white;
     border: none;
-    border-radius: 10px;
-    font-size: 1.1rem;
+    border-radius: 50px;
+    font-size: 1.15rem;
+    font-weight: bold;
     cursor: pointer;
-    transition: 0.3s;
+    box-shadow: 0 6px 20px rgba(74, 107, 34, 0.35);
+    transition: all 0.25s ease;
 }
+
+#next-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(74, 107, 34, 0.45);
+}
+
 
 .line-btn:hover {
     background-color: #05b34c !important;
@@ -1411,7 +1440,36 @@ body.show-result {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* --- Premium Button Global Styles --- */
+/* --- Senior Accessibility & Modern Glass Cards --- */
+
+.audio-btn, button[title*="ฟังเสียง"] {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.audio-btn:active, button[title*="ฟังเสียง"]:active {
+    transform: scale(0.92);
+}
+
+/* Glassmorphism Card Utilities */
+.glass-card {
+    background: rgba(255, 255, 255, 0.93) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.7) !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(74, 107, 34, 0.08) !important;
+}
+
+/* High Contrast Input Fields for Elderly Users */
+input[type="text"], input[type="number"], select {
+    font-size: 1.15rem !important;
+    line-height: 1.5 !important;
+}
+
+/* Premium Button Global Styles */
 button, .btn-advice {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     position: relative;
@@ -1422,8 +1480,8 @@ button, .btn-advice {
 
 button:hover, .btn-advice:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(130, 149, 75, 0.3) !important;
-    filter: brightness(1.08);
+    box-shadow: 0 6px 20px rgba(74, 107, 34, 0.3) !important;
+    filter: brightness(1.05);
 }
 
 button:active, .btn-advice:active {
@@ -1434,6 +1492,7 @@ button:active, .btn-advice:active {
 #close-hospital-modal:hover {
     transform: scale(1.15) !important;
 }
+
 
 
 /* ============================================================

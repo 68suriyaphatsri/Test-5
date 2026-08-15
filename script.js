@@ -1,4 +1,16 @@
-// --- 0. Mobile Viewport Height Fix ---
+// --- 0. Speech / Audio Assistant Utility ---
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // ล้างคิวเสียงเก่า
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'th-TH';
+        utterance.rate = 0.9; // พูดช้าลงเล็กน้อยเพื่อให้ผู้สูงอายุฟังง่าย
+        window.speechSynthesis.speak(utterance);
+    } else {
+        alert("เบราว์เซอร์นี้ไม่รองรับการอ่านเสียง");
+    }
+}
+
 // แก้ปัญหา 100vh บนมือถือ (Chrome/LINE browser มี address bar ทำให้ content ตก)
 function setMobileVH() {
     const vh = window.innerHeight * 0.01;
@@ -1454,9 +1466,11 @@ function calculateAndShowResult() {
     let totalScore = recallScore + clockScore + handsScore + mathScore + orientationScore + namingScore;
 
     const eduLevel = document.getElementById('user-education').value;
-    if (eduLevel === "ตํ่ากว่ามัธยมศึกษาปีที่ 6") {
+    // ปรับคะแนนตามระดับการศึกษา (Education Correction: +1 สำหรับผู้ที่มีวุฒิ ≤ 12 ปี หรือ ไม่ได้เรียน/ประถม)
+    if (eduLevel === "ตํ่ากว่ามัธยมศึกษาปีที่ 6" || eduLevel === "ไม่ได้เรียนหนังสือ / ประถมศึกษา") {
         totalScore += 1;
     }
+
 
     if (totalScore > 15) totalScore = 15;
 

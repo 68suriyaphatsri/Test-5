@@ -241,7 +241,10 @@
 
     <div id="login-container" style="display: none;">
         <div class="login-card">
-            <h2>ข้อมูลเบื้องต้น</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin:0;">ข้อมูลเบื้องต้น</h2>
+                <button type="button" onclick="speakText('กรุณากรอกข้อมูลส่วนตัวของท่าน เช่น ชื่อ อายุ เพศ ระดับการศึกษา เพื่อให้ระบบสามารถประเมินผลได้อย่างถูกต้องครับ')" style="background:#82954b; color:white; border:none; border-radius:20px; padding:6px 14px; cursor:pointer; font-size:0.9rem;">🔊 ฟังเสียงคำแนะนำ</button>
+            </div>
             <form id="info-form">
                 <div class="input-group"><label>ชื่อ - นามสกุล</label><input type="text" id="user-name" placeholder="เช่น สมชาย ใจดี"
                         required></div>
@@ -260,15 +263,16 @@
                     <label>ระดับวุฒิการศึกษา</label>
                     <select id="user-education" required>
                         <option value="" disabled selected>เลือกระดับวุฒิการศึกษา</option>
-                        <option value="ตํ่ากว่ามัธยมศึกษาปีที่ 6">ตํ่ากว่ามัธยมศึกษาปีที่ 6</option>
-                        <option value="สูงกว่ามัธยมศึกษาปีที่ 6 หรือเทียบเท่า">สูงกว่ามัธยมศึกษาปีที่ 6 หรือเทียบเท่า
-                        </option>
+                        <option value="ไม่ได้เรียนหนังสือ / ประถมศึกษา">ไม่ได้เรียนหนังสือ / ประถมศึกษา (≤ 6 ปี)</option>
+                        <option value="ตํ่ากว่ามัธยมศึกษาปีที่ 6">ตํ่ากว่ามัธยมศึกษาปีที่ 6 (7-12 ปี)</option>
+                        <option value="สูงกว่ามัธยมศึกษาปีที่ 6 หรือเทียบเท่า">สูงกว่ามัธยมศึกษาปีที่ 6 ขึ้นไป (> 12 ปี)</option>
                     </select>
                 </div>
                 <div class="input-group"><label>โรคประจำตัว (ถ้ามี)</label><input type="text" id="user-disease"
                         placeholder="ระบุ หรือพิมพ์ 'ไม่มี'"></div>
                 <button type="submit" id="next-btn">ถัดไป</button>
             </form>
+
         </div>
     </div>
 
@@ -314,6 +318,7 @@
         <div id="clock-instruction-box" style="text-align: center; max-width: 90%; margin-bottom: 8px; position: relative;">
             <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 6px;">
                 <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">🕰️ ทดสอบวาดนาฬิกา</span>
+                <button type="button" onclick="speakText(document.getElementById('clock-instruction').innerText || 'แตะนำตัวเลข 1 ถึง 12 ไปวางบนหน้าปัดนาฬิกาให้ถูกต้อง และปรับเข็มนาฬิกาให้ตรงเวลาครับ')" style="background: #82954b; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="ฟังเสียงคำสั่ง">🔊</button>
                 <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบนาฬิกา:\n\n1. แตะนำตัวเลข 1 ถึง 12 ไปวางบนตำแหน่งของหน้าปัดนาฬิกาให้ถูกต้อง\n2. ปรับเข็มสั้นและเข็มยาวให้ชี้ตรงเวลาที่กำหนดคำสั่งครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
             </div>
             <p id="clock-instruction"

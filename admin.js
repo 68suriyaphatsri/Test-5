@@ -257,7 +257,7 @@ function calculateSpearman(paperRecords) {
 function calculateMAE(paperRecords) {
     if (paperRecords.length === 0) return 0;
     const totalDiff = paperRecords.reduce((sum, r) => {
-        const normAppPct = ((r.total_score || 0) / 15) * 100;
+        const normAppPct = ((r.total_score || 0) / 30) * 100;
         const normPaperPct = (r.paper_score / 30) * 100;
         return sum + Math.abs(normAppPct - normPaperPct);
     }, 0);
@@ -280,7 +280,7 @@ function renderMetrics(totalUsers, paperCount, paperPct, spearmanRs, maePct, sen
     document.getElementById("metric-sensitivity").textContent = fmt(sensitivity);
     document.getElementById("metric-specificity").textContent = fmt(specificity);
     document.getElementById("metric-auc").textContent = auc !== null ? auc.toFixed(3) : `-`;
-    document.getElementById("metric-opt-cutoff").textContent = optCutoff !== null ? `< ${optCutoff}/15` : `-`;
+    document.getElementById("metric-opt-cutoff").textContent = optCutoff !== null ? `< ${optCutoff}/30` : `-`;
 }
 
 // --- Clinical Validity Functions ---
@@ -305,8 +305,8 @@ function computeSensSpec(records, appCutoff, paperCutoff = 26) {
 
 // หา cutoff ที่ดีที่สุดด้วย Youden's Index (Sens + Spec - 1)
 function findOptimalCutoff(records, paperCutoff = 26) {
-    let best = { cutoff: 10, youden: -Infinity, sens: 0, spec: 0, accuracy: 0 };
-    for (let c = 1; c <= 15; c++) {
+    let best = { cutoff: 25, youden: -Infinity, sens: 0, spec: 0, accuracy: 0 };
+    for (let c = 1; c <= 30; c++) {
         const { sensitivity, specificity, accuracy } = computeSensSpec(records, c, paperCutoff);
         const youden = sensitivity + specificity - 1;
         if (youden > best.youden) {
@@ -316,16 +316,16 @@ function findOptimalCutoff(records, paperCutoff = 26) {
     return best;
 }
 
-// \u0e04\u0e33\u0e19\u0e27\u0e13 AUC-ROC \u0e14\u0e49\u0e27\u0e22 Trapezoidal Rule
+// คำนวณ AUC-ROC ด้วย Trapezoidal Rule
 function computeAUCROC(records, paperCutoff = 26) {
     const points = [];
-    for (let c = 0; c <= 16; c++) {
+    for (let c = 0; c <= 30; c++) {
         const { sensitivity, specificity } = computeSensSpec(records, c, paperCutoff);
         points.push({ fpr: 1 - specificity, tpr: sensitivity, cutoff: c });
     }
-    // \u0e40\u0e23\u0e35\u0e22\u0e07\u0e15\u0e32\u0e21 FPR \u0e08\u0e32\u0e01\u0e19\u0e49\u0e2d\u0e22\u0e44\u0e1b\u0e2b\u0e32\u0e21\u0e32\u0e01
+    // เรียงตาม FPR จากน้อยไปหามาก
     points.sort((a, b) => a.fpr - b.fpr || a.tpr - b.tpr);
-    // \u0e40\u0e1e\u0e34\u0e48\u0e21 (0,0) \u0e41\u0e25\u0e30 (1,1) \u0e16\u0e49\u0e32\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35
+    // เพิ่ม (0,0) และ (1,1) ถ้ายังไม่มี
     if (!points.find(p => p.fpr === 0 && p.tpr === 0)) points.unshift({ fpr: 0, tpr: 0 });
     if (!points.find(p => p.fpr === 1 && p.tpr === 1)) points.push({ fpr: 1, tpr: 1 });
 
@@ -359,7 +359,7 @@ function renderCharts(allRecords, paperRecords) {
                     data: scatterData,
                     backgroundColor: "#82954b",
                     pointRadius: 6,
-                    pointHoverRadius: 9
+                    pointHoverRadius: 8
                 },
                 {
                     // เส้น Perfect Correlation y=x
@@ -378,23 +378,22 @@ function renderCharts(allRecords, paperRecords) {
             maintainAspectRatio: false,
             scales: {
                 x: {
-                    title: { display: true, text: "Percentile แอป — กลุ่มเดียวกัน (App Rank %)" },
-                    min: 0,
-                    max: 100
+                    min: 0, max: 100,
+                    title: { display: true, text: "เปอร์เซ็นไทล์ในกลุ่ม (แอป)" },
+                    grid: { color: "rgba(0,0,0,0.05)" }
                 },
                 y: {
-                    title: { display: true, text: "Percentile กระดาษ (Paper Rank %)" },
-                    min: 0,
-                    max: 100
+                    min: 0, max: 100,
+                    title: { display: true, text: "เปอร์เซ็นไทล์ตามเกณฑ์กระดาษ" },
+                    grid: { color: "rgba(0,0,0,0.05)" }
                 }
             },
             plugins: {
                 tooltip: {
                     callbacks: {
                         label: (ctx) => {
-                            const pt = ctx.raw;
-                            if (!pt.name) return null; // ซ่อน tooltip ของเส้น reference
-                            return `${pt.name}: แอป P${pt.x}% vs กระดาษ P${pt.y}%`;
+                            const p = ctx.raw;
+                            return `${p.name}: แอป P${p.x} vs กระดาษ P${p.y}`;
                         }
                     }
                 }
@@ -402,13 +401,11 @@ function renderCharts(allRecords, paperRecords) {
         }
     });
 
-    // --- Cumulative Distribution Chart ---
-    const curveCanvas = document.getElementById("curveChart");
-    const curveCtx = curveCanvas.getContext("2d");
+    // 2. Cumulative Score Comparison Curve
+    const curveCtx = document.getElementById("scoreCurveChart").getContext("2d");
     if (curveChartInstance) curveChartInstance.destroy();
 
     if (paperRecords.length === 0) {
-        // แสดงข้อความแทนกราฟเมื่อยังไม่มีข้อมูล
         curveChartInstance = new Chart(curveCtx, {
             type: "line",
             data: { datasets: [] },
@@ -421,12 +418,12 @@ function renderCharts(allRecords, paperRecords) {
         });
     } else {
         // แสดงเส้นโค้งสะสม
-        // ใช้ % ของคะแนนสูงสุดเป็น x-axis (app: /15, paper: /30) เพื่อให้ทั้งคู่อยู่บน scale 0-100%
+        // ใช้ % ของคะแนนสูงสุดเป็น x-axis (app: /30, paper: /30) เพื่อให้ทั้งคู่อยู่บน scale 0-100%
         const appScoresSorted = [...paperRecords].map(r => r.total_score || 0).sort((a, b) => a - b);
         const paperScoresSorted = paperRecords.map(r => r.paper_score).sort((a, b) => a - b);
 
-        const appPoints = Array.from({ length: 16 }, (_, i) => ({
-            x: Math.round((i / 15) * 100),  // % ของ max 15
+        const appPoints = Array.from({ length: 31 }, (_, i) => ({
+            x: Math.round((i / 30) * 100),  // % ของ max 30
             y: Math.round((appScoresSorted.filter(s => s <= i).length / appScoresSorted.length) * 100)
         }));
         const paperPoints = Array.from({ length: 31 }, (_, i) => ({
@@ -439,7 +436,7 @@ function renderCharts(allRecords, paperRecords) {
             data: {
                 datasets: [
                     {
-                        label: "แอป (0-15, พิกัดเป็น %)",
+                        label: "แอป (0-30, พิกัดเป็น %)",
                         data: appPoints,
                         borderColor: "#82954b",
                         backgroundColor: "rgba(130,149,75,0.1)",

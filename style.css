@@ -323,12 +323,23 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; font-size:
 
 #clock-face {
     position: relative;
-    width: 300px;
-    height: 300px;
+    width: clamp(330px, 88vw, 370px);
+    height: clamp(330px, 88vw, 370px);
     margin: 0 auto;
     background: white;
     border-radius: 50%;
     box-shadow: 0 0 0 6px #e8e8e8, 0 0 0 10px #d0d0d0, 0 8px 32px rgba(0, 0, 0, 0.18);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+}
+
+.clock-snap-animate {
+    animation: clockSnapPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes clockSnapPop {
+    0% { transform: scale(0.85); opacity: 0.5; }
+    60% { transform: scale(1.04); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 
@@ -359,8 +370,8 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; font-size:
 
 .drop-zone {
     position: absolute;
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     border: 2px dashed #88b04b;
     border-radius: 50%;
     display: flex;
@@ -371,11 +382,17 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; font-size:
     cursor: pointer;
     z-index: 2;
     background: rgba(136, 176, 75, 0.06);
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.15s;
+    -webkit-tap-highlight-color: rgba(136, 176, 75, 0.2);
 }
 
 .drop-zone:hover {
     background: rgba(136, 176, 75, 0.25);
+}
+
+.drop-zone:active {
+    background: rgba(136, 176, 75, 0.4);
+    transform: translate(-50%, -50%) scale(1.12);
 }
 
 .drop-zone.filled {
@@ -384,15 +401,15 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; font-size:
 }
 
 .draggable-number {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     background: #3d3d3d;
     color: white;
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 50%;
-    font-weight: bold;
+    font-weight: 700;
     font-size: 0.95rem;
     cursor: pointer;
     z-index: 100;
@@ -402,12 +419,14 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; font-size:
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
     transition: transform 0.1s, box-shadow 0.1s;
     flex-shrink: 0;
+    min-width: 34px;
+    min-height: 34px;
 }
 
 .draggable-number.selected {
     background: #88b04b !important;
     transform: scale(1.15);
-    box-shadow: 0 0 12px rgba(136, 176, 75, 0.8);
+    box-shadow: 0 0 14px rgba(136, 176, 75, 0.9);
     outline: 2px solid white;
 }
 
@@ -490,6 +509,73 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; font-size:
     box-shadow: 0 6px 20px rgba(130, 149, 75, 0.45);
 }
 
+/* --- Uniform Full-Bleed Background & Fixed Dark Overlay for All Test Pages --- */
+#memory-test-page,
+#clock-test-page,
+#math-test-page,
+#naming-test-page,
+#sentence-repeat-page,
+#fluency-test-page,
+#recall-test-page,
+#orientation-test-page,
+#farewell-page {
+    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif') center center / cover no-repeat fixed !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+/* หน้าที่มีเนื้อหายาว (scroll ได้) ต้องใช้ background-attachment: scroll
+   เพราะ fixed ทำให้ scroll เสียบน iOS Safari และ content ล้นจอ */
+#naming-test-page,
+#sentence-repeat-page,
+#fluency-test-page,
+#recall-test-page,
+#orientation-test-page {
+    background-attachment: scroll !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100vh;
+    height: var(--full-height, 100vh);
+    /* padding-bottom เผื่อปุ่มส่งคำตอบไม่ถูกบัง */
+    padding-bottom: 90px;
+}
+
+#memory-test-page::before,
+#clock-test-page::before,
+#math-test-page::before,
+#naming-test-page::before,
+#sentence-repeat-page::before,
+#fluency-test-page::before,
+#recall-test-page::before,
+#orientation-test-page::before,
+#farewell-page::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+    z-index: 0;
+}
+
+#memory-test-page > *,
+#clock-test-page > *,
+#math-test-page > *,
+#naming-test-page > *,
+#sentence-repeat-page > *,
+#fluency-test-page > *,
+#recall-test-page > *,
+#orientation-test-page > *,
+#farewell-page > * {
+    position: relative;
+    z-index: 1;
+}
 
 /* --- 6. Animations & Overlays --- */
 
@@ -959,21 +1045,7 @@ body.show-result {
 }
 
 
-/* --- Memory Test Page --- */
-
-#memory-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep.gif') center center / cover no-repeat;
-    position: fixed;
-}
-
-#memory-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 0;
-    pointer-events: none;
-}
+/* --- Memory Test Page Content Styles --- */
 
 #words-container {
     position: relative;
@@ -990,32 +1062,8 @@ body.show-result {
     z-index: 1;
 }
 
-#memory-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%202.gif') center center / cover no-repeat;
-}
 
-#memory-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    pointer-events: none;
-}
-
-
-/* --- Math Test Page --- */
-
-#math-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%203.png') center center / cover no-repeat;
-}
-
-#math-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    pointer-events: none;
-}
+/* --- Math Test Page Content Styles --- */
 
 #math-paper {
     position: relative;
@@ -1053,19 +1101,7 @@ body.show-result {
 }
 
 
-/* --- Naming Test Page --- */
-
-#naming-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%203.png') center center / cover no-repeat;
-}
-
-#naming-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    pointer-events: none;
-}
+/* --- Naming Test Page Content Styles --- */
 
 #naming-header {
     position: relative;
@@ -1105,20 +1141,48 @@ body.show-result {
     box-shadow: 0 6px 20px rgba(130, 149, 75, 0.45);
 }
 
+/* --- Category Fluency Test Page Content Styles --- */
 
-/* --- Recall Test Page --- */
-
-#recall-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep.gif') center center / cover no-repeat;
+.fluency-word-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #f0f7e6;
+    color: #4a5d23;
+    border: 1px solid #82954b;
+    border-radius: 20px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-#recall-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    pointer-events: none;
+.fluency-word-chip .chip-delete {
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #c0392b;
+    margin-left: 2px;
 }
+
+#fluency-mic-btn.listening {
+    background: #ff7675 !important;
+    color: white !important;
+    border-color: #d63031 !important;
+    animation: micPulse 1.2s infinite alternate;
+}
+
+@keyframes micPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 rgba(231, 76, 60, 0.4); }
+    100% { transform: scale(1.1); box-shadow: 0 0 16px rgba(231, 76, 60, 0.8); }
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+
+/* --- Recall Test Page Content Styles --- */
 
 #recall-input-container {
     position: relative;
@@ -1139,19 +1203,7 @@ body.show-result {
 }
 
 
-/* --- Orientation Test Page --- */
-
-#orientation-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%204.png') center center / cover no-repeat;
-}
-
-#orientation-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    pointer-events: none;
-}
+/* --- Orientation Test Page Content Styles --- */
 
 #orientation-input-container {
     position: relative;

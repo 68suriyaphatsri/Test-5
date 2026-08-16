@@ -23,6 +23,11 @@ window.addEventListener('orientationchange', () => {
     setTimeout(setMobileVH, 300);
 });
 
+// --- Global Variables ---
+let fluencyScore = 0;  // Category Fluency score (max 4)
+let sentenceRepeatScore = 0; // Sentence Repetition score (max 2)
+let currentStory = null; // เรื่องที่ถูกสุ่มในรอบนี้
+
 // --- 0.5 Page Transition Engine ---
 // ใช้แทน white-fade-overlay ทุกจุด
 // transitionTo(callback, options)
@@ -350,8 +355,8 @@ async function showHistoryPage() {
     const best = Math.max(...scores);
     const last = scores[0];
     if (histTotalCount) histTotalCount.textContent = records.length + ' ครั้ง';
-    if (histBestScore) histBestScore.textContent = best + '/15';
-    if (histLastScore) histLastScore.textContent = last + '/15';
+    if (histBestScore) histBestScore.textContent = best + '/30';
+    if (histLastScore) histLastScore.textContent = last + '/30';
 
     // Render รายการ
     if (histList) {
@@ -373,9 +378,11 @@ function renderHistoryCard(record, index) {
     const risk = record.risk_level || 'ไม่ระบุ';
     const details = record.details || {};
     const memory = details.memory ?? '-';
-    const focus = details.focus ?? '-';
-    const awareness = details.awareness ?? '-';
-    const pct = Math.round((score / 15) * 100);
+    const visuospatial = details.visuospatial ?? '-';
+    const math = details.math ?? '-';
+    const language = details.language ?? '-';
+    const orientation = details.orientation ?? '-';
+    const pct = Math.round((score / 30) * 100);
 
     // สีแถบและ badge
     let barColor = '#82954b'; // เขียว
@@ -409,7 +416,7 @@ function renderHistoryCard(record, index) {
             <span class="history-risk-badge ${badgeClass}">${badgeIcon} ${risk}</span>
         </div>
         <div class="history-score-row">
-            <div class="history-total-score">${score}<span>/15</span></div>
+            <div class="history-total-score">${score}<span>/30</span></div>
             <div class="history-score-bar-wrap">
                 <div class="history-score-bar-fill"
                     style="width: 0%; background: linear-gradient(90deg, ${barColor}, ${barColor}88);"
@@ -418,9 +425,11 @@ function renderHistoryCard(record, index) {
             <div style="margin-left: 10px; font-size: 0.85rem; color: #888; min-width: 36px; text-align: right;">${pct}%</div>
         </div>
         <div class="history-detail-row">
-            <div class="history-detail-chip">🧠 ความจำ: <strong>${memory}/3</strong></div>
-            <div class="history-detail-chip">🎯 สมาธิ: <strong>${focus}/5</strong></div>
-            <div class="history-detail-chip">🗓️ รับรู้: <strong>${awareness}/7</strong></div>
+            <div class="history-detail-chip">🧠 ความจำ: <strong>${memory}/5</strong></div>
+            <div class="history-detail-chip">🕰️ นาฬิกา: <strong>${visuospatial}/5</strong></div>
+            <div class="history-detail-chip">🛒 คิดเลข: <strong>${math}/5</strong></div>
+            <div class="history-detail-chip">🌿 บอกชื่อ: <strong>${language}/5</strong></div>
+            <div class="history-detail-chip">🗺️ วันเวลา: <strong>${orientation}/10</strong></div>
         </div>
     </div>`;
 }
@@ -577,88 +586,103 @@ if (infoForm) {
     infoForm.addEventListener('submit', function (e) {
         e.preventDefault();
         document.getElementById('login-container').style.display = 'none';
-        if (isLineLogin) {
-            const welcomePage = document.getElementById('welcome-garden-page');
-            if (welcomePage) { welcomePage.style.display = 'flex'; welcomePage.style.opacity = '1'; }
-            typeWriter(`สวัสดีคุณ ${lineProfile ? (lineProfile.displayName || 'ผู้ใช้งาน') : 'ผู้ใช้งาน'} ยินดีต้อนรับเข้าสู่สวนแห่งความทรงจำ...`, "typing-text", 50, () => {
-                const btn = document.getElementById('start-journey-btn');
-                if (btn) { btn.style.display = 'inline-block'; setTimeout(() => { btn.style.opacity = '1'; }, 100); }
-            });
-        } else {
-            document.getElementById('userid-display').innerText = userId;
-            document.getElementById('userid-page').style.display = 'flex';
+        
+        // ข้ามหน้า userid-page ไปยังหน้ายินดีต้อนรับสู่สวนความจำโดยตรง
+        const welcomePage = document.getElementById('welcome-garden-page');
+        if (welcomePage) { 
+            welcomePage.style.display = 'flex'; 
+            welcomePage.style.opacity = '1'; 
         }
+        
+        const userNameInput = document.getElementById('user-name')?.value;
+        const displayName = (isLineLogin && lineProfile && lineProfile.displayName) ? lineProfile.displayName : (userNameInput || 'ผู้ใช้งาน');
+        
+        typeWriter(`สวัสดีคุณ ${displayName} ยินดีต้อนรับสู่สวนแห่งความทรงจำ...`, "typing-text", 50, () => {
+            const btn = document.getElementById('start-journey-btn');
+            if (btn) { 
+                btn.style.display = 'inline-block'; 
+                setTimeout(() => { btn.style.opacity = '1'; }, 100); 
+            }
+        });
     });
 }
 
-document.getElementById('userid-next-btn').onclick = function () {
-    document.getElementById('userid-page').style.display = 'none';
-    const welcomePage = document.getElementById('welcome-garden-page');
-    welcomePage.style.display = 'flex';
-    welcomePage.style.opacity = '1';
-    setTimeout(() => {
-        const userNameInput = document.getElementById('user-name')?.value;
-        const greeting = userNameInput ? `สวัสดีคุณ ${userNameInput} ` : '';
-        typeWriter(`${greeting}ยินดีต้อนรับสู่สวนความจำที่แสนอบอุ่น พวกเราจะนําพาทุกท่านเดินเล่นและทบทวนความทรงจำไปด้วยกัน`, "typing-text", 50, () => {
-            const btn = document.getElementById('start-journey-btn');
-            btn.style.display = 'inline-block';
-            setTimeout(() => { btn.style.opacity = '1'; }, 100);
-        });
-    }, 200);
-};
 
-// --- 5. ด่านที่ 1: จดจำ 3 คำ (ดึงจาก Supabase) ---
+// --- 5. ด่านที่ 1: จดจำสิ่งของในสวน (Garden Memory Test - 5 ข้อ 5 คะแนน) ---
+const GARDEN_STORIES = [
+    {
+        story: "ต้นไม้, แมว, นาฬิกา, ผีเสื้อ, ดอกไม้",
+        words: ["ต้นไม้", "แมว", "นาฬิกา", "ผีเสื้อ", "ดอกไม้"],
+        voice: "โปรดจดจำสิ่งของทั้ง 5 อย่างต่อไปนี้นะครับ ได้แก่ ต้นไม้, แมว, นาฬิกา, ผีเสื้อ, และดอกไม้ เมื่อจำได้แล้วให้กดปุ่มฉันจำได้แล้วเพื่อไปต่อครับ"
+    },
+    {
+        story: "นกกระจอก, มะม่วง, กระถาง, กรรไกร, โต๊ะไม้",
+        words: ["นกกระจอก", "มะม่วง", "กระถาง", "กรรไกร", "โต๊ะไม้"],
+        voice: "โปรดจดจำสิ่งของทั้ง 5 อย่างต่อไปนี้นะครับ ได้แก่ นกกระจอก, มะม่วง, กระถาง, กรรไกร, และโต๊ะไม้ เมื่อจำได้แล้วให้กดปุ่มฉันจำได้แล้วเพื่อไปต่อครับ"
+    },
+    {
+        story: "บัวรดน้ำ, น้ำใส, กระรอก, ผักกาด, บ้านสวน",
+        words: ["บัวรดน้ำ", "น้ำใส", "กระรอก", "ผักกาด", "บ้านสวน"],
+        voice: "โปรดจดจำสิ่งของทั้ง 5 อย่างต่อไปนี้นะครับ ได้แก่ บัวรดน้ำ, น้ำใส, กระรอก, ผักกาด, และบ้านสวน เมื่อจำได้แล้วให้กดปุ่มฉันจำได้แล้วเพื่อไปต่อครับ"
+    }
+];
+
+function replayMemoryWordsVoice() {
+    if (secretWords && secretWords.length > 0) {
+        speakText("สิ่งของ 5 อย่างที่ต้องจดจำ ได้แก่ " + secretWords.join(", "));
+    }
+}
+
 const startJourneyBtn = document.getElementById('start-journey-btn');
 if (startJourneyBtn) {
     startJourneyBtn.addEventListener('click', async function () {
-        // ดึงคำจาก Supabase ก่อน แล้วค่อย transition
-        let wordsData = await MemoryGardenTools.fetchRecallSet(userId, 3);
-
-        const FALLBACK_POOL = [
-            { id: null, word: 'แมว', definition: '', example_sentence: 'เจ้า[.....]ชอบกินปลาและนอนบนโซฟา' },
-            { id: null, word: 'บ้าน', definition: '', example_sentence: 'ฉันกำลังเดินทางกลับ[.....]หลังเลิกงาน' },
-            { id: null, word: 'ต้นไม้', definition: '', example_sentence: 'ในสวนมี[.....]ใหญ่ที่ให้ร่มเงาดีมาก' },
-            { id: null, word: 'นาฬิกา', definition: '', example_sentence: 'คุณช่วยดู[.....]หน่อยสิว่ากี่โมงแล้ว' },
-            { id: null, word: 'ดอกไม้', definition: '', example_sentence: 'ฉันชอบกลิ่นหอมของ[.....]ในตอนเช้า' },
-        ];
-
-        if (!wordsData) wordsData = [];
-        if (wordsData.length < 3) {
-            const currentWords = wordsData.map(w => w.word);
-            const needed = 3 - wordsData.length;
-            const extra = FALLBACK_POOL
-                .filter(w => !currentWords.includes(w.word))
-                .sort(() => Math.random() - 0.5)
-                .slice(0, needed);
-            wordsData = [...wordsData, ...extra];
-        }
-
-        secretWordsData = wordsData;
-        secretWords = wordsData.map(w => w.word);
+        // สุ่มชุดสิ่งของในสวน
+        const selectedStory = GARDEN_STORIES[Math.floor(Math.random() * GARDEN_STORIES.length)];
+        currentStory = selectedStory; // เก็บไว้ใช้ในขั้นตอน Sentence Repeat
+        
+        secretWords = selectedStory.words;
+        secretWordsData = selectedStory.words.map(w => ({
+            id: null,
+            word: w,
+            example_sentence: `สิ่งของในสวนคือ [.....]`
+        }));
 
         document.getElementById('welcome-garden-page').style.display = 'none';
         document.getElementById('memory-test-page').style.display = 'flex';
-        document.getElementById('memory-words-display').innerText = secretWords.join('   ');
+        
+        const wordsDisplay = document.getElementById('memory-words-display');
+        if (wordsDisplay) {
+            wordsDisplay.innerHTML = secretWords.map(w => `<span style="background:white;color:#2e4414;padding:8px 18px;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,0.08);font-size:1.35rem;font-weight:bold;display:inline-block;">${w}</span>`).join(' ');
+        }
 
-        typeWriter("ขอให้ทุกท่านลองจำคำต่อไปนี้ดูนะ...", "instruction-text", 50, () => {
+        // อ่านเสียงโจทย์อัตโนมัติ
+        speakText(selectedStory.voice);
+
+        typeWriter("โปรดตั้งใจฟังและจดจำสิ่งของในสวนความทรงจำทั้ง 5 อย่างต่อไปนี้นะครับ...", "instruction-text", 45, () => {
             setTimeout(() => {
                 const words = document.getElementById('words-container');
                 words.style.display = 'block';
                 setTimeout(() => { words.style.opacity = "1"; }, 100);
-
-                setTimeout(() => {
-                    words.style.opacity = "0";
-                    setTimeout(() => {
-                        words.style.display = 'none';
-                        goToClockPage();
-                    }, 300);
-                }, 4500);
-            }, 1000);
+            }, 600);
         });
     });
 }
 
-// --- 6. ด่านที่ 2: ระบบนาฬิกา ---
+// ผูกปุ่ม "ฉันจำได้แล้ว ไปต่อ" (ให้ผู้ใช้กดเมื่อพร้อม)
+const memoryReadyBtn = document.getElementById('memory-ready-btn');
+if (memoryReadyBtn) {
+    memoryReadyBtn.onclick = function () {
+        const words = document.getElementById('words-container');
+        if (words) words.style.opacity = "0";
+        setTimeout(() => {
+            if (words) words.style.display = 'none';
+            goToClockPage();
+        }, 300);
+    };
+}
+
+
+// --- 6. ด่านที่ 2: ระบบนาฬิกา (Clock Drawing Test - 3 คะแนน) ---
 const CLOCK_TIME_POOL = [
     { h: 3, m: 0 }, { h: 6, m: 0 }, { h: 9, m: 0 }, { h: 12, m: 0 },
     { h: 1, m: 30 }, { h: 4, m: 30 }, { h: 7, m: 30 }, { h: 10, m: 30 },
@@ -669,11 +693,17 @@ const CLOCK_TIME_POOL = [
 let targetHour = 0, targetMinute = 0;
 let correctHourAngle = 0, correctMinuteAngle = 0;
 let selectedNumberElement = null;
+let contourScore = 0;
+let canvasPoints = [];
+let isDrawing = false;
+let clockCanvasInited = false;
 
 function goToClockPage() {
     // reset scores ทุกครั้งที่เริ่มใหม่
     clockScore = 0;
     handsScore = 0;
+    contourScore = 0;
+    canvasPoints = [];
 
     const pick = CLOCK_TIME_POOL[Math.floor(Math.random() * CLOCK_TIME_POOL.length)];
     targetHour = pick.h;
@@ -689,11 +719,177 @@ function goToClockPage() {
     const timeStr = `${targetHour}:${String(targetMinute).padStart(2, '0')}`;
 
     document.getElementById('memory-test-page').style.display = 'none';
-    document.getElementById('clock-hand-btns').style.display = 'none';
     document.getElementById('clock-test-page').style.display = 'flex';
-    typeWriter(`อรุณสวัสดิ์ ตอนนี้คุณพึ่งตื่นนอนแต่นาฬิกาคุณดันกลับมาพังซะได้ คุณช่วยซ่อมนาฬิกาให้หน่อยได้มั้ย ตอนนี้ ${timeStr}`, "clock-instruction", 50, () => {
-        setupClockGame();
+    
+    // แสดง Canvas สำหรับวาดวงกลมก่อน ซ่อนส่วนวางตัวเลข
+    document.getElementById('clock-canvas-container').style.display = 'flex';
+    document.getElementById('clock-interactive-container').style.display = 'none';
+    
+    initClockCanvas();
+
+    typeWriter(`อรุณสวัสดิ์ ตอนนี้นาฬิกาพังซะแล้ว กรุณาใช้นิ้ววาดวงกลมหน้าปัดนาฬิกาลงในกรอบด้านล่างก่อนนะครับ (เวลาที่ต้องตั้งคือ ${timeStr})`, "clock-instruction", 45, () => {
+        speakText(`กรุณาใช้นิ้ววาดวงกลมหน้าปัดนาฬิกาลงในกรอบด้านล่างก่อนนะครับ`);
     });
+}
+
+function initClockCanvas() {
+    const canvas = document.getElementById('clock-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvasPoints = [];
+    isDrawing = false;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const placeholder = document.getElementById('clock-canvas-placeholder');
+    if (placeholder) placeholder.style.display = 'flex';
+
+    if (clockCanvasInited) return;
+    clockCanvasInited = true;
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const pos = getPos(e);
+        canvasPoints = [pos];
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        ctx.strokeStyle = '#4a5d23';
+        ctx.lineWidth = 4.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (placeholder) placeholder.style.display = 'none';
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        canvasPoints.push(pos);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
+
+    function stopDraw(e) {
+        if (!isDrawing) return;
+        isDrawing = false;
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', stopDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('touchend', stopDraw);
+
+    const clearBtn = document.getElementById('clock-canvas-clear-btn');
+    if (clearBtn) {
+        clearBtn.onclick = function () {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvasPoints = [];
+            if (placeholder) placeholder.style.display = 'flex';
+        };
+    }
+
+    const confirmBtn = document.getElementById('clock-canvas-confirm-btn');
+    if (confirmBtn) {
+        confirmBtn.onclick = function () {
+            if (canvasPoints.length < 15) {
+                showCustomPopup("กรุณาใช้นิ้ววาดเส้นวงกลมหน้าปัดนาฬิกาก่อนนะครับ", "✍️");
+                return;
+            }
+
+            // ประเมินความกลมของเส้นที่วาด (Circularity Evaluation)
+            contourScore = evaluateCircularity(canvasPoints, canvas.width, canvas.height);
+            console.log("Circularity Contour Score (0 or 1):", contourScore);
+
+            // Morph / Snap สู่ Perfect Circle
+            snapToPerfectClock();
+        };
+    }
+}
+
+// อัลกอริทึมประเมินความกลมของวงกลม (Circularity / Contour Metric)
+function evaluateCircularity(points, width, height) {
+    if (points.length < 15) return 0;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let sumX = 0, sumY = 0;
+    
+    points.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+        sumX += p.x;
+        sumY += p.y;
+    });
+
+    const boxW = maxX - minX;
+    const boxH = maxY - minY;
+    if (boxW < 60 || boxH < 60) return 0; // ขนาดเล็กเกินไป
+
+    const aspectRatio = boxW / boxH;
+    if (aspectRatio < 0.60 || aspectRatio > 1.65) return 0; // เบี้ยวเป็นเส้นยาว
+
+    const centerX = sumX / points.length;
+    const centerY = sumY / points.length;
+
+    // คำนวณระยะทางจากจุดศูนย์กลาง
+    const radii = points.map(p => Math.hypot(p.x - centerX, p.y - centerY));
+    const avgRadius = radii.reduce((a, b) => a + b, 0) / radii.length;
+    if (avgRadius < 30) return 0;
+
+    // ส่วนเบี่ยงเบนมาตรฐานของรัศมี (ความคงที่ของรัศมี)
+    const variance = radii.reduce((sum, r) => sum + Math.pow(r - avgRadius, 2), 0) / radii.length;
+    const stdDev = Math.sqrt(variance);
+    const relativeStdDev = stdDev / avgRadius;
+
+    // ตรวจสอบความชิดของจุดเริ่มต้นกับจุดสิ้นสุด (Closure Check)
+    const startEndDist = Math.hypot(points[0].x - points[points.length - 1].x, points[0].y - points[points.length - 1].y);
+    const isClosed = startEndDist < avgRadius * 0.95;
+
+    // เกณฑ์ผ่าน: มีความกลมต่อเนื่องและเส้นบรรจบกันพอสมควร
+    if (relativeStdDev <= 0.38 && isClosed) {
+        return 1;
+    }
+    return 0;
+}
+
+function snapToPerfectClock() {
+    const canvasContainer = document.getElementById('clock-canvas-container');
+    const interactiveContainer = document.getElementById('clock-interactive-container');
+    const clockFace = document.getElementById('clock-face');
+
+    canvasContainer.style.display = 'none';
+    interactiveContainer.style.display = 'flex';
+    
+    // Snap animation
+    if (clockFace) {
+        clockFace.classList.remove('clock-snap-animate');
+        void clockFace.offsetWidth; // trigger reflow
+        clockFace.classList.add('clock-snap-animate');
+    }
+
+    const timeStr = `${targetHour}:${String(targetMinute).padStart(2, '0')}`;
+    const instr = document.getElementById('clock-instruction');
+    if (instr) {
+        instr.innerHTML = `เก่งมากครับ! ตอนนี้นำตัวเลข 1 ถึง 12 มาวางบนหน้าปัด และปรับเข็มให้ตรงเวลา <b>${timeStr}</b> นะครับ`;
+    }
+    speakText(`นำตัวเลข 1 ถึง 12 มาวางบนหน้าปัด และปรับเข็มให้ตรงเวลา ${timeStr} ครับ`);
+
+    setupClockGame();
 }
 
 function setupClockGame() {
@@ -703,7 +899,7 @@ function setupClockGame() {
 
     const hint = document.getElementById('clock-hint');
     if (hint) {
-        hint.innerHTML = "💡 แตะตัวเลขที่กองด้านล่างแล้ว<b>แตะช่องบนหน้าปัดนาฬิกา</b>เพื่อวาง หรือแตะเลขบนหน้าปัดเพื่อนำกลับลงมา";
+        hint.innerHTML = "💡 แตะตัวเลขที่กองด้านบนแล้ว<b>แตะช่องบนหน้าปัดนาฬิกา</b>เพื่อวาง หรือแตะเลขบนหน้าปัดเพื่อนำกลับขึ้นมา";
         hint.style.display = 'block';
     }
 
@@ -711,11 +907,11 @@ function setupClockGame() {
     face.querySelectorAll('.drop-zone').forEach(z => z.remove());
     selectedNumberElement = null;
 
-    // สร้าง drop-zone ทั้ง 12 ตำแหน่งบนหน้าปัดก่อน
+    // สร้าง drop-zone ทั้ง 12 ตำแหน่งบนหน้าปัดก่อน (กระจายรัศมี 41% พอดีกับปุ่ม 34px)
     for (let i = 1; i <= 12; i++) {
         const angle = (i * 30 - 90) * (Math.PI / 180);
-        const x = 50 + 39 * Math.cos(angle);
-        const y = 50 + 39 * Math.sin(angle);
+        const x = 50 + 41 * Math.cos(angle);
+        const y = 50 + 41 * Math.sin(angle);
 
         const zone = document.createElement('div');
         zone.className = 'drop-zone';
@@ -908,42 +1104,35 @@ function enableRotation(id, type) {
 }
 
 document.getElementById('clock-submit-btn').onclick = function () {
-    clockScore = (document.querySelectorAll('.drop-zone .draggable-number').length === 12) ? 1 : 0;
+    const numbersCount = document.querySelectorAll('.drop-zone .draggable-number').length;
+    if (numbersCount < 12) {
+        showCustomPopup("กรุณาวางตัวเลขให้ครบทั้ง 12 ตัวบนหน้าปัดนาฬิกาก่อนส่งคำตอบครับ", "⚠️");
+        return;
+    }
+    
+    const numbersScore = (numbersCount === 12) ? 1 : 0;
     handsScore = (hourAngle === correctHourAngle && minuteAngle === correctMinuteAngle) ? 1 : 0;
+    
+    // รวมคะแนนนาฬิกาเต็ม 3 คะแนน (Contour 1 + Numbers 1 + Hands 1)
+    clockScore = contourScore + numbersScore + handsScore;
+    
     document.getElementById('clock-test-page').style.display = 'none';
     startMathTest();
 };
 
-// --- 7. ด่านที่ 3: ระบบคำนวณ (Math Test) ---
-let mathStartValue = 100;
-let mathSubtractor = 7;
+// --- 7. ด่านที่ 3: ระบบคิดเลข 100 ลบ 7 ต่อเนื่อง (Serial 7s Math Test - 5 ข้อ 5 คะแนน) ---
+let mathCurrentValue = 100;
+let mathStep = 1;
+let mathCorrectCount = 0;
+let mathScore = 0;
+const mathSubtractor = 7;
 
 function startMathTest() {
     const mathPage = document.getElementById('math-test-page');
-    
-    // สุ่มชุดโจทย์สำหรับทำแบบทดสอบ (เพื่อให้เหมาะสมกับสมาธิ)
-    const mathPool = [
-        { start: 100, step: 7 },
-        { start: 100, step: 3 },
-        { start: 90, step: 7 },
-        { start: 90, step: 3 },
-        { start: 95, step: 5 },
-        { start: 80, step: 7 },
-        { start: 80, step: 5 }
-    ];
-    
-    const chosen = mathPool[Math.floor(Math.random() * mathPool.length)];
-    mathStartValue = chosen.start;
-    mathSubtractor = chosen.step;
-    
-    mathCurrentValue = mathStartValue;
+    mathCurrentValue = 100;
     mathStep = 1;
     mathCorrectCount = 0;
     mathScore = 0;
-    
-    // อัปเดตตัวเลขลบในหน้าจอ HTML
-    const subEl = document.getElementById('math-subtractor');
-    if (subEl) subEl.innerText = mathSubtractor;
     
     mathPage.style.display = 'flex';
     setTimeout(() => {
@@ -952,13 +1141,24 @@ function startMathTest() {
             document.getElementById('math-question-container').style.opacity = "1";
             document.getElementById('math-next-btn').style.opacity = "1";
             updateMathUI();
-        }, 1200);
-    }, 500);
+        }, 800);
+    }, 400);
 }
 
 function updateMathUI() {
+    const scenarioEl = document.getElementById('math-scenario-text');
+    if (scenarioEl) {
+        if (mathStep === 1) {
+            scenarioEl.innerHTML = `เริ่มต้นจากตัวเลข <b>100</b> <br>🧮 ข้อที่ 1: <b>100 ลบออก 7</b> <br>👉 เหลือเท่าไหร่ครับ?`;
+        } else {
+            scenarioEl.innerHTML = `จากผลลัพธ์เดิม <b>${mathCurrentValue}</b> <br>🧮 ข้อที่ ${mathStep}: <b>ลบออกอีก 7</b> <br>👉 เหลือเท่าไหร่ครับ?`;
+        }
+    }
+    
     document.getElementById('current-num').innerText = mathCurrentValue;
+    document.getElementById('math-subtractor').innerText = 7;
     document.getElementById('math-step').innerText = mathStep;
+    
     const input = document.getElementById('math-answer');
     input.value = "";
     input.focus();
@@ -967,23 +1167,35 @@ function updateMathUI() {
 document.getElementById('math-next-btn').onclick = async function () {
     const userAnswer = parseInt(document.getElementById('math-answer').value);
     if (isNaN(userAnswer)) { 
-        showCustomPopup("กรุณาใส่คำตอบก่อนนะคะ"); 
+        showCustomPopup("กรุณากรอกตัวเลขคำตอบก่อนนะครับ"); 
         return; 
     }
-    if (userAnswer === (mathCurrentValue - mathSubtractor)) mathCorrectCount++;
-    mathCurrentValue -= mathSubtractor;
+    
+    const expected = mathCurrentValue - 7;
+    if (userAnswer === expected) {
+        mathCorrectCount++;
+    }
+    
+    mathCurrentValue = expected;
     mathStep++;
-    if (mathStep <= 5) updateMathUI();
-    else {
+    
+    if (mathStep <= 5) {
+        updateMathUI();
+    } else {
+        // ให้คะแนนตามเกณฑ์ Serial 7s
         if (mathCorrectCount >= 4) mathScore = 3;
         else if (mathCorrectCount >= 2) mathScore = 2;
         else if (mathCorrectCount === 1) mathScore = 1;
+        else mathScore = 0;
+        
         document.getElementById('math-test-page').style.display = 'none';
         await startNamingTest();
     }
 };
 
-// --- 8. ด่านที่ 3.5: การบอกชื่อสิ่งของ (Naming Test) — ดึงรูปสัตว์จาก Supabase Storage ---
+
+
+// --- 8. ด่านที่ 3.5: การบอกชื่อสิ่งของ/เครื่องมือทำสวน (Naming Test - 5 ข้อ 5 คะแนน) ---
 let namingScore = 0;
 let namingSelectedObjects = [];
 
@@ -991,73 +1203,640 @@ async function startNamingTest() {
     const page = document.getElementById('naming-test-page');
     const container = document.getElementById('naming-cards-container');
     page.style.display = 'flex';
-    container.innerHTML = '<p style="color:#82954b;font-size:1rem;text-align:center;">กำลังโหลดรูปภาพ...</p>';
+    container.innerHTML = '<p style="color:#82954b;font-size:1rem;text-align:center;">กำลังโหลดภาพเครื่องมือและสิ่งของในสวน...</p>';
     namingScore = 0;
 
-    // ดึงรายการสัตว์จาก Supabase (naming_pool) พร้อม fallback อัตโนมัติ
-    namingSelectedObjects = await MemoryGardenTools.fetchNamingItems(2);
+    // ดึงรายการสิ่งของ/เครื่องมือทำสวน 5 ชิ้น (เต็ม 5 คะแนน)
+    namingSelectedObjects = await MemoryGardenTools.fetchNamingItems(5);
 
     container.innerHTML = '';
     namingSelectedObjects.forEach((obj, i) => {
         const card = document.createElement('div');
-        card.style.cssText = 'width:100%;background:#fff;border-radius:16px;padding:14px 18px;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:flex;flex-direction:row;align-items:center;gap:16px;box-sizing:border-box;border:1.5px solid #e8ede0;';
+        card.style.cssText = 'width:100%;background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:flex;flex-direction:row;align-items:center;gap:16px;box-sizing:border-box;border:1.5px solid #e8ede0;';
 
-        // แสดงรูปจริงจาก Supabase Storage
         const imgWrapper = document.createElement('div');
-        imgWrapper.style.cssText = 'width:90px;height:90px;flex-shrink:0;background:#f5f8f0;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;';
+        imgWrapper.style.cssText = 'width:95px;height:95px;flex-shrink:0;background:#f5f8f0;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #e0ebd2;';
 
         const img = document.createElement('img');
         img.src = obj.image_url;
-        img.alt = '?';  // ไม่เผย alt เพื่อไม่บอกคำตอบ
+        img.alt = '?';
         img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
         img.onerror = () => {
-            // ถ้าโหลดรูปไม่ได้ แสดง emoji แทน
-            imgWrapper.innerHTML = '<span style="font-size:52px;">🐾</span>';
+            imgWrapper.innerHTML = '<span style="font-size:48px;">🪴</span>';
         };
 
         imgWrapper.appendChild(img);
 
         const rightDiv = document.createElement('div');
-        rightDiv.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:8px;';
+        rightDiv.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:6px;';
 
         const label = document.createElement('label');
-        label.textContent = `ชื่อสัตว์ที่ ${i + 1}`;
-        label.style.cssText = 'font-size:0.9rem;color:#82954b;font-weight:bold;';
+        label.textContent = `สิ่งของ/สัตว์ในภาพที่ ${i + 1} (ข้อที่ ${i + 1}/5)`;
+        label.style.cssText = 'font-size:0.95rem;color:#4a5d23;font-weight:bold;';
+
+        // Input Row: ช่องพิมพ์ + ปุ่มไมค์
+        const inputRow = document.createElement('div');
+        inputRow.style.cssText = 'display:flex;gap:8px;align-items:center;width:100%;';
 
         const input = document.createElement('input');
         input.type = 'text';
         input.id = `naming-answer-${i}`;
-        input.placeholder = 'พิมพ์ชื่อสัตว์ในภาพ';
-        input.style.cssText = 'width:100%;padding:10px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:1rem;outline:none;box-sizing:border-box;font-family:\'Anuphan\',sans-serif;';
+        input.placeholder = 'พิมพ์ชื่อสิ่งของ หรือแตะเลือก';
+        input.style.cssText = 'flex:1;padding:11px 13px;border:1.5px solid #ddd;border-radius:10px;font-size:1.05rem;outline:none;box-sizing:border-box;font-family:\'Anuphan\',sans-serif;transition:border-color 0.2s;';
+        input.oninput = () => {
+            input.style.borderColor = '#ddd';
+            input.style.background = '#fff';
+        };
+
+        // ปุ่มไมค์ 🎙️
+        const micBtn = document.createElement('button');
+        micBtn.type = 'button';
+        micBtn.id = `naming-mic-${i}`;
+        micBtn.title = 'กดแล้วพูดชื่อสิ่งของ';
+        micBtn.innerHTML = '🎙️';
+        micBtn.style.cssText = 'flex-shrink:0;width:42px;height:42px;background:#e8ede0;border:1.5px solid #82954b;border-radius:10px;font-size:1.2rem;cursor:pointer;color:#4a5d23;display:flex;align-items:center;justify-content:center;transition:all 0.2s;';
+        micBtn.onclick = () => toggleNamingMic(i, input, micBtn);
+
+        inputRow.appendChild(input);
+        inputRow.appendChild(micBtn);
+
+        // Choice suggestions for easier tapping
+        const chipsDiv = document.createElement('div');
+        chipsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;';
+        const distractorOptions = ['จอบ', 'บัวรดน้ำ', 'กรรไกรตัดกิ่ง', 'กระถางต้นไม้', 'ผีเสื้อ', 'แมว', 'กระรอก', 'เสียม', 'สายยาง', 'นก'];
+        const quickOptions = [...new Set([obj.name, ...distractorOptions.filter(d => d !== obj.name).slice(0, 2)])].sort(() => Math.random() - 0.5);
+        quickOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.innerText = opt;
+            btn.style.cssText = 'padding:4px 10px;background:#f0f7e6;color:#4a5d23;border:1px solid #82954b;border-radius:14px;font-size:0.85rem;cursor:pointer;font-family:\'Anuphan\',sans-serif;';
+            btn.onclick = () => {
+                input.value = opt;
+                input.style.borderColor = '#ddd';
+                input.style.background = '#fff';
+            };
+            chipsDiv.appendChild(btn);
+        });
 
         rightDiv.appendChild(label);
-        rightDiv.appendChild(input);
+        rightDiv.appendChild(inputRow);
+        rightDiv.appendChild(chipsDiv);
         card.appendChild(imgWrapper);
         card.appendChild(rightDiv);
         container.appendChild(card);
     });
 }
 
+// --- ฟังก์ชันไมค์สำหรับแต่ละ Naming Card ---
+let namingRecognition = null;
+let namingActiveMicIndex = null;
+
+function toggleNamingMic(index, inputEl, micBtn) {
+    // หยุดไมค์เดิมก่อน (ถ้ากำลังฟังอยู่)
+    if (namingRecognition) {
+        try { namingRecognition.stop(); } catch(e) {}
+        namingRecognition = null;
+    }
+    // reset ปุ่มเดิม
+    if (namingActiveMicIndex !== null && namingActiveMicIndex !== index) {
+        const prevBtn = document.getElementById(`naming-mic-${namingActiveMicIndex}`);
+        if (prevBtn) {
+            prevBtn.innerHTML = '🎙️';
+            prevBtn.style.background = '#e8ede0';
+            prevBtn.style.borderColor = '#82954b';
+        }
+    }
+    // ถ้ากดปุ่มเดิมขณะกำลังฟัง → หยุด
+    if (namingActiveMicIndex === index && micBtn.style.background === 'rgb(130, 149, 75)') {
+        namingActiveMicIndex = null;
+        micBtn.innerHTML = '🎙️';
+        micBtn.style.background = '#e8ede0';
+        micBtn.style.borderColor = '#82954b';
+        return;
+    }
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showCustomPopup('เบราว์เซอร์ไม่รองรับการพูด กรุณาพิมพ์คำตอบแทนครับ', '⚠️');
+        return;
+    }
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    namingRecognition = new SR();
+    namingRecognition.lang = 'th-TH';
+    namingRecognition.interimResults = false;
+    namingRecognition.maxAlternatives = 1;
+    namingRecognition.continuous = false;
+
+    // แสดงสถานะกำลังฟัง
+    namingActiveMicIndex = index;
+    micBtn.innerHTML = '🔴';
+    micBtn.style.background = '#82954b';
+    micBtn.style.borderColor = '#4a5d23';
+    micBtn.title = 'กำลังฟัง... กดเพื่อหยุด';
+
+    namingRecognition.onresult = (event) => {
+        const spoken = event.results[0][0].transcript.trim();
+        inputEl.value = spoken;
+        inputEl.style.borderColor = '#82954b';
+        inputEl.style.background = '#f0f7e6';
+        resetNamingMic(index, micBtn);
+    };
+    namingRecognition.onerror = () => resetNamingMic(index, micBtn);
+    namingRecognition.onend = () => resetNamingMic(index, micBtn);
+    namingRecognition.start();
+}
+
+function resetNamingMic(index, micBtn) {
+    namingRecognition = null;
+    namingActiveMicIndex = null;
+    if (micBtn) {
+        micBtn.innerHTML = '🎙️';
+        micBtn.style.background = '#e8ede0';
+        micBtn.style.borderColor = '#82954b';
+        micBtn.title = 'กดแล้วพูดชื่อสิ่งของ';
+    }
+}
+
+
 document.getElementById('naming-submit-btn').onclick = function () {
-    const answers = namingSelectedObjects.map((_, i) =>
-        document.getElementById(`naming-answer-${i}`).value.trim()
+    const inputs = namingSelectedObjects.map((_, i) =>
+        document.getElementById(`naming-answer-${i}`)
     );
 
-    if (answers.some(ans => ans === "")) {
-        showCustomPopup("กรุณากรอกคำตอบให้ครบถ้วนก่อนส่งคำตอบค่ะ", "⚠️");
+    let hasEmpty = false;
+    inputs.forEach(inp => {
+        if (!inp || !inp.value.trim()) {
+            if (inp) {
+                inp.style.borderColor = '#e74c3c';
+                inp.style.background = '#fff8f8';
+            }
+            hasEmpty = true;
+        } else {
+            inp.style.borderColor = '#ddd';
+            inp.style.background = '#fff';
+        }
+    });
+
+    if (hasEmpty) {
+        showCustomPopup("กรุณากรอกคำตอบให้ครบทั้ง 5 ภาพก่อนส่งคำตอบครับ", "⚠️");
         return;
     }
 
     namingScore = 0;
-    answers.forEach((ans, i) => {
+    inputs.forEach((inp, i) => {
         const correct = namingSelectedObjects[i].name.trim().toLowerCase();
-        if (ans.toLowerCase() === correct) namingScore++;
+        if (inp.value.trim().toLowerCase() === correct) namingScore++;
     });
 
     document.getElementById('naming-test-page').style.display = 'none';
-    startRecallTest();
+    startSentenceRepeatTest();
 };
 
+
+// --- 8.3 ด่านการพูดซ้ำประโยค (Sentence Repetition - 2 คะแนน 2 ขั้นตอน) ---
+const SENTENCE_REPEAT_POOLS = [
+    [
+        "คุณยายรดน้ำต้นไม้ในสวนดอกไม้ทุกเช้าตรู่",
+        "แมวสีขาวชอบนอนหลับอยู่ใต้ต้นไม้ใหญ่ริมสระน้ำ"
+    ],
+    [
+        "ฉันรู้เพียงว่าสมชายเป็นคนเดียวที่มาช่วยงานวันนี้",
+        "นกกระจอกบินมารอรับอาหารที่วางไว้บนโต๊ะไม้"
+    ],
+    [
+        "ลมพัดเย็นสบายในสวนหลังบ้านยามบ่าย",
+        "กระรอกน้อยวิ่งกระโดดไปตามกิ่งมะม่วงอย่างรวดเร็ว"
+    ]
+];
+
+let sentenceRepeatParts = [];
+let currentRepeatIndex = 0;
+
+function startSentenceRepeatTest() {
+    sentenceRepeatScore = 0;
+    currentRepeatIndex = 0;
+
+    // สุ่มชุดประโยคภาษาไทยที่สมบูรณ์ 2 ข้อ (ข้อละ 1 คะแนน รวม 2 คะแนน)
+    const selectedPair = SENTENCE_REPEAT_POOLS[Math.floor(Math.random() * SENTENCE_REPEAT_POOLS.length)];
+    sentenceRepeatParts = [...selectedPair];
+
+    showRepeatRound(0);
+}
+
+function showRepeatRound(index) {
+    if (index >= sentenceRepeatParts.length) {
+        // เสร็จแล้ว → ไป Fluency
+        document.getElementById('sentence-repeat-page').style.display = 'none';
+        startFluencyTest();
+        return;
+    }
+
+    currentRepeatIndex = index;
+    const part = sentenceRepeatParts[index];
+    const page = document.getElementById('sentence-repeat-page');
+    page.style.display = 'flex';
+
+    const listenCard = document.getElementById('repeat-listen-card');
+    const actionCard = document.getElementById('repeat-action-card');
+    
+    // เริ่มต้นแสดงการ์ดฟังประโยคก่อน (Step 1)
+    if (listenCard) listenCard.style.display = 'block';
+    if (actionCard) actionCard.style.display = 'none';
+
+    const listenRoundLabel = document.getElementById('repeat-listen-round-label');
+    const actionRoundLabel = document.getElementById('repeat-action-round-label');
+    const sentenceEl = document.getElementById('repeat-sentence-display');
+    const inputEl = document.getElementById('repeat-input');
+    const statusEl = document.getElementById('repeat-speech-status');
+    const feedbackEl = document.getElementById('repeat-feedback');
+
+    if (listenRoundLabel) listenRoundLabel.textContent = `ประโยคที่ ${index + 1} / ${sentenceRepeatParts.length}`;
+    if (actionRoundLabel) actionRoundLabel.textContent = `ประโยคที่ ${index + 1} / ${sentenceRepeatParts.length}`;
+    if (sentenceEl) sentenceEl.textContent = part;
+    if (inputEl) { inputEl.value = ''; }
+    if (statusEl) statusEl.style.display = 'none';
+    if (feedbackEl) { feedbackEl.textContent = ''; feedbackEl.style.display = 'none'; }
+
+    // อ่านเสียงประโยค
+    speakText(`ฟังให้ดีและจดจำประโยค: ${part}`);
+
+    // Replay button
+    const replayBtn = document.getElementById('repeat-replay-btn');
+    if (replayBtn) replayBtn.onclick = () => speakText(part);
+
+    // Ready button -> Switch to Action Card (Step 2 - ซ่อนประโยค ทวนจากความจำ)
+    const readyBtn = document.getElementById('repeat-ready-btn');
+    if (readyBtn) {
+        readyBtn.onclick = () => {
+            if (listenCard) listenCard.style.display = 'none';
+            if (actionCard) actionCard.style.display = 'block';
+            if (inputEl) {
+                inputEl.value = '';
+                inputEl.focus();
+            }
+            // Auto-speak พร้อมคำแนะนำเมื่อเข้า Step 2
+            setTimeout(() => speakText('โปรดพูดหรือพิมพ์ประโยคที่ท่านได้ยินเมื่อสักครู่ครับ'), 200);
+        };
+    }
+
+    // Wire mic button
+    const micBtn = document.getElementById('repeat-mic-btn');
+    if (micBtn) micBtn.onclick = () => toggleRepeatMic(part);
+
+    // Wire submit button  
+    const submitBtn = document.getElementById('repeat-submit-btn');
+    if (submitBtn) submitBtn.onclick = () => submitRepeat(part);
+
+    // Wire Enter key
+    if (inputEl) {
+        inputEl.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); submitRepeat(part); } };
+    }
+}
+
+let repeatRecognition = null;
+
+function toggleRepeatMic(expectedSentence) {
+    const micBtn = document.getElementById('repeat-mic-btn');
+    const statusEl = document.getElementById('repeat-speech-status');
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showCustomPopup('เบราว์เซอร์ไม่รองรับเสียงพูด กรุณาพิมพ์แทนครับ', '⚠️');
+        return;
+    }
+    // ถ้ากำลังฟังอยู่ → หยุด
+    if (repeatRecognition) {
+        stopRepeatMic();
+        return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    repeatRecognition = new SR();
+    repeatRecognition.lang = 'th-TH';
+    repeatRecognition.interimResults = false;
+    repeatRecognition.maxAlternatives = 1;
+    repeatRecognition.continuous = false;
+    repeatRecognition.onresult = (event) => {
+        const spoken = event.results[0][0].transcript.trim();
+        const inputEl = document.getElementById('repeat-input');
+        if (inputEl) inputEl.value = spoken;
+        stopRepeatMic();
+        submitRepeat(expectedSentence);
+    };
+    repeatRecognition.onerror = () => stopRepeatMic();
+    repeatRecognition.onend = () => stopRepeatMic();
+    repeatRecognition.start();
+    // เปลี่ยนสีปุ่มเดิมเพื่อแสดงสถานะกำลังฟัง
+    if (micBtn) {
+        micBtn.innerHTML = '🔴 กำลังฟัง...';
+        micBtn.style.background = '#82954b';
+        micBtn.style.color = 'white';
+        micBtn.style.borderColor = '#4a5d23';
+    }
+    if (statusEl) statusEl.style.display = 'block';
+}
+
+function stopRepeatMic() {
+    const micBtn = document.getElementById('repeat-mic-btn');
+    const statusEl = document.getElementById('repeat-speech-status');
+    try { if (repeatRecognition) repeatRecognition.stop(); } catch (e) {}
+    repeatRecognition = null;
+    // เรียกคืน visual กลับเดิม
+    if (micBtn) {
+        micBtn.innerHTML = '🎙️ พูด';
+        micBtn.style.background = '#e8ede0';
+        micBtn.style.color = '#4a5d23';
+        micBtn.style.borderColor = '#82954b';
+        micBtn.classList.remove('listening');
+    }
+    if (statusEl) statusEl.style.display = 'none';
+}
+
+function submitRepeat(expectedSentence) {
+    const inputEl = document.getElementById('repeat-input');
+    const feedbackEl = document.getElementById('repeat-feedback');
+    const answer = (inputEl ? inputEl.value.trim() : '').replace(/\s+/g, ' ');
+    const expected = expectedSentence.replace(/\s+/g, ' ').trim();
+
+    // เปรียบเทียบความคล้ายคลึง (Fuzzy: คิดเป็น % ของคำตรงกัน)
+    const correct = fuzzyMatch(answer, expected);
+    if (correct) sentenceRepeatScore++;
+
+    if (feedbackEl) {
+        feedbackEl.style.display = 'block';
+        feedbackEl.innerHTML = correct
+            ? `<span style="color:#4caf50;">✅ ถูกต้อง! +1 คะแนน</span>`
+            : `<span style="color:#e74c3c;">❌ ไม่ถูกต้อง</span>`;
+    }
+
+    // หน่วง 1.2 วินาทีแล้วไปรอบถัดไป
+    setTimeout(() => {
+        showRepeatRound(currentRepeatIndex + 1);
+    }, 1200);
+}
+
+function fuzzyMatch(answer, expected) {
+    if (!answer || !expected) return false;
+    const normalize = s => s.replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]/g, '').toLowerCase();
+    const a = normalize(answer);
+    const e = normalize(expected);
+    if (a === e) return true;
+    // ตรงกัน ≥ 75% = ถือว่าถูก (รองรับเสียงพูดที่อาจเพี้ยนเล็กน้อย)
+    const minLen = Math.min(a.length, e.length);
+    let matches = 0;
+    for (let i = 0; i < minLen; i++) { if (a[i] === e[i]) matches++; }
+    return e.length > 0 && (matches / e.length) >= 0.75;
+}
+
+
+// --- 8.5 ด่านความคล่องแคล่วทางภาษา (Category Fluency Test - 4 คะแนน พร้อม Thai Animal Dictionary) ---
+const THAI_ANIMALS_SET = new Set([
+    "หมา", "สุนัข", "แมว", "ช้าง", "ม้า", "วัว", "ควาย", "หมู", "เป็ด", "ไก่", "ห่าน",
+    "นก", "นกแก้ว", "นกพิราบ", "นกกระจอก", "นกขุนทอง", "นกฮูก", "นกอินทรี", "นกยูง", "นกกระจอกเทศ", "นกนางนวล",
+    "ปลา", "ปลาดุก", "ปลาช่อน", "ปลาทู", "ปลากัด", "ปลาทอง", "ปลาวาฬ", "ปลาโลมา", "ปลาฉลาม", "ปลากระพง", "ปลาแซลมอน",
+    "ลิง", "ชะนี", "ค่าง", "กอริลลา", "ค่างแว่น", "เสือ", "สิงโต", "เสือดาว", "เสือดำ", "เสือชีตาห์", "แมวดาว",
+    "หมี", "หมีควาย", "หมีแพนด้า", "หมีขอ", "กวาง", "เก้ง", "ละองละมั่ง", "กระจง", "ยีราฟ", "ม้าลาย",
+    "ฮิปโป", "ฮิปโปโปเตมัส", "แรด", "สมเสร็จ", "จิงโจ้", "โคอาล่า", "แพะ", "แกะ", "อูฐ", "ลามะ",
+    "กระต่าย", "กระรอก", "กระแต", "หนู", "บ่าง", "พังพอน", "ตัวตุ่น", "ตัวกินมด", "เม่น", "ลิ่น",
+    "จระเข้", "เต่า", "เต่าตนุ", "ตะพาบ", "งู", "งูจงอาง", "งูเห่า", "งูเหลือม", "งูหลาม", "งูเขียว",
+    "กบ", "เขียด", "คางคก", "อึ่งอ่าง", "ปาด", "ซาลาแมนเดอร์",
+    "จิ้งจก", "ตุ๊กแก", "กิ้งก่า", "กิ้งก่าคาเมเลี่ยน", "ตัวเงินตัวทอง", "เหี้ย", "ตะกวด",
+    "กุ้ง", "กุ้งมังกร", "กุ้งก้ามกราม", "ปู", "ปูม้า", "ปูดำ", "ปูเสฉวน", "หอย", "หอยแครง", "หอยแมลงภู่", "หอยทาก", "หอยเชลล์",
+    "หมึก", "ปลาหมึก", "หมึกยักษ์", "หมึกกล้วย", "แมงกะพรุน", "ดาวทะเล", "ปลาดาว", "ม้าน้ำ", "เม่นทะเล", "ปลิงทะเล",
+    "ผึ้ง", "ต่อ", "แตน", "มด", "ปลวก", "แมลงวัน", "ยุง", "แมลงสาบ", "ผีเสื้อ", "ตั๊กแตน", "จิ้งหรีด", "ด้วง", "แมลงปอ", "จักจั่น",
+    "แมงมุม", "แมงป่อง", "ตะขาบ", "กิ้งกือ", "ไส้เดือน", "หนอน", "ดักแด้", "หิ่งห้อย", "หมัด", "เห็บ", "เหา",
+    "ค้างคาว", "วาฬ", "โลมา", "พะยูน", "แมวน้ำ", "สิงโตทะเล", "วอลรัส", "เพนกวิน"
+]);
+
+function isValidAnimalWord(rawWord) {
+    if (!rawWord) return false;
+    const word = rawWord.trim().replace(/\s+/g, '');
+    if (THAI_ANIMALS_SET.has(word)) return true;
+    
+    // Check animal prefixes in Thai
+    const prefixes = ["นก", "ปลา", "แมลง", "กุ้ง", "หอย", "ปู", "เป็ด", "ไก่", "หมู", "หมา", "แมว", "งู", "เต่า", "กบ", "หนู", "ลิง", "เสือ", "หมี", "มด", "ผึ้ง", "หนอน"];
+    for (const p of prefixes) {
+        if (word.startsWith(p) && word.length > p.length) return true;
+    }
+    return false;
+}
+
+let fluencyWords = [];
+let fluencyTimerInterval = null;
+let fluencyTimeLeft = 60;
+let fluencyRecognition = null;
+
+function startFluencyTest() {
+    fluencyWords = [];
+    fluencyScore = 0;
+    fluencyTimeLeft = 60;
+    if (fluencyTimerInterval) clearInterval(fluencyTimerInterval);
+
+    const page = document.getElementById('fluency-test-page');
+    page.style.display = 'flex';
+
+    // Reset UI
+    const container = document.getElementById('fluency-words-container');
+    const countBadge = document.getElementById('fluency-count-badge');
+    const timerDisplay = document.getElementById('fluency-timer-display');
+    const input = document.getElementById('fluency-input');
+    const submitBtn = document.getElementById('fluency-submit-btn');
+
+    if (container) container.innerHTML = '<span style="color:#aaa;font-size:0.88rem;">ยังไม่มีคำตอบ — พิมพ์หรือพูดชื่อสัตว์แล้วกดเพิ่ม</span>';
+    if (countBadge) countBadge.textContent = '0 คำ';
+    if (timerDisplay) {
+        timerDisplay.textContent = '60 วินาที';
+        timerDisplay.style.color = '#e74c3c';
+        timerDisplay.style.animation = 'none';
+    }
+    if (input) { input.value = ''; input.focus(); }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.cursor = 'not-allowed';
+        submitBtn.style.background = '#bbb';
+        submitBtn.style.opacity = '0.8';
+        submitBtn.textContent = '⏳ กำลังจับเวลา (เหลือ 60 วินาที)';
+    }
+
+    speakText('บอกชื่อสัตว์ให้ได้มากที่สุดในเวลา 60 วินาทีครับ พิมพ์หรือกดไมค์พูดได้เลยครับ');
+
+    // Start countdown
+    fluencyTimerInterval = setInterval(() => {
+        fluencyTimeLeft--;
+        if (timerDisplay) {
+            timerDisplay.textContent = `${fluencyTimeLeft} วินาที`;
+            if (fluencyTimeLeft <= 15) timerDisplay.style.color = '#c0392b';
+            if (fluencyTimeLeft <= 10) timerDisplay.style.animation = 'micPulse 0.5s infinite alternate';
+        }
+        if (submitBtn) {
+            if (fluencyTimeLeft > 0) {
+                submitBtn.textContent = `⏳ กำลังจับเวลา (เหลือ ${fluencyTimeLeft} วินาที)`;
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.style.cursor = 'pointer';
+                submitBtn.style.background = 'linear-gradient(135deg, #82954b, #6a7a3a)';
+                submitBtn.style.opacity = '1';
+                submitBtn.textContent = 'เสร็จสิ้น / ไปต่อ →';
+            }
+        }
+        if (fluencyTimeLeft <= 0) {
+            clearInterval(fluencyTimerInterval);
+            fluencyTimerInterval = null;
+            stopFluencyRecognition();
+            if (timerDisplay) {
+                timerDisplay.textContent = '⏰ หมดเวลา!';
+                timerDisplay.style.animation = 'none';
+            }
+            submitFluency();
+        }
+    }, 1000);
+
+    // Wire Add button
+    const addBtn = document.getElementById('fluency-add-btn');
+    if (addBtn) addBtn.onclick = () => addFluencyWord();
+
+    // Wire Enter key on input
+    if (input) {
+        input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addFluencyWord(); } };
+    }
+
+    // Wire mic button
+    const micBtn = document.getElementById('fluency-mic-btn');
+    if (micBtn) micBtn.onclick = () => toggleFluencyMic();
+
+    // Wire submit button
+    if (submitBtn) {
+        submitBtn.onclick = () => {
+            if (fluencyTimeLeft > 0) {
+                showCustomPopup(`กรุณาบอกชื่อสัตว์ให้ได้มากที่สุดจนหมดเวลา 60 วินาทีครับ (เหลือเวลาอีก ${fluencyTimeLeft} วินาที)`, "⏳");
+                return;
+            }
+            clearInterval(fluencyTimerInterval);
+            stopFluencyRecognition();
+            submitFluency();
+        };
+    }
+}
+
+function addFluencyWord() {
+    if (fluencyTimeLeft <= 0) return;
+    const input = document.getElementById('fluency-input');
+    if (!input) return;
+    const word = input.value.trim();
+    if (!word) return;
+
+    // ตรวจสอบว่าคำนี้เป็นสัตว์หรือไม่ (Animal Validation)
+    if (!isValidAnimalWord(word)) {
+        const statusEl = document.getElementById('fluency-speech-status');
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#e74c3c';
+            statusEl.textContent = `⚠️ คำว่า "${word}" ไม่ใช่ชื่อสัตว์ จึงไม่นับคะแนนครับ`;
+            setTimeout(() => {
+                statusEl.style.color = '#4a5d23';
+                statusEl.style.display = 'none';
+            }, 2500);
+        }
+        input.value = '';
+        input.focus();
+        return;
+    }
+
+    // Dedup (case-insensitive)
+    const already = fluencyWords.some(w => w.toLowerCase() === word.toLowerCase());
+    if (already) {
+        input.value = '';
+        input.focus();
+        return;
+    }
+
+    fluencyWords.push(word);
+    renderFluencyWord(word);
+    input.value = '';
+    input.focus();
+
+    const countBadge = document.getElementById('fluency-count-badge');
+    if (countBadge) countBadge.textContent = `${fluencyWords.length} คำ`;
+}
+
+function renderFluencyWord(word) {
+    const container = document.getElementById('fluency-words-container');
+    if (!container) return;
+    // Remove placeholder if first word
+    if (fluencyWords.length === 1) container.innerHTML = '';
+
+    const chip = document.createElement('span');
+    chip.className = 'fluency-word-chip';
+    chip.innerHTML = `${word} <span class="chip-delete" title="ลบ">✕</span>`;
+    chip.querySelector('.chip-delete').onclick = () => {
+        fluencyWords = fluencyWords.filter(w => w !== word);
+        chip.remove();
+        if (fluencyWords.length === 0) container.innerHTML = '<span style="color:#aaa;font-size:0.88rem;">ยังไม่มีคำตอบ — พิมพ์หรือพูดชื่อสัตว์แล้วกดเพิ่ม</span>';
+        const countBadge = document.getElementById('fluency-count-badge');
+        if (countBadge) countBadge.textContent = `${fluencyWords.length} คำ`;
+    };
+    container.appendChild(chip);
+}
+
+function toggleFluencyMic() {
+    if (fluencyTimeLeft <= 0) return;
+    const micBtn = document.getElementById('fluency-mic-btn');
+    const statusEl = document.getElementById('fluency-speech-status');
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showCustomPopup('ขออภัย เบราว์เซอร์นี้ไม่รองรับการรับเสียงพูด กรุณาพิมพ์คำตอบแทนครับ', '⚠️');
+        return;
+    }
+
+    if (fluencyRecognition && micBtn.classList.contains('listening')) {
+        stopFluencyRecognition();
+        return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    fluencyRecognition = new SpeechRecognition();
+    fluencyRecognition.lang = 'th-TH';
+    fluencyRecognition.interimResults = false;
+    fluencyRecognition.maxAlternatives = 1;
+    fluencyRecognition.continuous = false;
+
+    fluencyRecognition.onresult = (event) => {
+        const spoken = event.results[0][0].transcript.trim();
+        if (spoken) {
+            const input = document.getElementById('fluency-input');
+            if (input) input.value = spoken;
+            addFluencyWord();
+        }
+        stopFluencyRecognition();
+    };
+    fluencyRecognition.onerror = () => stopFluencyRecognition();
+    fluencyRecognition.onend = () => stopFluencyRecognition();
+
+    fluencyRecognition.start();
+    micBtn.classList.add('listening');
+    if (statusEl) statusEl.style.display = 'block';
+}
+
+function stopFluencyRecognition() {
+    const micBtn = document.getElementById('fluency-mic-btn');
+    const statusEl = document.getElementById('fluency-speech-status');
+    try { if (fluencyRecognition) fluencyRecognition.stop(); } catch (e) {}
+    fluencyRecognition = null;
+    if (micBtn) micBtn.classList.remove('listening');
+    if (statusEl) statusEl.style.display = 'none';
+}
+
+function submitFluency() {
+    // คำนวณคะแนน Fluency ตามเกณฑ์ MoCA Thai (สัตว์)
+    const count = fluencyWords.length;
+    if (count >= 11) fluencyScore = 4;
+    else if (count >= 8) fluencyScore = 3;
+    else if (count >= 5) fluencyScore = 2;
+    else if (count >= 2) fluencyScore = 1;
+    else fluencyScore = 0;
+
+    document.getElementById('fluency-test-page').style.display = 'none';
+    startRecallTest();
+}
 
 // --- Helper: สร้าง Pattern Hint (Stage 1) ---
 // "Sustainable" → "S _ _ _ _ _ _ _ e"
@@ -1089,7 +1868,7 @@ async function updateProgressBar() {
     if (textEl) textEl.textContent = `${reviewed}/${total} คำ`;
 }
 
-// --- 9. ด่านที่ 4: ระบบระลึกถึง (Recall Test) ---
+// --- 9. ด่านที่ 4: ระบบระลึกถึงความจำ (Recall Test - 5 ข้อ 5 คะแนน) ---
 function startRecallTest() {
     const recallPage = document.getElementById('recall-test-page');
     const inputCon = document.getElementById('recall-input-container');
@@ -1103,24 +1882,56 @@ function startRecallTest() {
     hintBtn.textContent = '💡 ขอคำใบ้ (จะได้ 0 คะแนน)';
 
     document.getElementById('recall-hint-box').style.display = 'none';
-    document.getElementById('recall-1').value = '';
-    document.getElementById('recall-2').value = '';
-    document.getElementById('recall-3').value = '';
+    for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById(`recall-${i}`);
+        if (el) el.value = '';
+    }
     inputCon.style.opacity = '0';
     recallPage.style.display = 'flex';
 
+    // สร้างตัวเลือกคำตอบแบบปุ่มกด (Choice Chips) สุ่มรวมกับตัวหลอก เพื่อให้ผู้สูงอายุแตะเลือกได้ง่าย
+    const choicesContainer = document.getElementById('recall-choices-chips');
+    if (choicesContainer) {
+        choicesContainer.innerHTML = '';
+        const distractorWords = ['กุหลาบ', 'สายน้ำ', 'เก้าอี้', 'ร่มเงา', 'สุนัข', 'พลั่ว'];
+        const combinedPool = [...new Set([...secretWords, ...distractorWords.slice(0, 4)])]
+            .sort(() => Math.random() - 0.5);
+
+        combinedPool.forEach(word => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.innerText = word;
+            chip.style.cssText = 'padding: 6px 14px; background: #f0f7e6; color: #4a5d23; border: 1.5px solid #82954b; border-radius: 20px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;';
+            chip.onclick = () => {
+                // เติมลงในช่องที่ยังว่างใน 5 ช่อง
+                for (let k = 1; k <= 5; k++) {
+                    const inEl = document.getElementById(`recall-${k}`);
+                    if (inEl && !inEl.value) {
+                        inEl.value = word;
+                        return;
+                    }
+                }
+                // ถ้าเต็มหมดแล้ว ให้แทนที่ช่องแรก
+                const in1 = document.getElementById('recall-1');
+                if (in1) in1.value = word;
+            };
+            choicesContainer.appendChild(chip);
+        });
+    }
+
     // แสดงข้อความด้วย typeWriter ให้ตัวหนังสือค่อยๆ พิมพ์
-    typeWriter("เมื่อคืนเราฝันอะไรก็ไม่รู้ แต่จำลางๆ ได้ว่ามีของ 3 อย่างอยู่ด้วย คุณช่วยเรานึกออกมาได้มั้ย?", "recall-caption", 50, () => {
+    typeWriter("เมื่อสักครู่นี้ในสวนความทรงจำ มีสิ่งของ 5 อย่างอยู่ด้วย คุณช่วยเรานึกออกมาได้มั้ยครับ? (ข้อละ 1 คะแนน)", "recall-caption", 45, () => {
         setTimeout(() => {
             inputCon.style.transition = "opacity 0.8s ease";
             inputCon.style.opacity = "1";
-            document.getElementById('recall-1').focus();
-        }, 300);
+            document.getElementById('recall-1')?.focus();
+        }, 200);
     });
 
     // โหลด progress bar แบบ real-time
     updateProgressBar();
 }
+
 
 // --- Multi-stage Progressive Hint System ---
 document.getElementById('recall-hint-btn').onclick = async function () {
@@ -1206,14 +2017,16 @@ function speakWord(word) {
 }
 
 document.getElementById('recall-next-btn').onclick = async function () {
-    const r1 = document.getElementById('recall-1').value.trim();
-    const r2 = document.getElementById('recall-2').value.trim();
-    const r3 = document.getElementById('recall-3').value.trim();
-    const answers = [r1, r2, r3];
+    const rawAnswers = [];
+    for (let i = 1; i <= 5; i++) {
+        const val = document.getElementById(`recall-${i}`)?.value.trim() || '';
+        rawAnswers.push(val);
+    }
+    const filledAnswers = rawAnswers.filter(a => a !== "");
 
     // อนุญาตให้ผ่านได้แม้จำไม่ได้ทุกคำ เพื่อไม่บิดเบือนผลทางคลินิก
     // แต่ต้องกรอกอย่างน้อย 1 ช่อง หรือยืนยันว่าจำไม่ได้
-    if (r1 === "" && r2 === "" && r3 === "") {
+    if (filledAnswers.length === 0) {
         const confirmed = await showCustomPopup("คุณยังไม่ได้กรอกคำตอบเลย\n\nหากจำไม่ได้จริงๆ กดยืนยันเพื่อไปต่อ (คะแนนความจำจะเป็น 0)", "⚠️", true);
         if (!confirmed) return;
     }
@@ -1221,8 +2034,8 @@ document.getElementById('recall-next-btn').onclick = async function () {
     recallScore = 0;
     if (!recallHintUsed) {
         const correctAnswers = new Set();
-        answers.forEach(ans => {
-            if (secretWords.includes(ans)) {
+        rawAnswers.forEach(ans => {
+            if (ans && secretWords.includes(ans)) {
                 correctAnswers.add(ans);
             }
         });
@@ -1375,28 +2188,40 @@ document.getElementById('ori-next-btn').onclick = function () {
     const y = parseInt(document.getElementById('ori-year').value);
     const dayVal = document.getElementById('ori-day').value;
     const province = document.getElementById('ori-province-value').value;
+    const timeOfDay = document.getElementById('ori-timeofday')?.value || '';
 
-    if (!d || !m || !y || dayVal === '' || !province) {
-        showCustomPopup("กรุณากรอกข้อมูลให้ครบถ้วน");
+    if (!d || !m || !y || dayVal === '' || !province || !timeOfDay) {
+        showCustomPopup("กรุณากรอกข้อมูลให้ครบถ้วน รวมถึงช่วงเวลาปัจจุบัน");
         return;
     }
 
     const now = new Date();
     orientationScore = 0;
-    if (d === now.getDate()) orientationScore++;
-    if (m === (now.getMonth() + 1)) orientationScore++;
-    if (y === now.getFullYear() || y === (now.getFullYear() + 543)) orientationScore++;
-    if (parseInt(dayVal) === now.getDay()) orientationScore++;
-    // เช็คจังหวัดจาก GPS (ถ้าได้พิกัดมา)
+    // ข้อละ 1 คะแนน ตามมาตรฐาน MoCA (รวม 6 คะแนน)
+    if (d === now.getDate()) orientationScore += 1; // วันที่
+    if (m === (now.getMonth() + 1)) orientationScore += 1; // เดือน
+    if (y === now.getFullYear() || y === (now.getFullYear() + 543)) orientationScore += 1; // ปี
+    if (parseInt(dayVal) === now.getDay()) orientationScore += 1; // วันในสัปดาห์
+
+    // ช่วงเวลาปัจจุบัน 1 คะแนน
+    const hour = now.getHours();
+    const correctTimeOfDay =
+        hour >= 6 && hour < 12 ? 'morning' :
+        hour >= 12 && hour < 14 ? 'noon' :
+        hour >= 14 && hour < 18 ? 'afternoon' :
+        hour >= 18 && hour < 21 ? 'evening' : 'night';
+    if (timeOfDay === correctTimeOfDay) orientationScore += 1;
+
+    // จังหวัด/สถานที่ 1 คะแนน
     if (detectedProvince) {
-        if (province === detectedProvince) orientationScore++;
+        if (province === detectedProvince) orientationScore += 1;
     } else {
-        // GPS ไม่พร้อม/ปฏิเสธ → ให้คะแนนเสมอ
-        orientationScore++;
+        orientationScore += 1; // GPS ไม่พร้อม → ให้คะแนนเสมอ
     }
 
     goToFarewell();
 };
+
 
 function goToFarewell() {
     document.getElementById('orientation-test-page').style.display = 'none';
@@ -1436,7 +2261,7 @@ function sendToGoogleForm(userData) {
 
     // แมปข้อมูลเข้ากับ Entry ID จริงที่ตรวจพบ
     formData.append("entry.604375086", userData.userId); // User ID
-    formData.append("entry.1212631587", `คะแนน: ${userData.totalScore}/15, ระดับ: ${userData.riskLevel}, รายละเอียด: ${JSON.stringify(userData.details)}`); // ใส่คะแนนและรายละเอียดในช่องข้อเสนอแนะ
+    formData.append("entry.1212631587", `คะแนน: ${userData.totalScore}/30, ระดับ: ${userData.riskLevel}, รายละเอียด: ${JSON.stringify(userData.details)}`); // ใส่คะแนนและรายละเอียดในช่องข้อเสนอแนะ
 
     fetch(formURL, {
         method: "POST",
@@ -1459,25 +2284,63 @@ function calculateAndShowResult() {
         localStorage.setItem('memory_garden_user_id', userId);
     }
 
-    let memoryScoreFinal = recallScore;
-    let focusScoreFinal = (clockScore + handsScore + mathScore);
-    let orientScoreFinal = orientationScore;
+    // --- คำนวณคะแนนเต็ม 30 คะแนน (5 โดเมนหลักตามมาตรฐาน MoCA) ---
+    // 1. ด้านความจำ (Memory Story Recall): 5 ข้อ -> ข้อละ 1 คะแนน = 5 คะแนนเต็ม
+    const memoryScoreScaled = Math.min(5, Math.max(0, recallScore));
 
-    let totalScore = recallScore + clockScore + handsScore + mathScore + orientationScore + namingScore;
+    // 2. ด้านมิติสัมพันธ์และนาฬิกา (Visuospatial Clock): ตามมาตรฐาน MoCA ต้นฉบับ = 3 คะแนน
+    //    Contour (วาดวงกลมหน้าปัดด้วยตัวเอง): 1 คะแนน (ประเมินจากความกลม contourScore)
+    //    Numbers (วางตัวเลข 1–12 ครบถ้วน): 1 คะแนน
+    //    Hands (เข็มสั้น + เข็มยาวถูกต้องทั้งคู่): 1 คะแนน
+    const numbersScore = (document.querySelectorAll('.drop-zone .draggable-number').length === 12) ? 1 : 0;
+    const handsCorrect = (hourAngle === correctHourAngle && minuteAngle === correctMinuteAngle) ? 1 : 0;
+    const visuoScoreScaled = Math.min(3, Math.max(0, contourScore + numbersScore + handsCorrect));
+
+    // 3. ด้านสมาธิและคิดเงินทอนในตลาด (Math & Attention): 5 ข้อ -> ข้อละ 1 คะแนน = 5 คะแนนเต็ม
+    const mathScoreScaled = Math.min(5, Math.max(0, mathCorrectCount));
+
+    // 4. ด้านภาษา (Language): Naming 5 + Sentence Repeat 2 + Fluency 4 = 11 คะแนนเต็ม
+    const namingScoreScaled = Math.min(5, Math.max(0, namingScore));
+    const repeatScoreScaled = Math.min(2, Math.max(0, sentenceRepeatScore));
+    const fluencyScoreScaled = Math.min(4, Math.max(0, fluencyScore));
+    const langScoreScaled = namingScoreScaled + repeatScoreScaled + fluencyScoreScaled;  // max 11
+
+    // 5. ด้านการรับรู้วันเวลาและสถานที่ (Orientation): ข้อละ 1 คะแนน 6 ข้อ = 6 คะแนนเต็ม
+    const orientScoreScaled = Math.min(6, Math.max(0, orientationScore));
+
+    // รวม: 5 + 3 + 5 + 11 + 6 = 30 คะแนน
+    let totalScore = memoryScoreScaled + visuoScoreScaled + mathScoreScaled + langScoreScaled + orientScoreScaled;
 
     const eduLevel = document.getElementById('user-education').value;
+    let hasEduBonus = false;
     // ปรับคะแนนตามระดับการศึกษา (Education Correction: +1 สำหรับผู้ที่มีวุฒิ ≤ 12 ปี หรือ ไม่ได้เรียน/ประถม)
     if (eduLevel === "ตํ่ากว่ามัธยมศึกษาปีที่ 6" || eduLevel === "ไม่ได้เรียนหนังสือ / ประถมศึกษา") {
         totalScore += 1;
+        hasEduBonus = true;
     }
 
+    if (totalScore > 30) totalScore = 30;
 
-    if (totalScore > 15) totalScore = 15;
-
-    const percentage = Math.round((totalScore / 15) * 100);
     document.getElementById('farewell-page').style.display = 'none';
     document.getElementById('result-page').style.display = 'flex';
     document.body.style.overflowY = "auto";
+
+    const eduBadge = document.getElementById('edu-bonus-badge');
+    if (eduBadge) {
+        eduBadge.style.display = hasEduBonus ? 'inline-block' : 'none';
+    }
+
+    // อัปเดตผลคะแนนแยก 5 โดเมนหลัก (เต็ม 30 คะแนน)
+    const memEl = document.getElementById('score-memory-val');
+    const visEl = document.getElementById('score-visuo-val');
+    const matEl = document.getElementById('score-math-val');
+    const lanEl = document.getElementById('score-lang-val');
+    const oriEl = document.getElementById('score-ori-val');
+    if (memEl) memEl.innerText = `${memoryScoreScaled} / 5`;
+    if (visEl) visEl.innerText = `${visuoScoreScaled} / 3 (วาดวงกลม: ${contourScore} + ตัวเลข: ${numbersScore} + เข็ม: ${handsCorrect})`;
+    if (matEl) matEl.innerText = `${mathScoreScaled} / 5`;
+    if (lanEl) lanEl.innerText = `${langScoreScaled} / 11 (Naming: ${namingScoreScaled} + Repeat: ${repeatScoreScaled} + Fluency: ${fluencyScoreScaled})`;
+    if (oriEl) oriEl.innerText = `${orientScoreScaled} / 6`;
 
     updateRiskDisplay(totalScore);
 
@@ -1490,13 +2353,20 @@ function calculateAndShowResult() {
         education: document.getElementById('user-education').value,
         disease: document.getElementById('user-disease').value || "ไม่มี",
         totalScore: totalScore,
+        maxScore: 30,
         riskLevel: document.getElementById('risk-level-title').innerText,
         latitude: userLatitude,
         longitude: userLongitude,
         details: {
-            memory: recallScore,
-            focus: (clockScore + handsScore + mathScore),
-            awareness: (orientationScore + namingScore)
+            memory: memoryScoreScaled,
+            visuospatial: visuoScoreScaled,
+            contour: contourScore,
+            math: mathScoreScaled,
+            naming: namingScoreScaled,
+            sentenceRepeat: repeatScoreScaled,
+            fluency: fluencyScoreScaled,
+            language: langScoreScaled,
+            orientation: orientScoreScaled
         }
     };
 
@@ -1514,14 +2384,15 @@ function updateRiskDisplay(score) {
     const riskDesc = document.getElementById('risk-description');
     const adviceList = document.getElementById('advice-list');
 
-    if (score >= 13) {
+    // เกณฑ์มาตรฐาน MoCA 30 คะแนน: ปกติ (>= 25), เสี่ยงบกพร่องเล็กน้อย MCI (18 - 24), ควรได้รับการดูแลพิเศษ (< 18)
+    if (score >= 25) {
         riskCard.style.backgroundColor = "";
         riskCard.style.borderColor = "#82954b";
         riskCard.style.borderWidth = "2px";
         riskCard.style.borderStyle = "solid";
         riskCard.style.color = "#2d2d2d";
-        riskTitle.innerText = "ปกติ (Normal)";
-        riskDesc.innerText = "ขณะนี้สุขภาพสมองของท่านอยู่ในเกณฑ์ปกติครับ การทดสอบด้านสมาธิ การจดจำ และการรับรู้วันเวลาทำได้ดีมาก ขอให้ท่านหมั่นดูแลสุขภาพกายและใจเพื่อรักษาประสิทธิภาพของสมองให้แข็งแรงแบบนี้ต่อไปนะครับ";
+        riskTitle.innerText = `ปกติ (Normal) — ${score}/30 คะแนน`;
+        riskDesc.innerText = "ขณะนี้สุขภาพสมองของท่านอยู่ในเกณฑ์ปกติครับ การทดสอบด้านสมาธิ การจดจำ มิติสัมพันธ์ และการรับรู้วันเวลาทำได้ดีมาก ขอให้ท่านหมั่นดูแลสุขภาพกายและใจเพื่อรักษาประสิทธิภาพของสมองให้แข็งแรงแบบนี้ต่อไปนะครับ";
         adviceList.innerHTML = `
             <li>✅ ออกกำลังกายสม่ำเสมออย่างน้อย 30 นาทีต่อวัน เช่น เดินเร็ว หรือว่ายน้ำ เพื่อช่วยให้เลือดไปเลี้ยงสมองได้ดี</li>
             <li>✅ รับประทานอาหารครบ 5 หมู่ เน้นผักผลไม้ และปลา หลีกเลี่ยงอาหารหวานหรือเค็มจัด</li>
@@ -1529,19 +2400,19 @@ function updateRiskDisplay(score) {
             <li>✅ หากิจกรรมลับสมองทำสม่ำเสมอ เช่น อ่านหนังสือ เล่นเกมปริศนา หรือเรียนรู้ทักษะใหม่ๆ</li>
             <li>✅ ตรวจสุขภาพประจำปีอย่างสม่ำเสมอ และนำผลประเมินนี้ปรึกษาแพทย์หากมีความกังวลครับ</li>
         `;
-    } else if (score >= 9) {
+    } else if (score >= 18) {
         riskCard.style.backgroundColor = "";
         riskCard.style.borderColor = "#ffd966";
         riskCard.style.borderWidth = "2px";
         riskCard.style.borderStyle = "solid";
         riskCard.style.color = "#2d2d2d";
-        riskTitle.innerText = "เสี่ยงบกพร่องเล็กน้อย (MCI)";
+        riskTitle.innerText = `เสี่ยงบกพร่องเล็กน้อย (MCI) — ${score}/30 คะแนน`;
         riskDesc.innerText = "เริ่มพบสัญญาณการทำงานของสมองที่ลดลงเล็กน้อย อาจมีปัญหาด้านความจำหรือสมาธิบ้างในชีวิตประจำวัน แต่ยังสามารถดูแลตัวเองได้ตามปกติ แนะนำให้ปรึกษาแพทย์เพื่อประเมินอย่างละเอียดต่อไปครับ";
         adviceList.innerHTML = `
             <li>⚠️ นัดพบแพทย์หรือผู้เชี่ยวชาญด้านสมองและระบบประสาทเพื่อตรวจประเมินอย่างละเอียด อย่าปล่อยทิ้งไว้นานครับ</li>
             <li>⚠️ ฝึกกิจกรรมกระตุ้นสมองทุกวัน เช่น เล่นเกมทายคำ ต่อเลข ฝึกจำชื่อคน หรือเขียนบันทึกประจำวัน</li>
             <li>⚠️ ออกกำลังกายเบาๆ สม่ำเสมอ เช่น เดินเร็ว โยคะ หรือรำมวยจีน อย่างน้อย 5 วันต่อสัปดาห์</li>
-            <li>⚠️ ลดความเครียด หากิจกรรมผ่อนคลาย เช่น ฟังเพลง ทำสวน หรือนั่งสมาธิ เพราะความเครียดเรื้อรังทำลายสมองได้</li>
+            <li>⚠️ ลดความเครียด หากิจกรรมผ่อนคลาย เช่น ฟังเพลง ทำสวน หรือนั่งสมาธิ</li>
             <li>⚠️ แจ้งคนในครอบครัวให้รับทราบ เพื่อช่วยสังเกตอาการและให้กำลังใจในการดูแลสุขภาพ</li>
             <li>⚠️ หลีกเลี่ยงแอลกอฮอล์และบุหรี่ เพราะส่งผลเสียต่อการทำงานของสมองโดยตรง</li>
         `;
@@ -1551,16 +2422,17 @@ function updateRiskDisplay(score) {
         riskCard.style.borderWidth = "2px";
         riskCard.style.borderStyle = "solid";
         riskCard.style.color = "#2d2d2d";
-        riskTitle.innerText = "ควรได้รับการดูแลพิเศษ";
-        riskDesc.innerText = "จากการทดสอบเบื้องต้น พบว่าประสิทธิภาพการทำงานของสมองในหลายด้านอยู่ในเกณฑ์ที่ควรเฝ้าระวังครับ แนะนำให้ท่านเข้าพบแพทย์ผู้เชี่ยวชาญเพื่อรับการตรวจวินิจฉัยอย่างละเอียดโดยเร็วที่สุด เพื่อวางแผนการดูแลและรักษาสุขภาพสมองที่เหมาะสมกับท่านครับ";
+        riskTitle.innerText = `ควรได้รับการดูแลพิเศษ — ${score}/30 คะแนน`;
+        riskDesc.innerText = "ผลการประเมินพบข้อจำกัดในการทำงานของสมองในหลายด้าน แนะนำให้ญาติหรือผู้ดูแลพาไปพบแพทย์เฉพาะทางด้านสมองหรือคลินิกความจำเพื่อรับการตรวจวินิจฉัยและวางแผนการรักษาอย่างเหมาะสมครับ";
         adviceList.innerHTML = `
-            <li>🆘 นัดพบแพทย์เฉพาะทางด้านประสาทวิทยาหรืออายุรกรรมสมองโดยเร็วที่สุด</li>
-            <li>🆘 แจ้งผลการประเมินนี้ให้แพทย์และสมาชิกในครอบครัวทราบเพื่อร่วมกันวางแผนการดูแล</li>
-            <li>🆘 ครอบครัวควรเข้ามามีส่วนร่วมในการช่วยเหลือและดูแลกิจวัตรประจำวันอย่างใกล้ชิด</li>
-            <li>🆘 ดูแลสุขภาพกายและควบคุมโรคประจำตัวอย่างเคร่งครัดตามคำแนะนำของแพทย์</li>
+            <li>🚨 นัดหมายพบแพทย์เฉพาะทางด้านสมองและระบบประสาท หรือคลินิกความจำโดยเร็วเพื่อตรวจประเมินอย่างละเอียด</li>
+            <li>🚨 ให้ญาติหรือผู้ดูแลช่วยดูแลความปลอดภัยในชีวิตประจำวันอย่างใกล้ชิด เช่น การใช้ยา การเดินทาง และการใช้เครื่องใช้ไฟฟ้า</li>
+            <li>🚨 จัดสิ่งแวดล้อมในบ้านให้ปลอดภัย มีแสงสว่างเพียงพอ และลดสิ่งกีดขวางที่อาจทำให้หกล้ม</li>
+            <li>🚨 สร้างกิจวัตรประจำวันที่แน่นอน เช่น เวลารับประทานอาหาร เวลาเข้านอน เพื่อลดความสับสน</li>
         `;
     }
 }
+
 
 // =====================================================
 // ระบบค้นหาโรงพยาบาลและคลินิกความจำเกี่ยวกับอัลไซเมอร์ใกล้ฉัน

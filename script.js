@@ -147,16 +147,18 @@ window.addEventListener('load', async function () {
 
     let liffInitialized = false;
     try {
-        // Initialize LIFF
+        // Initialize LIFF พร้อม timeout 2 วินาที ป้องกันโหลดค้าง
         const liffId = "2010532474-WfR6f2f3";
-        await liff.init({
+        const liffPromise = liff.init({
             liffId: liffId,
-            withLoginOnExternalBrowser: false // ป้องกันการ redirect ออก browser ภายนอก
+            withLoginOnExternalBrowser: false
         });
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('LIFF init timeout')), 2000));
+        
+        await Promise.race([liffPromise, timeoutPromise]);
         liffInitialized = true;
-        // เช็ค isInClient ก่อน: ถ้าอยู่ใน LINE app
+
         if (liff.isInClient()) {
-            // บังคับเด้งออกไปเปิดใน External Browser (Chrome / Safari) ทันที
             const currentUrl = window.location.href;
             if (currentUrl.indexOf('openExternalBrowser=1') === -1) {
                 const connector = currentUrl.indexOf('?') > -1 ? '&' : '?';
@@ -173,7 +175,6 @@ window.addEventListener('load', async function () {
             localStorage.setItem('memory_garden_user_id', userId);
             console.log("Logged in via LINE in-app browser. User ID:", userId);
         } else if (liff.isLoggedIn()) {
-            // เปิดใน external browser แต่ login ไว้แล้ว
             isLineLogin = true;
             lineProfile = await liff.getProfile();
             userId = lineProfile.userId;
@@ -181,7 +182,7 @@ window.addEventListener('load', async function () {
             console.log("Logged in via LINE (external browser). User ID:", userId);
         }
     } catch (err) {
-        console.error("LIFF Initialization failed", err);
+        console.warn("LIFF Initialization skipped or timed out:", err.message);
     }
 
     // Bind LINE UI events
@@ -189,11 +190,9 @@ window.addEventListener('load', async function () {
     if (lineLoginBtn) {
         lineLoginBtn.onclick = function () {
             if (liffInitialized) {
-                // ถ้าอยู่ใน LINE app (isInClient) ให้ login ภายใน ไม่เปิด browser ใหม่
                 if (liff.isInClient()) {
-                    liff.login(); // ใน LINE in-app จะไม่เด้งออก browser นอก
+                    liff.login();
                 } else {
-                    // อยู่นอก LINE app ค่อย login ปกติ
                     liff.login();
                 }
             } else {
@@ -210,8 +209,6 @@ window.addEventListener('load', async function () {
             showIntroPage();
         };
     }
-
-
 
     const lineLogoutBtn = document.getElementById('line-logout-btn');
     if (lineLogoutBtn) {
@@ -236,8 +233,17 @@ window.addEventListener('load', async function () {
         if (loaderWrapper) loaderWrapper.style.display = 'none';
         updateLineLoginUI();
         goToLogin();
-    }, 500);
+    }, 400);
 });
+
+// Fallback timer ป้องกันหน้า loading ค้างในทุกกรณี
+setTimeout(() => {
+    const lw = document.getElementById('loader-wrapper');
+    if (lw && lw.style.display !== 'none') {
+        lw.style.display = 'none';
+        goToLogin();
+    }
+}, 2500);
 
 // ฟังก์ชันปรับปรุงการแสดงผล UI LINE
 function updateLineLoginUI() {
@@ -1121,10 +1127,6 @@ document.getElementById('clock-submit-btn').onclick = function () {
 };
 
 // --- 7. ด่านที่ 3: ระบบคิดเลข 100 ลบ 7 ต่อเนื่อง (Serial 7s Math Test - 5 ข้อ 5 คะแนน) ---
-let mathCurrentValue = 100;
-let mathStep = 1;
-let mathCorrectCount = 0;
-let mathScore = 0;
 const mathSubtractor = 7;
 
 function startMathTest() {

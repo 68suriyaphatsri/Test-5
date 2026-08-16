@@ -180,7 +180,7 @@ function computePercentilesAndStats() {
             record.app_percentile_ingroup = calculateStandardPercentileRank(groupAppScores, record.total_score || 0);
 
             // Normalized Score comparison (|%App - %Paper|)
-            const normAppPct = ((record.total_score || 0) / 15) * 100;
+            const normAppPct = ((record.total_score || 0) / 30) * 100;
             const normPaperPct = (record.paper_score / 30) * 100;
             record.norm_score_diff = Math.round(Math.abs(normAppPct - normPaperPct) * 10) / 10;
         });
@@ -402,7 +402,9 @@ function renderCharts(allRecords, paperRecords) {
     });
 
     // 2. Cumulative Score Comparison Curve
-    const curveCtx = document.getElementById("scoreCurveChart").getContext("2d");
+    const curveCanvas = document.getElementById("curveChart");
+    if (!curveCanvas) return;
+    const curveCtx = curveCanvas.getContext("2d");
     if (curveChartInstance) curveChartInstance.destroy();
 
     if (paperRecords.length === 0) {

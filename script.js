@@ -1,17 +1,77 @@
 // --- 0. Speech / Audio Assistant Utility ---
+// --- High-Quality Thai Voice Engine ---
+let cachedThaiVoice = null;
+let currentUtterance = null;
+
+function getBestThaiVoice() {
+    if (!('speechSynthesis' in window)) return null;
+    if (cachedThaiVoice) return cachedThaiVoice;
+
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    // หาเสียงภาษาไทยทั้งหมด
+    const thaiVoices = voices.filter(v => 
+        v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.toLowerCase().startsWith('th')
+    );
+
+    if (thaiVoices.length === 0) return null;
+
+    // ลำดับเสียงที่คมชัดและเป็นธรรมชาติที่สุด (Natural / Neural / Cloud Voices)
+    const preferred = thaiVoices.find(v => v.name.includes('Google') || v.name.includes('ภาษาไทย')) ||
+                      thaiVoices.find(v => v.name.includes('Natural') || v.name.includes('Premwadee') || v.name.includes('Niwat')) ||
+                      thaiVoices.find(v => v.name.includes('Kanya') || v.name.includes('Narisa') || v.name.includes('Siri')) ||
+                      thaiVoices.find(v => v.name.includes('Enhanced') || v.name.includes('Premium')) ||
+                      thaiVoices.find(v => !v.localService) || // เสียง Cloud ความละเอียดสูง
+                      thaiVoices[0];
+
+    cachedThaiVoice = preferred;
+    return preferred;
+}
+
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        cachedThaiVoice = null;
+        getBestThaiVoice();
+    };
+    getBestThaiVoice();
+}
+
 function speakText(text) {
-    if ('speechSynthesis' in window) {
+    if (!('speechSynthesis' in window)) {
+        alert("เบราว์เซอร์นี้ไม่รองรับการอ่านเสียง");
+        return;
+    }
+
+    try {
         window.speechSynthesis.cancel(); // ล้างคิวเสียงเก่า
+        if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+        }
+
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'th-TH';
-        utterance.rate = 0.9; // พูดช้าลงเล็กน้อยเพื่อให้ผู้สูงอายุฟังง่าย
+
+        const voice = getBestThaiVoice();
+        if (voice) {
+            utterance.voice = voice;
+        }
+
+        // ปรับแต่งความเร็วและระดับเสียงให้ออกเสียง ร/ล และวรรณยุกต์ชัดเจนที่สุด
+        utterance.rate = 0.93;  // ความเร็วกำลังดี ชัดถ้อยชัดคำ
+        utterance.pitch = 1.02; // โทนเสียงสดใสฟังง่าย
+        utterance.volume = 1.0;
+
+        currentUtterance = utterance;
+        utterance.onend = () => { currentUtterance = null; };
+        utterance.onerror = () => { currentUtterance = null; };
+
         window.speechSynthesis.speak(utterance);
-    } else {
-        alert("เบราว์เซอร์นี้ไม่รองรับการอ่านเสียง");
+    } catch (e) {
+        console.warn('[TTS Error]:', e);
     }
 }
 
-// แก้ปัญหา 100vh บนมือถือ (Chrome/LINE browser มี address bar ทำให้ content ตก)
 function setMobileVH() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -1214,37 +1274,37 @@ async function startNamingTest() {
     container.innerHTML = '';
     namingSelectedObjects.forEach((obj, i) => {
         const card = document.createElement('div');
-        card.style.cssText = 'width:100%;background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:flex;flex-direction:row;align-items:center;gap:16px;box-sizing:border-box;border:1.5px solid #e8ede0;';
+        card.style.cssText = 'width:100%;max-width:440px;background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:flex;flex-direction:row;align-items:center;gap:12px;box-sizing:border-box;border:1.5px solid #e8ede0;';
 
         const imgWrapper = document.createElement('div');
-        imgWrapper.style.cssText = 'width:95px;height:95px;flex-shrink:0;background:#f5f8f0;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #e0ebd2;';
+        imgWrapper.style.cssText = 'width:75px;height:75px;flex-shrink:0;background:#f5f8f0;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #e0ebd2;';
 
         const img = document.createElement('img');
         img.src = obj.image_url;
         img.alt = '?';
-        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:12px;';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:10px;';
         img.onerror = () => {
-            imgWrapper.innerHTML = '<span style="font-size:48px;">🪴</span>';
+            imgWrapper.innerHTML = '<span style="font-size:40px;">🪴</span>';
         };
 
         imgWrapper.appendChild(img);
 
         const rightDiv = document.createElement('div');
-        rightDiv.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:6px;';
+        rightDiv.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;';
 
         const label = document.createElement('label');
         label.textContent = `สิ่งของ/สัตว์ในภาพที่ ${i + 1} (ข้อที่ ${i + 1}/5)`;
-        label.style.cssText = 'font-size:0.95rem;color:#4a5d23;font-weight:bold;';
+        label.style.cssText = 'font-size:0.85rem;color:#4a5d23;font-weight:bold;white-space:normal;word-break:break-word;line-height:1.3;';
 
         // Input Row: ช่องพิมพ์ + ปุ่มไมค์
         const inputRow = document.createElement('div');
-        inputRow.style.cssText = 'display:flex;gap:8px;align-items:center;width:100%;';
+        inputRow.style.cssText = 'display:flex;gap:6px;align-items:center;width:100%;min-width:0;';
 
         const input = document.createElement('input');
         input.type = 'text';
         input.id = `naming-answer-${i}`;
         input.placeholder = 'พิมพ์ชื่อสิ่งของ หรือแตะเลือก';
-        input.style.cssText = 'flex:1;padding:11px 13px;border:1.5px solid #ddd;border-radius:10px;font-size:1.05rem;outline:none;box-sizing:border-box;font-family:\'Anuphan\',sans-serif;transition:border-color 0.2s;';
+        input.style.cssText = 'flex:1;min-width:0;width:0;padding:8px 10px;border:1.5px solid #ddd;border-radius:10px;font-size:0.95rem;outline:none;box-sizing:border-box;font-family:\'Anuphan\',sans-serif;transition:border-color 0.2s;';
         input.oninput = () => {
             input.style.borderColor = '#ddd';
             input.style.background = '#fff';
@@ -1256,7 +1316,7 @@ async function startNamingTest() {
         micBtn.id = `naming-mic-${i}`;
         micBtn.title = 'กดแล้วพูดชื่อสิ่งของ';
         micBtn.innerHTML = '🎙️';
-        micBtn.style.cssText = 'flex-shrink:0;width:42px;height:42px;background:#e8ede0;border:1.5px solid #82954b;border-radius:10px;font-size:1.2rem;cursor:pointer;color:#4a5d23;display:flex;align-items:center;justify-content:center;transition:all 0.2s;';
+        micBtn.style.cssText = 'flex-shrink:0;width:38px;height:38px;background:#e8ede0;border:1.5px solid #82954b;border-radius:10px;font-size:1.1rem;cursor:pointer;color:#4a5d23;display:flex;align-items:center;justify-content:center;transition:all 0.2s;';
         micBtn.onclick = () => toggleNamingMic(i, input, micBtn);
 
         inputRow.appendChild(input);
@@ -1264,14 +1324,14 @@ async function startNamingTest() {
 
         // Choice suggestions for easier tapping
         const chipsDiv = document.createElement('div');
-        chipsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;';
+        chipsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;';
         const distractorOptions = ['จอบ', 'บัวรดน้ำ', 'กรรไกรตัดกิ่ง', 'กระถางต้นไม้', 'ผีเสื้อ', 'แมว', 'กระรอก', 'เสียม', 'สายยาง', 'นก'];
         const quickOptions = [...new Set([obj.name, ...distractorOptions.filter(d => d !== obj.name).slice(0, 2)])].sort(() => Math.random() - 0.5);
         quickOptions.forEach(opt => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.innerText = opt;
-            btn.style.cssText = 'padding:4px 10px;background:#f0f7e6;color:#4a5d23;border:1px solid #82954b;border-radius:14px;font-size:0.85rem;cursor:pointer;font-family:\'Anuphan\',sans-serif;';
+            btn.style.cssText = 'padding:3px 8px;background:#f0f7e6;color:#4a5d23;border:1px solid #82954b;border-radius:12px;font-size:0.8rem;cursor:pointer;font-family:\'Anuphan\',sans-serif;';
             btn.onclick = () => {
                 input.value = opt;
                 input.style.borderColor = '#ddd';
@@ -2011,11 +2071,7 @@ document.getElementById('recall-hint-btn').onclick = async function () {
 
 // TTS helper
 function speakWord(word) {
-    if (!('speechSynthesis' in window)) return;
-    const utterance = new SpeechSynthesisUtterance(word);
-    utterance.lang = 'th-TH';
-    utterance.rate = 0.8;
-    window.speechSynthesis.speak(utterance);
+    speakText(word);
 }
 
 document.getElementById('recall-next-btn').onclick = async function () {

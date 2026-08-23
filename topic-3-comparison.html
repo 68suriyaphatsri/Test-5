@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>03 · เทียบให้เห็นชัด — หลงลืมตามวัย VS อัลไซเมอร์ | Memory Garden</title>
+    <meta name="description" content="ตารางเปรียบเทียบความแตกต่างระหว่างการหลงลืมตามวัยของผู้สูงอายุทั่วไป กับภาวะสมองเสื่อมอัลไซเมอร์อย่างละเอียด">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚖️</text></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #3d5e23;
+            --primary-dark: #273d16;
+            --accent: #82954b;
+            --accent-green: #2e7d32;
+            --accent-red: #c62828;
+            --bg-main: #f5f8f2;
+            --text-main: #27341d;
+            --text-muted: #57664d;
+            --border-color: #dbe5d2;
+            --shadow-sm: 0 4px 12px rgba(45, 66, 23, 0.06);
+            --shadow-md: 0 10px 30px rgba(45, 66, 23, 0.1);
+            --radius-md: 20px;
+            --radius-lg: 28px;
+            --radius-full: 9999px;
+            --font-scale: 1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif; }
+        body {
+            background-color: var(--bg-main); color: var(--text-main); line-height: 1.8;
+            font-size: calc(17px * var(--font-scale));
+            background-image: radial-gradient(circle at 10% 20%, rgba(130, 149, 75, 0.07) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(61, 94, 35, 0.05) 0%, transparent 40%);
+        }
+
+        #progress-bar { position: fixed; top: 0; left: 0; height: 5px; width: 0%; background: linear-gradient(90deg, #82954b, #2e7d32); z-index: 1000; }
+        .header-nav { position: sticky; top: 0; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); z-index: 900; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--primary-dark); font-weight: 700; font-size: 1.15rem; }
+        .nav-actions { display: flex; align-items: center; gap: 12px; }
+        .font-controls { display: flex; background: #eef4e8; border-radius: var(--radius-full); padding: 3px; gap: 2px; }
+        .font-btn { background: transparent; border: none; padding: 4px 10px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+        .font-btn.active, .font-btn:hover { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+        .btn-test-nav { background: linear-gradient(135deg, var(--accent), var(--primary)); color: white; text-decoration: none; padding: 8px 18px; border-radius: var(--radius-full); font-weight: 600; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; }
+
+        .content-container { max-width: 880px; margin: 0 auto; padding: 24px 20px 80px 20px; }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; flex-wrap: wrap; }
+        .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+        .topic-header { background: linear-gradient(145deg, #ffffff, #f0f7ea); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 36px 28px; margin-bottom: 30px; box-shadow: var(--shadow-md); text-align: center; }
+        .topic-tag { display: inline-block; background: #e2edd9; color: var(--primary-dark); font-weight: 700; font-size: 0.9rem; padding: 4px 14px; border-radius: var(--radius-full); margin-bottom: 12px; }
+        .topic-title { font-size: 2.1rem; color: var(--primary-dark); margin-bottom: 14px; line-height: 1.35; }
+        .topic-subtitle { font-size: 1.12rem; color: var(--text-muted); max-width: 680px; margin: 0 auto; }
+
+        .comp-card-grid { display: flex; flex-direction: column; gap: 18px; margin-top: 20px; }
+        .comp-row {
+            background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            padding: 22px; box-shadow: var(--shadow-sm); transition: transform 0.2s;
+        }
+        .comp-row:hover { box-shadow: var(--shadow-md); }
+        .comp-category { font-size: 1.18rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        
+        .comp-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 650px) { .comp-split { grid-template-columns: 1fr; } }
+
+        .box-normal {
+            background: #f4faf2; border: 1px solid #cce5c6; border-radius: 14px; padding: 16px;
+        }
+        .box-alz {
+            background: #fdf5f5; border: 1px solid #f6c8c8; border-radius: 14px; padding: 16px;
+        }
+
+        .box-badge { font-size: 0.85rem; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-full); display: inline-block; margin-bottom: 6px; }
+        .badge-green { background: #e8f5e9; color: var(--accent-green); }
+        .badge-red { background: #ffebee; color: var(--accent-red); }
+
+        .box-text { font-size: 0.95rem; line-height: 1.65; color: var(--text-main); }
+
+        .page-navigation { display: flex; justify-content: space-between; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
+        .nav-btn-step {
+            flex: 1; min-width: 240px; background: white; border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md); padding: 18px 22px; text-decoration: none;
+            color: var(--text-main); transition: all 0.2s; display: flex; flex-direction: column;
+        }
+        .nav-btn-step:hover { border-color: var(--primary); background: #f8fbf6; transform: translateY(-2px); }
+        .nav-step-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+        .nav-step-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-dark); }
+    </style>
+</head>
+
+<body>
+    <div id="progress-bar"></div>
+
+    <header class="header-nav">
+        <a href="index.html" class="nav-brand">
+            <span style="font-size: 1.4rem;">🌿</span>
+            <span>Memory Garden Hub</span>
+        </a>
+        <div class="nav-actions">
+            <div class="font-controls">
+                <button class="font-btn" onclick="setFontScale(0.9)">ก-</button>
+                <button class="font-btn active" id="font-btn-default" onclick="setFontScale(1)">ก</button>
+                <button class="font-btn" onclick="setFontScale(1.15)">ก+</button>
+            </div>
+            <a href="test.html" class="btn-test-nav">
+                <span>🌱</span> <span>เริ่มทำแบบทดสอบ</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="content-container">
+        <nav class="breadcrumb">
+            <a href="index.html">🏠 หน้าแรก</a>
+            <span>/</span>
+            <span>03 · หลงลืมตามวัย VS อัลไซเมอร์</span>
+        </nav>
+
+        <header class="topic-header">
+            <span class="topic-tag">หมวดความรู้ที่ 03 / 07</span>
+            <h1 class="topic-title">เทียบให้เห็นชัด — หลงลืมตามวัย VS อัลไซเมอร์</h1>
+            <p class="topic-subtitle">แยกแยะระหว่างกระบวนการชะลอตัวตามธรรมชาติของสมองผู้สูงอายุ กับความผิดปกติที่เกิดจากโรคอัลไซเมอร์</p>
+        </header>
+
+        <div class="comp-card-grid">
+
+            <!-- 1. ความจำ -->
+            <div class="comp-row">
+                <div class="comp-category"><span>🧠</span> 1. การจดจำข้อมูลและความจำระยะสั้น</div>
+                <div class="comp-split">
+                    <div class="box-normal">
+                        <span class="box-badge badge-green">🟢 หลงลืมตามวัยทั่วไป</span>
+                        <p class="box-text">ลืมชื่อคนหรือนัดหมายชั่วคราว แต่มักจะนึกออกได้เองในภายหลัง หรือจำได้เมื่อมีคนบอกใบ้</p>
+                    </div>
+                    <div class="box-alz">
+                        <span class="box-badge badge-red">🔴 โรคอัลไซเมอร์</span>
+                        <p class="box-text">ลืมข้อมูลใหม่ที่เพิ่งเกิดขึ้น ลืมแล้วลืมเลย แม้มีคนเตือนความจำก็จำไม่ได้ และถามเรื่องเดิมซ้ำ ๆ</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. อุปกรณ์ -->
+            <div class="comp-row">
+                <div class="comp-category"><span>📱</span> 2. การใช้อุปกรณ์และเทคโนโลยี</div>
+                <div class="comp-split">
+                    <div class="box-normal">
+                        <span class="box-badge badge-green">🟢 หลงลืมตามวัยทั่วไป</span>
+                        <p class="box-text">ต้องใช้เวลาเรียนรู้หรืออาจต้องการความช่วยเหลือเมื่อใช้อุปกรณ์หรือสมาร์ทโฟนรุ่นใหม่ที่ไม่คุ้นเคย</p>
+                    </div>
+                    <div class="box-alz">
+                        <span class="box-badge badge-red">🔴 โรคอัลไซเมอร์</span>
+                        <p class="box-text">ลืมวิธีใช้งานอุปกรณ์ที่เคยใช้เป็นประจำมาหลายสิบปี เช่น รีโมตทีวี โทรศัพท์บ้าน หรือเตาแก๊ส</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. การสนทนา -->
+            <div class="comp-row">
+                <div class="comp-category"><span>💬</span> 3. การสื่อสารและการสนทนา</div>
+                <div class="comp-split">
+                    <div class="box-normal">
+                        <span class="box-badge badge-green">🟢 หลงลืมตามวัยทั่วไป</span>
+                        <p class="box-text">นึกคำพูดบางคำไม่ออกเป็นบางครั้ง (Tip of the tongue) แต่นึกออกได้ในเวลาต่อมา</p>
+                    </div>
+                    <div class="box-alz">
+                        <span class="box-badge badge-red">🔴 โรคอัลไซเมอร์</span>
+                        <p class="box-text">หยุดพูดกลางคันบ่อยครั้ง ไม่สามารถต่อประโยคได้ และใช้คำเรียกสิ่งของผิดความหมายรุนแรง</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. วางของ -->
+            <div class="comp-row">
+                <div class="comp-category"><span>🔑</span> 4. การวางสิ่งของและการหาของ</div>
+                <div class="comp-split">
+                    <div class="box-normal">
+                        <span class="box-badge badge-green">🟢 หลงลืมตามวัยทั่วไป</span>
+                        <p class="box-text">วางแว่นตาหรือกุญแจผิดที่ แต่นึกย้อนรอยตามหาเส้นทางเดิมจนพบได้</p>
+                    </div>
+                    <div class="box-alz">
+                        <span class="box-badge badge-red">🔴 โรคอัลไซเมอร์</span>
+                        <p class="box-text">นำของไปวางไว้ในที่แปลกประหลาดมาก ไม่สามารถนึกย้อนรอยได้ และเริ่มสงสัยว่ามีคนขโมย</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. วันเวลา -->
+            <div class="comp-row">
+                <div class="comp-category"><span>📅</span> 5. การรับรู้วันที่ เวลา และสถานที่</div>
+                <div class="comp-split">
+                    <div class="box-normal">
+                        <span class="box-badge badge-green">🟢 หลงลืมตามวัยทั่วไป</span>
+                        <p class="box-text">ลืมว่าวันนี้วันที่เท่าไรหรือวันอะไรชั่วคราว แต่นึกออกได้เมื่อดูปฏิทินหรือตั้งสติ</p>
+                    </div>
+                    <div class="box-alz">
+                        <span class="box-badge badge-red">🔴 โรคอัลไซเมอร์</span>
+                        <p class="box-text">สับสนฤดูกาล ปี พ.ศ. หรือหลงเวลาโดยสิ้นเชิง ไม่รู้ว่าตอนนี้เช้าหรือมืด หรืออยู่ที่ใด</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. การตัดสินใจ -->
+            <div class="comp-row">
+                <div class="comp-category"><span>💰</span> 6. การตัดสินใจและการเงิน</div>
+                <div class="comp-split">
+                    <div class="box-normal">
+                        <span class="box-badge badge-green">🟢 หลงลืมตามวัยทั่วไป</span>
+                        <p class="box-text">อาจมีตัดสินใจผิดพลาดหรือลืมจ่ายบิลบางเดือนเป็นครั้งคราว</p>
+                    </div>
+                    <div class="box-alz">
+                        <span class="box-badge badge-red">🔴 โรคอัลไซเมอร์</span>
+                        <p class="box-text">การตัดสินใจเรื่องเงินเสียไปอย่างรุนแรง ถูกหลอกโอนเงินง่าย และละเลยสุขอนามัยตนเอง</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Navigation Next/Prev -->
+        <div class="page-navigation">
+            <a href="topic-2-warning-signs.html" class="nav-btn-step">
+                <span class="nav-step-label">← หัวข้อก่อนหน้า</span>
+                <span class="nav-step-title">02 · 10 สัญญาณเตือนแรกเริ่ม</span>
+            </a>
+            <a href="topic-4-stages.html" class="nav-btn-step" style="text-align: right;">
+                <span class="nav-step-label">หัวข้อถัดไป →</span>
+                <span class="nav-step-title">04 · การดำเนินโรค 3 ระยะ</span>
+            </a>
+        </div>
+    </main>
+
+    <script>
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (document.documentElement.scrollTop / h) * 100;
+            document.getElementById('progress-bar').style.width = scrolled + '%';
+        });
+
+        function setFontScale(scale) {
+            document.documentElement.style.setProperty('--font-scale', scale);
+            document.querySelectorAll('.font-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

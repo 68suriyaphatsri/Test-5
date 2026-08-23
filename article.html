@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าใจอัลไซเมอร์ ก่อนที่ความทรงจำจะร่วงหล่น | Memory Garden</title>
+    <meta name="description" content="คู่มือทำความเข้าใจโรคอัลไซเมอร์ 10 สัญญาณเตือน การแยกแยะกับความจำเสื่อมตามวัย ระยะของโรค และการดูแลผู้ป่วยที่บ้าน">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #3d5e23;
+            --primary-light: #527a32;
+            --primary-dark: #2a4217;
+            --accent: #82954b;
+            --accent-gold: #d49a37;
+            --accent-warm: #d97736;
+            --accent-red: #c94a3d;
+            --bg-main: #f5f8f2;
+            --bg-card: #ffffff;
+            --bg-card-subtle: #edf3e7;
+            --text-main: #27341d;
+            --text-muted: #5e6d52;
+            --text-light: #839178;
+            --border-color: #dbe5d2;
+            --shadow-sm: 0 4px 12px rgba(45, 66, 23, 0.06);
+            --shadow-md: 0 10px 30px rgba(45, 66, 23, 0.1);
+            --shadow-lg: 0 18px 45px rgba(45, 66, 23, 0.15);
+            --radius-sm: 12px;
+            --radius-md: 20px;
+            --radius-lg: 28px;
+            --radius-full: 9999px;
+            --font-scale: 1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            font-size: calc(17px * var(--font-scale));
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(130, 149, 75, 0.07) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(61, 94, 35, 0.05) 0%, transparent 40%);
+        }
+
+        /* Reading Progress Bar */
+        #progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: rgba(219, 229, 210, 0.5);
+            z-index: 1000;
+        }
+
+        #reading-progress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #82954b, #d49a37);
+            transition: width 0.1s ease-out;
+        }
+
+        /* Header Navigation */
+        .header-nav {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 900;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--primary-dark);
+            font-weight: 700;
+            font-size: 1.15rem;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .font-controls {
+            display: flex;
+            background: #eef4e8;
+            border-radius: var(--radius-full);
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .font-btn {
+            background: transparent;
+            border: none;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .font-btn.active, .font-btn:hover {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+
+        .btn-test-nav {
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            color: white;
+            text-decoration: none;
+            padding: 8px 18px;
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 14px rgba(61, 94, 35, 0.25);
+            transition: all 0.3s;
+        }
+
+        .btn-test-nav:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(61, 94, 35, 0.35);
+        }
+
+        /* Container */
+        .content-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px 80px 20px;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            text-align: center;
+            padding: 45px 24px 35px 24px;
+            background: linear-gradient(145deg, #ffffff, #f1f7ea);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '🍃';
+            position: absolute;
+            font-size: 7rem;
+            opacity: 0.08;
+            top: -20px;
+            left: 20px;
+            pointer-events: none;
+            transform: rotate(-25deg);
+        }
+
+        .hero-section::after {
+            content: '🌿';
+            position: absolute;
+            font-size: 7rem;
+            opacity: 0.08;
+            bottom: -20px;
+            right: 20px;
+            pointer-events: none;
+            transform: rotate(20deg);
+        }
+
+        .badge-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e4eee0;
+            color: var(--primary);
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+            border: 1px solid #cfddc8;
+        }
+
+        .badge-source a {
+            color: var(--primary-dark);
+            text-decoration: underline;
+            font-weight: 700;
+        }
+
+        .hero-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            line-height: 1.35;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 24px auto;
+            line-height: 1.7;
+        }
+
+        .hero-quote {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.85);
+            border-left: 4px solid var(--accent-gold);
+            padding: 12px 20px;
+            border-radius: 8px 16px 16px 8px;
+            font-size: 1.05rem;
+            color: #554426;
+            font-style: italic;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Quick Navigation Bar */
+        .quick-nav {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 4px 18px 4px;
+            margin-bottom: 30px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .quick-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .quick-nav-item {
+            white-space: nowrap;
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .quick-nav-item:hover, .quick-nav-item.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* Section Container */
+        .article-section {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 36px 30px;
+            margin-bottom: 35px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .article-section:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--bg-card-subtle);
+        }
+
+        .section-number {
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(61, 94, 35, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            line-height: 1.3;
+        }
+
+        .section-lead {
+            font-size: 1.08rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            line-height: 1.75;
+        }
+
+        /* Highlights & Key Metric */
+        .key-stat-box {
+            background: linear-gradient(135deg, #f0f7e9, #e5f0dc);
+            border-radius: var(--radius-md);
+            padding: 22px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+            border: 1px solid #d4e5c7;
+        }
+
+        .key-stat-number {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .key-stat-text {
+            font-size: 1rem;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        /* 01 Biological Mechanisms */
+        .mechanism-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .mechanism-card {
+            background: #fafcf8;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 22px 18px;
+            text-align: left;
+            transition: all 0.3s;
+        }
+
+        .mechanism-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .mechanism-badge {
+            display: inline-block;
+            background: #eef5e8;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.88rem;
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            margin-bottom: 10px;
+        }
+
+        .mechanism-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mechanism-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.65;
+        }
+
+        /* 02 Warning Signs (10 Signs) */
+        .signs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .sign-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 18px 16px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            transition: all 0.25s;
+            position: relative;
+        }
+
+        .sign-card:hover {
+            border-color: var(--accent);
+            background: #fbfdf9;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sign-badge {
+            background: #f0f5ec;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.9rem;
+            min-width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sign-body h4 {
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .sign-body p {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* 03 Comparison Table */
+        .comparison-table-wrapper {
+            overflow-x: auto;
+            margin-top: 15px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .comp-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            background: white;
+            min-width: 580px;
+        }
+
+        .comp-table th {
+            background: #f0f6ec;
+            padding: 16px 18px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .comp-table td {
+            padding: 16px 18px;
+            font-size: 0.96rem;
+            border-bottom: 1px solid #edf2e8;
+            vertical-align: top;
+            line-height: 1.6;
+        }
+
+        .comp-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comp-table tr:hover td {
+            background-color: #fbfdf9;
+        }
+
+        .badge-normal {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        .badge-alz {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #c62828;
+            font-weight: 600;
+        }
+
+        /* 04 Stages Progression */
+        .stages-container {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin-top: 10px;
+        }
+
+        .stage-card {
+            border-radius: var(--radius-md);
+            padding: 24px;
+            border: 1.5px solid transparent;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .stage-1 {
+            background: linear-gradient(135deg, #f3f9ed, #e6f3dc);
+            border-color: #cde4bd;
+        }
+
+        .stage-2 {
+            background: linear-gradient(135deg, #fff9ee, #fef1db);
+            border-color: #f6dcab;
+        }
+
+        .stage-3 {
+            background: linear-gradient(135deg, #fdf4f2, #fce5e1);
+            border-color: #f5c4bc;
+        }
+
+        .stage-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .stage-title {
+            font-size: 1.22rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stage-1 .stage-title { color: #2e6018; }
+        .stage-2 .stage-title { color: #9c5c00; }
+        .stage-3 .stage-title { color: #a82e22; }
+
+        .stage-badge {
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .stage-desc {
+            font-size: 1rem;
+            color: var(--text-main);
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        /* 05 Home Care Guidelines */
+        .care-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .care-card {
+            background: #fafcf8;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .care-icon-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .care-icon {
+            font-size: 1.8rem;
+            background: #eef5e8;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .care-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .care-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .care-list li {
+            position: relative;
+            padding-left: 22px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .care-list li::before {
+            content: '✔';
+            position: absolute;
+            left: 0;
+            top: 1px;
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        /* 06 Diagnosis & Treatment */
+        .diag-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .diag-grid { grid-template-columns: 1fr; }
+        }
+
+        .diag-box {
+            background: #fbfdf9;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 24px;
+        }
+
+        .diag-box h4 {
+            font-size: 1.18rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .diag-box p {
+            font-size: 0.96rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 14px;
+        }
+
+        .treatment-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .treatment-pill {
+            background: #eef5e8;
+            color: var(--primary-dark);
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            border: 1px solid #d4e5c6;
+        }
+
+        /* 07 Hotlines & Resources */
+        .hotline-card {
+            background: linear-gradient(135deg, #ffffff, #f5f9f0);
+            border: 1.5px solid #d0e2c4;
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .hotline-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .hotline-icon {
+            font-size: 2.2rem;
+            background: #e3f2dc;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .hotline-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 2px;
+        }
+
+        .hotline-number {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--accent-red);
+            line-height: 1.2;
+        }
+
+        .btn-call {
+            background: #2e7d32;
+            color: white;
+            text-decoration: none;
+            padding: 10px 22px;
+            border-radius: var(--radius-full);
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25);
+            transition: all 0.2s;
+        }
+
+        .btn-call:hover {
+            background: #1b5e20;
+            transform: scale(1.03);
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .external-link-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-decoration: none;
+            color: var(--primary-dark);
+            font-weight: 600;
+            font-size: 0.92rem;
+            transition: all 0.2s;
+        }
+
+        .external-link-card:hover {
+            border-color: var(--primary);
+            background: #f7faf4;
+            transform: translateX(3px);
+            color: var(--primary);
+        }
+
+        /* Memory Garden CTA Box */
+        .garden-cta-box {
+            background: linear-gradient(135deg, #2d4c18, #456b26);
+            color: white;
+            border-radius: var(--radius-lg);
+            padding: 40px 30px;
+            text-align: center;
+            margin: 40px 0 30px 0;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .garden-cta-box::before {
+            content: '🌸';
+            position: absolute;
+            font-size: 8rem;
+            opacity: 0.1;
+            top: -20px;
+            right: -10px;
+            pointer-events: none;
+        }
+
+        .garden-cta-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .garden-cta-desc {
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto 26px auto;
+            color: #e3ebd9;
+            line-height: 1.7;
+        }
+
+        .btn-start-test {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #ffffff, #f2f7ec);
+            color: var(--primary-dark);
+            text-decoration: none;
+            padding: 16px 36px;
+            border-radius: var(--radius-full);
+            font-size: 1.15rem;
+            font-weight: 700;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            transition: all 0.3s;
+        }
+
+        .btn-start-test:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+            background: #ffffff;
+        }
+
+        /* Disclaimer */
+        .disclaimer-box {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            font-size: 0.88rem;
+            color: #6d5400;
+            line-height: 1.7;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+
+        /* Footer */
+        .page-footer {
+            text-align: center;
+            padding: 30px 20px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+
+        /* Floating Audio / Back to Top Button */
+        .floating-actions {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 800;
+        }
+
+        .fab-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: white;
+            border: 1px solid var(--border-color);
+            color: var(--primary);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            transition: all 0.2s;
+        }
+
+        .fab-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .hero-title { font-size: 1.7rem; }
+            .article-section { padding: 26px 18px; }
+            .key-stat-box { flex-direction: column; text-align: center; gap: 10px; }
+            .hotline-card { flex-direction: column; text-align: center; }
+            .hotline-info { flex-direction: column; }
+            .btn-call { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Reading Progress Indicator -->
+    <div id="progress-container">
+        <div id="reading-progress"></div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="header-nav">
+        <a href="index.html" class="nav-brand">
+            <span style="font-size: 1.5rem;">🧠</span>
+            <span>Memory Garden</span>
+        </a>
+
+        <div class="nav-actions">
+            <!-- Senior Font Size Toggle -->
+            <div class="font-controls" title="ปรับขนาดตัวหนังสือ">
+                <button class="font-btn" onclick="setFontScale(0.9)">ก-</button>
+                <button class="font-btn active" id="font-btn-default" onclick="setFontScale(1)">ก</button>
+                <button class="font-btn" onclick="setFontScale(1.15)">ก+</button>
+            </div>
+
+            <!-- Test CTA Button -->
+            <a href="index.html" class="btn-test-nav">
+                <span>🌱</span>
+                <span>เริ่มทำแบบทดสอบ</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="content-container">
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="badge-source">
+                <span>📖</span>
+                <span>อ้างอิงข้อมูล: <a href="https://www.azthai.org/" target="_blank" rel="noopener">สมาคมผู้ดูแลผู้ป่วยสมองเสื่อมแห่งประเทศไทย</a></span>
+            </div>
+
+            <h1 class="hero-title">🌿 เข้าใจอัลไซเมอร์<br><span style="color: var(--primary-light);">ก่อนที่ความทรงจำจะร่วงหล่น</span></h1>
+            <p class="hero-subtitle">อัลไซเมอร์เริ่มต้นอย่างเงียบ ๆ เหมือนใบไม้ที่ค่อย ๆ ร่วงทีละใบ ยิ่งรู้เร็ว ยิ่งดูแลได้ทัน</p>
+            
+            <div class="hero-quote">
+                "การตรวจพบตั้งแต่ระยะแรกเริ่ม (Early Detection) คือหัวใจสำคัญในการชะลอการถดถอยของสมอง"
+            </div>
+        </section>
+
+        <!-- Quick Jump Bar -->
+        <nav class="quick-nav" aria-label="สารบัญด่วน">
+            <a href="#section-overview" class="quick-nav-item"><span>01</span> ภาพรวม</a>
+            <a href="#section-warning-signs" class="quick-nav-item"><span>02</span> 10 สัญญาณเตือน</a>
+            <a href="#section-comparison" class="quick-nav-item"><span>03</span> เทียบกับหลงลืมตามวัย</a>
+            <a href="#section-stages" class="quick-nav-item"><span>04</span> 3 ระยะของโรค</a>
+            <a href="#section-homecare" class="quick-nav-item"><span>05</span> การดูแลที่บ้าน</a>
+            <a href="#section-treatment" class="quick-nav-item"><span>06</span> วินิจฉัย & รักษา</a>
+            <a href="#section-hotlines" class="quick-nav-item"><span>07</span> แหล่งข้อมูล & สายด่วน</a>
+        </nav>
+
+        <!-- SECTION 01: Overview & Mechanisms -->
+        <section id="section-overview" class="article-section">
+            <div class="section-header">
+                <div class="section-number">01</div>
+                <h2 class="section-title">ภาพรวม — อัลไซเมอร์คืออะไร</h2>
+            </div>
+
+            <div class="key-stat-box">
+                <div class="key-stat-number">60–80%</div>
+                <div class="key-stat-text">
+                    <strong>สาเหตุที่พบบ่อยที่สุดของภาวะสมองเสื่อม</strong> คิดเป็นราว 60–80% ของผู้ป่วยภาวะสมองเสื่อมทั้งหมด เกิดจากการที่เซลล์สมองถูกทำลายลงอย่างต่อเนื่องและไม่สามารถฟื้นฟูกลับมาได้
+                </div>
+            </div>
+
+            <p class="section-lead">
+                โรคอัลไซเมอร์ (Alzheimer's Disease) ส่งผลกระทบโดยตรงต่อสมองส่วนที่ควบคุมความคิด ความจำ และภาษา โดยมี 3 กลไกทางชีววิทยาสำคัญที่ทำให้เซลล์สมองสูญเสียการทำงาน:
+            </p>
+
+            <div class="mechanism-grid">
+                <div class="mechanism-card">
+                    <span class="mechanism-badge">คราบโปรตีนภายนอก</span>
+                    <h3 class="mechanism-title">🧬 Amyloid-Beta</h3>
+                    <p class="mechanism-desc">โปรตีนชนิดผิดปกติสะสมและเกาะตัวเป็นคราบนอกเซลล์ประสาท ขัดขวางการส่งสัญญาณระหว่างเซลล์สมอง</p>
+                </div>
+
+                <div class="mechanism-card">
+                    <span class="mechanism-badge">กระจุกเส้นใยภายใน</span>
+                    <h3 class="mechanism-title">🧶 Tau Protein</h3>
+                    <p class="mechanism-desc">โปรตีนทาวพันกันเป็นกระจุกเส้นใยอยู่ภายในเซลล์ประสาท ทำให้ระบบลำเลียงสารอาหารล้มเหลว เซลล์ขาดอาหารและตายลง</p>
+                </div>
+
+                <div class="mechanism-card">
+                    <span class="mechanism-badge">สารสื่อประสาทลดลง</span>
+                    <h3 class="mechanism-title">⚡ Acetylcholine ↓</h3>
+                    <p class="mechanism-desc">การสูญเสียสารสื่อประสาท 'แอซิติลโคลีน' ซึ่งมีความสำคัญยิ่งต่อกระบวนการจดจำ การมีสมาธิ และการเรียนรู้สิ่งใหม่</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 02: 10 Warning Signs -->
+        <section id="section-warning-signs" class="article-section">
+            <div class="section-header">
+                <div class="section-number">02</div>
+                <h2 class="section-title">สัญญาณเตือน — 10 สัญญาณเตือนแรกเริ่ม</h2>
+            </div>
+            
+            <p class="section-lead">
+                หากคุณหรือคนใกล้ชิดมีอาการเหล่านี้เกิดขึ้นบ่อยครั้งและกระทบต่อชีวิตประจำวัน ควรเข้ารับการประเมินจากแพทย์ผู้เชี่ยวชาญด้านสมองและระบบประสาท:
+            </p>
+
+            <div class="signs-grid">
+                <div class="sign-card">
+                    <div class="sign-badge">1</div>
+                    <div class="sign-body">
+                        <h4>หลงลืมเรื่องที่เพิ่งเกิดขึ้น</h4>
+                        <p>ลืมข้อมูลใหม่ ลืมวันนัดสำคัญ และถามคำถามเดิมซ้ำ ๆ แม้เพิ่งได้รับคำตอบไป</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">2</div>
+                    <div class="sign-body">
+                        <h4>วางแผนหรือแก้ปัญหายากขึ้น</h4>
+                        <p>ทำตามสูตรอาหารเดิมไม่ได้ คำนวณตัวเลข รายรับรายจ่าย หรือจ่ายบิลลำบากขึ้น</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">3</div>
+                    <div class="sign-body">
+                        <h4>ทำกิจวัตรที่คุ้นเคยได้ยาก</h4>
+                        <p>ขับรถไปสถานที่ที่ไปประจำแล้วหลงทาง หรือจำกฎกติกาของเกมโปรดที่เล่นประจำไม่ได้</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">4</div>
+                    <div class="sign-body">
+                        <h4>สับสนเรื่องเวลาและสถานที่</h4>
+                        <p>ลืมวัน เดือน ฤดูกาล ปี พ.ศ. หรือไม่รู้ว่าตนเองมาอยู่ที่ไหนและมาได้อย่างไร</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">5</div>
+                    <div class="sign-body">
+                        <h4>มีปัญหาด้านภาพและมิติสัมพันธ์</h4>
+                        <p>กะระยะทางลำบาก อ่านหนังสือยากขึ้น แยกแยะสีหรือความเปรียบต่างของวัตถุได้ยาก</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">6</div>
+                    <div class="sign-body">
+                        <h4>มีปัญหาการใช้ภาษา</h4>
+                        <p>ชะงักกลางคันขณะพูด นึกคำไม่ออก หรือเรียกชื่อสิ่งของผิด เช่น เรียกนาฬิกาเป็นเครื่องบอกเวลา</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">7</div>
+                    <div class="sign-body">
+                        <h4>วางของผิดที่และหาไม่เจอ</h4>
+                        <p>นำของไปเก็บในที่แปลกประหลาด (เช่น เอารีโมตใส่ตู้เย็น) และเริ่มระแวงว่ามีคนขโมย</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">8</div>
+                    <div class="sign-body">
+                        <h4>การตัดสินใจแย่ลง</h4>
+                        <p>ถูกหลอกง่าย ให้เงินคนแปลกหน้าจำนวนมาก หรือละเลยการดูแลสุขอนามัยของตนเอง</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">9</div>
+                    <div class="sign-body">
+                        <h4>ถอนตัวจากสังคมหรืองาน</h4>
+                        <p>เลิกทำงานอดิเรกที่เคยชอบ หลีกเลี่ยงการพบปะเพื่อนฝูงเนื่องจากรู้สึกตามบทสนทนาไม่ทัน</p>
+                    </div>
+                </div>
+
+                <div class="sign-card">
+                    <div class="sign-badge">10</div>
+                    <div class="sign-body">
+                        <h4>บุคลิกภาพและอารมณ์เปลี่ยน</h4>
+                        <p>วิตกกังวล สับสน ซึมเศร้า หงุดหงิดง่าย อารมณ์แปรปรวน หรือหวาดระแวงคนรอบข้าง</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 03: Age-related vs Alzheimer's -->
+        <section id="section-comparison" class="article-section">
+            <div class="section-header">
+                <div class="section-number">03</div>
+                <h2 class="section-title">เทียบให้เห็นชัด — หลงลืมตามวัย VS อัลไซเมอร์</h2>
+            </div>
+
+            <p class="section-lead">
+                ความแตกต่างสำคัญระหว่างการเสื่อมถอยตามธรรมชาติของวัยผู้สูงอายุ กับภาวะสมองเสื่อมจากโรคอัลไซเมอร์:
+            </p>
+
+            <div class="comparison-table-wrapper">
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 28%;">สังเกตอาการ</th>
+                            <th style="width: 36%;">หลงลืมตามวัยทั่วไป 🟢</th>
+                            <th style="width: 36%;">โรคอัลไซเมอร์ 🔴</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>การลืมความจำ</strong></td>
+                            <td><span class="badge-normal">✔ ลืมชั่วคราว</span> แต่นึกออกภายหลัง</td>
+                            <td><span class="badge-alz">✖ ลืมแล้วลืมเลย</span> ถามเรื่องเดิมซ้ำ ๆ</td>
+                        </tr>
+                        <tr>
+                            <td><strong>การใช้อุปกรณ์</strong></td>
+                            <td><span class="badge-normal">✔ ช้าลง</span> ต้องใช้เวลาเรียนรู้สมาร์ทโฟนรุ่นใหม่</td>
+                            <td><span class="badge-alz">✖ ลืมวิธีใช้</span> ใช้อุปกรณ์ที่คุ้นเคยมาหลายปีไม่ได้</td>
+                        </tr>
+                        <tr>
+                            <td><strong>การสนทนา</strong></td>
+                            <td><span class="badge-normal">✔ นึกคำไม่ออก</span> เป็นบางครั้งแต่นึกออกภายหลัง</td>
+                            <td><span class="badge-alz">✖ หยุดพูดกลางคัน</span> ใช้คำผิดความหมายรุนแรง</td>
+                        </tr>
+                        <tr>
+                            <td><strong>การวางของ</strong></td>
+                            <td><span class="badge-normal">✔ วางผิดที่</span> แต่นึกย้อนรอยตามหาเจอ</td>
+                            <td><span class="badge-alz">✖ วางในที่ผิดปกติมาก</span> สงสัยว่ามีคนขโมย</td>
+                        </tr>
+                        <tr>
+                            <td><strong>การรับรู้เวลา</strong></td>
+                            <td><span class="badge-normal">✔ ลืมวันที่</span> แต่นึกออกภายหลังหรือดูปฏิทินได้</td>
+                            <td><span class="badge-alz">✖ สับสนฤดูกาล</span> หลงเวลาและปี พ.ศ. โดยสิ้นเชิง</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 04: Disease Progression -->
+        <section id="section-stages" class="article-section">
+            <div class="section-header">
+                <div class="section-number">04</div>
+                <h2 class="section-title">การดำเนินโรค — จากใบไม้เขียวสู่กิ่งโกร๋น</h2>
+            </div>
+
+            <p class="section-lead">
+                โรคอัลไซเมอร์แบ่งออกเป็น 3 ระยะหลัก ซึ่งมีการเปลี่ยนแปลงของเซลล์สมองและความสามารถในการใช้ชีวิต:
+            </p>
+
+            <div class="stages-container">
+                <div class="stage-card stage-1">
+                    <div class="stage-header">
+                        <div class="stage-title">
+                            <span>🌿</span>
+                            <span>ระยะที่ 1 · เริ่มต้น (Mild)</span>
+                        </div>
+                        <span class="stage-badge" style="color: #2e6018;">ใบไม้เขียวครบ</span>
+                    </div>
+                    <p class="stage-desc">
+                        ยังช่วยเหลือตัวเองได้ในชีวิตประจำวัน ขับรถและทำงานได้ตามปกติ แต่เริ่มมีอาการหลงลืมความจำระยะสั้น หาคำพูดลำบาก และเริ่มจัดการงานที่ซับซ้อน (เช่น การคำนวณเงินหรือวางแผนเที่ยว) ได้ยากขึ้น
+                    </p>
+                </div>
+
+                <div class="stage-card stage-2">
+                    <div class="stage-header">
+                        <div class="stage-title">
+                            <span>🍂</span>
+                            <span>ระยะที่ 2 · ปานกลาง (Moderate)</span>
+                        </div>
+                        <span class="stage-badge" style="color: #9c5c00;">ใบไม้เริ่มร่วง</span>
+                    </div>
+                    <p class="stage-desc">
+                        เป็นระยะที่ยาวนานที่สุด ผู้ป่วยต้องการความช่วยเหลือในกิจวัตรประจำวัน เช่น การแต่งตัวและอาบน้ำ สับสนสถานที่และเวลาชัดเจน พฤติกรรมเปลี่ยนแปลง เริ่มเดินเพ่นพ่าน หลงทาง และจำบุคคลคุ้นเคยไม่ได้
+                    </p>
+                </div>
+
+                <div class="stage-card stage-3">
+                    <div class="stage-header">
+                        <div class="stage-title">
+                            <span>🍁</span>
+                            <span>ระยะที่ 3 · รุนแรง (Severe)</span>
+                        </div>
+                        <span class="stage-badge" style="color: #a82e22;">กิ่งโกร๋น</span>
+                    </div>
+                    <p class="stage-desc">
+                        สูญเสียความสามารถในการตอบสนองต่อสิ่งแวดล้อม สื่อสารเป็นประโยคไม่ได้ ติดเตียงหรือเดินไม่ได้ ต้องได้รับการดูแลช่วยเหลืออย่างใกล้ชิดตลอด 24 ชั่วโมง มีความเสี่ยงต่อภาวะแทรกซ้อน เช่น ปอดบวมและการติดเชื้อ
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 05: Home Care -->
+        <section id="section-homecare" class="article-section">
+            <div class="section-header">
+                <div class="section-number">05</div>
+                <h2 class="section-title">ดูแลที่บ้าน — แนวทางการดูแลผู้ป่วยที่บ้าน</h2>
+            </div>
+
+            <p class="section-lead">
+                การสร้างสภาพแวดล้อมที่ปลอดภัยและความเข้าใจจากคนในครอบครัว ช่วยลดความเครียดและเพิ่มคุณภาพชีวิตให้ผู้ป่วย:
+            </p>
+
+            <div class="care-grid">
+                <div class="care-card">
+                    <div class="care-icon-header">
+                        <div class="care-icon">💬</div>
+                        <h3 class="care-title">การสื่อสาร</h3>
+                    </div>
+                    <ul class="care-list">
+                        <li>ใช้ภาษาสั้น กระชับ ชัดเจน น้ำเสียงนุ่มนวล</li>
+                        <li>ถามคำถามปลายปิด เช่น "ทานข้าวหรือก๋วยเตี๋ยวดีครับ" แทนคำถามเปิด</li>
+                        <li>ให้เวลา อดทนรอคำตอบ และไม่พูดแทรกหรือเร่งรัด</li>
+                        <li>สบตาและรอยยิ้มอย่างอ่อนโยนเสมอขณะพูดคุย</li>
+                    </ul>
+                </div>
+
+                <div class="care-card">
+                    <div class="care-icon-header">
+                        <div class="care-icon">🏠</div>
+                        <h3 class="care-title">สภาพแวดล้อม</h3>
+                    </div>
+                    <ul class="care-list">
+                        <li>เปิดไฟให้สว่างเพียงพอ โดยเฉพาะทางเดินไปห้องน้ำยามค่ำคืน</li>
+                        <li>เก็บของมีคม สารเคมี และยาในตู้ล็อกมิดชิด</li>
+                        <li>ติดป้ายชื่อห้องด้วยรูปภาพหรือตัวหนังสือขนาดใหญ่ชัดเจน</li>
+                        <li>ล็อกประตูหรือติดตั้งระบบแจ้งเตือนเพื่อป้องกันการเดินหลงออกนอกบ้าน</li>
+                    </ul>
+                </div>
+
+                <div class="care-card">
+                    <div class="care-icon-header">
+                        <div class="care-icon">🎵</div>
+                        <h3 class="care-title">พฤติกรรมและอารมณ์</h3>
+                    </div>
+                    <ul class="care-list">
+                        <li>ยึดตารางกิจวัตรประจำวันเดิมอย่างสม่ำเสมอสร้างความคุ้นเคย</li>
+                        <li>ใช้เทคนิคการเบี่ยงเบนความสนใจ แทนการโต้เถียงหรือหักล้าง</li>
+                        <li>เปิดเพลงโปรดในอดีตเพื่อช่วยผ่อนคลายและกระตุ้นความทรงจำสุขใจ</li>
+                        <li>ชวนทำกิจกรรมง่าย ๆ เช่น พับผ้า รดน้ำต้นไม้</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 06: Diagnosis & Treatment -->
+        <section id="section-treatment" class="article-section">
+            <div class="section-header">
+                <div class="section-number">06</div>
+                <h2 class="section-title">วินิจฉัยและรักษา</h2>
+            </div>
+
+            <div class="diag-grid">
+                <div class="diag-box">
+                    <h4><span>🔍</span> การตรวจวินิจฉัยทางการแพทย์</h4>
+                    <p>การวินิจฉัยที่แม่นยำต้องอาศัยการตรวจหลายมิติร่วมกัน:</p>
+                    <ul class="care-list">
+                        <li><strong>การซักประวัติ:</strong> สอบถามอย่างละเอียดจากทั้งผู้ป่วยและผู้ดูแลใกล้ชิด</li>
+                        <li><strong>การทดสอบสมอง:</strong> ประเมินด้วยแบบทดสอบมาตรฐาน เช่น MMSE หรือ MoCA</li>
+                        <li><strong>การตรวจภาพสมอง:</strong> MRI หรือ CT Scan เพื่อดูการฝ่อของสมองส่วนฮิปโปแคมปัส</li>
+                        <li><strong>การตรวจเลือด:</strong> เพื่อคัดกรองโรคอื่นที่รักษาหายได้ เช่น ขาดวิตามิน B12 หรือไทรอยด์ทำงานผิดปกติ</li>
+                    </ul>
+                </div>
+
+                <div class="diag-box">
+                    <h4><span>💊</span> แนวทางการรักษาและการชะลอโรค</h4>
+                    <p>ปัจจุบันยังไม่มีวิธีรักษาให้หายขาด แต่มีแนวทางชะลออาการที่มีประสิทธิภาพ:</p>
+                    <div class="treatment-pills" style="margin-bottom: 16px;">
+                        <span class="treatment-pill">💊 Cholinesterase inhibitors</span>
+                        <span class="treatment-pill">🛡 Memantine</span>
+                        <span class="treatment-pill">🎨 Cognitive Stimulation</span>
+                        <span class="treatment-pill">🥗 MIND Diet & Exercise</span>
+                    </div>
+                    <p style="font-size: 0.92rem; color: var(--text-muted); margin: 0;">
+                        • <strong>ยาเพิ่มสารสื่อประสาท:</strong> ช่วยรักษาการทำงานของสมองให้นานขึ้น<br>
+                        • <strong>กิจกรรมฝึกสมอง & ศิลปะดนตรีบำบัด:</strong> เสริมสร้างโครงข่ายประสาท<br>
+                        • <strong>โภชนาการ MIND Diet:</strong> เน้นผักใบเขียว เบอร์รี่ ถั่ว และปลา ร่วมกับการออกกำลังกายสม่ำเสมอ
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 07: Hotlines & Resources -->
+        <section id="section-hotlines" class="article-section">
+            <div class="section-header">
+                <div class="section-number">07</div>
+                <h2 class="section-title">แหล่งข้อมูลอ้างอิงและสายด่วนช่วยเหลือ</h2>
+            </div>
+
+            <!-- Hotline Card -->
+            <div class="hotline-card">
+                <div class="hotline-info">
+                    <div class="hotline-icon">📞</div>
+                    <div>
+                        <div class="hotline-title">สายด่วนสุขภาพจิต (โทรฟรีตลอด 24 ชม.)</div>
+                        <div class="hotline-number">1323</div>
+                    </div>
+                </div>
+                <a href="tel:1323" class="btn-call">
+                    <span>📞</span>
+                    <span>โทรออกทันที</span>
+                </a>
+            </div>
+
+            <p style="font-weight: 600; color: var(--primary-dark); margin-bottom: 12px; font-size: 1.05rem;">
+                🌐 องค์กรและแหล่งข้อมูลทางการแพทย์ที่เชื่อถือได้:
+            </p>
+
+            <div class="links-grid">
+                <a href="https://www.azthai.org/" target="_blank" rel="noopener" class="external-link-card">
+                    <span>สมาคมผู้ดูแลผู้ป่วยสมองเสื่อมแห่งประเทศไทย (AZTHAI)</span>
+                    <span>↗</span>
+                </a>
+
+                <a href="http://www.pni.go.th/" target="_blank" rel="noopener" class="external-link-card">
+                    <span>สถาบันประสาทวิทยา กรมการแพทย์</span>
+                    <span>↗</span>
+                </a>
+
+                <a href="https://www.alz.org/" target="_blank" rel="noopener" class="external-link-card">
+                    <span>Alzheimer's Association (นานาชาติ)</span>
+                    <span>↗</span>
+                </a>
+
+                <a href="https://www.who.int/news-room/fact-sheets/detail/dementia" target="_blank" rel="noopener" class="external-link-card">
+                    <span>องค์การอนามัยโลก (WHO) — Dementia</span>
+                    <span>↗</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Interactive Memory Garden CTA Box -->
+        <div class="garden-cta-box">
+            <h2 class="garden-cta-title">🌱 สนใจเช็กความจำของตัวเองหรือคนที่คุณรัก?</h2>
+            <p class="garden-cta-desc">
+                ลองทำแบบทดสอบ <strong>Memory Garden</strong> — ประเมินภาวะความจำและสมรรถภาพสมองเบื้องต้น ผ่านเกมและเรื่องราวในสวนธรรมชาติ เข้าใจง่าย ใช้เวลาเพียง 10–15 นาที
+            </p>
+            <a href="index.html" class="btn-start-test">
+                <span>🌸</span>
+                <span>เริ่มทำแบบทดสอบ Memory Garden</span>
+                <span>→</span>
+            </a>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer-box">
+            <span style="font-size: 1.4rem;">⚠️</span>
+            <div>
+                <strong>ข้อสงวนสิทธิ์ทางการแพทย์ (Medical Disclaimer):</strong><br>
+                แบบทดสอบและเนื้อหานี้จัดทำขึ้นเพื่อการให้ความรู้และการคัดกรองเบื้องต้นเท่านั้น ไม่สามารถใช้แทนคำแนะนำ การวินิจฉัย หรือการรักษาทางการแพทย์จากแพทย์ผู้เชี่ยวชาญได้ อ้างอิงข้อมูลหลักจาก สมาคมผู้ดูแลผู้ป่วยสมองเสื่อมแห่งประเทศไทย (azthai.org), สถาบันประสาทวิทยา กรมการแพทย์, Alzheimer's Association และ WHO
+            </div>
+        </div>
+
+        <footer class="page-footer">
+            <p>© 2025-2026 สวนความทรงจำ (Memory Garden) | มุ่งมั่นส่งเสริมสุขภาวะสมองของผู้สูงอายุไทย</p>
+        </footer>
+
+    </main>
+
+    <!-- Floating Quick Actions (Back to Top + Read Aloud) -->
+    <div class="floating-actions">
+        <button class="fab-btn" id="tts-btn" onclick="toggleReadAloud()" title="ฟังเสียงอ่าน">
+            🔊
+        </button>
+        <button class="fab-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="กลับขึ้นด้านบน">
+            ↑
+        </button>
+    </div>
+
+    <script>
+        // Reading Progress Indicator
+        window.addEventListener('scroll', () => {
+            const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            const progressBar = document.getElementById('reading-progress');
+            if (progressBar) {
+                progressBar.style.width = scrolled + '%';
+            }
+        });
+
+        // Senior Font Resizer
+        function setFontScale(scale) {
+            document.documentElement.style.setProperty('--font-scale', scale);
+            document.querySelectorAll('.font-btn').forEach(btn => btn.classList.remove('active'));
+            if (scale === 1) {
+                document.getElementById('font-btn-default')?.classList.add('active');
+            } else if (event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+
+        // Text-to-Speech (TTS) for Seniors
+        let isSpeaking = false;
+        function toggleReadAloud() {
+            const ttsBtn = document.getElementById('tts-btn');
+            if (!('speechSynthesis' in window)) {
+                alert('อุปกรณ์ของคุณไม่รองรับการอ่านออกเสียงอัตโนมัติ');
+                return;
+            }
+
+            if (isSpeaking) {
+                window.speechSynthesis.cancel();
+                isSpeaking = false;
+                if (ttsBtn) ttsBtn.innerText = '🔊';
+                return;
+            }
+
+            const title = document.querySelector('.hero-title')?.innerText || '';
+            const subtitle = document.querySelector('.hero-subtitle')?.innerText || '';
+            const intro = document.querySelector('.hero-quote')?.innerText || '';
+            const textToSpeak = `${title} ${subtitle} ${intro} อัลไซเมอร์เริ่มต้นอย่างเงียบ ๆ ยิ่งรู้เร็ว ยิ่งดูแลได้ทัน สามารถเริ่มทำแบบทดสอบความจำได้ที่ปุ่มเริ่มทำแบบทดสอบครับ`;
+
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = 'th-TH';
+            utterance.rate = 0.9; // Slightly slower for senior comprehension
+
+            utterance.onend = () => {
+                isSpeaking = false;
+                if (ttsBtn) ttsBtn.innerText = '🔊';
+            };
+
+            utterance.onerror = () => {
+                isSpeaking = false;
+                if (ttsBtn) ttsBtn.innerText = '🔊';
+            };
+
+            window.speechSynthesis.speak(utterance);
+            isSpeaking = true;
+            if (ttsBtn) ttsBtn.innerText = '⏹';
+        }
+    </script>
+</body>
+
+</html>

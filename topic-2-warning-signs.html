@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>02 · สัญญาณเตือน — 10 สัญญาณเตือนแรกเริ่ม | Memory Garden</title>
+    <meta name="description" content="เจาะลึก 10 สัญญาณเตือนแรกเริ่มของโรคอัลไซเมอร์ พร้อมตัวอย่างสถานการณ์จริงและแบบประเมินอาการเบื้องต้น">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚠️</text></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #3d5e23;
+            --primary-dark: #273d16;
+            --accent: #82954b;
+            --accent-warm: #d97736;
+            --accent-red: #c94a3d;
+            --bg-main: #f5f8f2;
+            --text-main: #27341d;
+            --text-muted: #57664d;
+            --border-color: #dbe5d2;
+            --shadow-sm: 0 4px 12px rgba(45, 66, 23, 0.06);
+            --shadow-md: 0 10px 30px rgba(45, 66, 23, 0.1);
+            --radius-md: 20px;
+            --radius-lg: 28px;
+            --radius-full: 9999px;
+            --font-scale: 1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif; }
+        body {
+            background-color: var(--bg-main); color: var(--text-main); line-height: 1.8;
+            font-size: calc(17px * var(--font-scale));
+            background-image: radial-gradient(circle at 10% 20%, rgba(130, 149, 75, 0.07) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(61, 94, 35, 0.05) 0%, transparent 40%);
+        }
+
+        #progress-bar { position: fixed; top: 0; left: 0; height: 5px; width: 0%; background: linear-gradient(90deg, #82954b, #d97736); z-index: 1000; }
+        .header-nav { position: sticky; top: 0; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); z-index: 900; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--primary-dark); font-weight: 700; font-size: 1.15rem; }
+        .nav-actions { display: flex; align-items: center; gap: 12px; }
+        .font-controls { display: flex; background: #eef4e8; border-radius: var(--radius-full); padding: 3px; gap: 2px; }
+        .font-btn { background: transparent; border: none; padding: 4px 10px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+        .font-btn.active, .font-btn:hover { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+        .btn-test-nav { background: linear-gradient(135deg, var(--accent), var(--primary)); color: white; text-decoration: none; padding: 8px 18px; border-radius: var(--radius-full); font-weight: 600; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; }
+
+        .content-container { max-width: 880px; margin: 0 auto; padding: 24px 20px 80px 20px; }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; flex-wrap: wrap; }
+        .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+        .topic-header { background: linear-gradient(145deg, #ffffff, #fff8ee); border: 1px solid #fae1c3; border-radius: var(--radius-lg); padding: 36px 28px; margin-bottom: 30px; box-shadow: var(--shadow-md); text-align: center; }
+        .topic-tag { display: inline-block; background: #feeeda; color: #b2580b; font-weight: 700; font-size: 0.9rem; padding: 4px 14px; border-radius: var(--radius-full); margin-bottom: 12px; }
+        .topic-title { font-size: 2.1rem; color: var(--primary-dark); margin-bottom: 14px; line-height: 1.35; }
+        .topic-subtitle { font-size: 1.12rem; color: var(--text-muted); max-width: 680px; margin: 0 auto; }
+
+        /* Signs Cards */
+        .sign-item {
+            background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            padding: 24px; margin-bottom: 18px; box-shadow: var(--shadow-sm); transition: all 0.2s;
+            display: flex; gap: 18px; align-items: flex-start;
+        }
+        .sign-item:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .sign-num {
+            background: #eef5e8; color: var(--primary); font-weight: 800; font-size: 1.2rem;
+            width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .sign-content h3 { font-size: 1.2rem; color: var(--primary-dark); margin-bottom: 6px; }
+        .sign-content p { font-size: 0.98rem; color: var(--text-main); line-height: 1.65; margin-bottom: 8px; }
+        .real-case { background: #f9fbf7; border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 6px; font-size: 0.92rem; color: #435436; }
+
+        /* Interactive Checklist */
+        .interactive-checker {
+            background: linear-gradient(135deg, #ffffff, #f1f7ea); border: 2px solid #cde2bd;
+            border-radius: var(--radius-lg); padding: 30px; margin: 35px 0; box-shadow: var(--shadow-md);
+        }
+        .checker-title { font-size: 1.3rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 10px; }
+        .chk-row {
+            display: flex; align-items: center; gap: 12px; background: white; padding: 12px 16px;
+            border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--border-color); cursor: pointer;
+        }
+        .chk-row:hover { background: #fbfdf9; }
+        .chk-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer; }
+        .chk-text { font-size: 0.95rem; }
+
+        #checker-result {
+            margin-top: 18px; padding: 16px 20px; border-radius: 12px; display: none; font-weight: 600;
+        }
+
+        .page-navigation { display: flex; justify-content: space-between; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
+        .nav-btn-step {
+            flex: 1; min-width: 240px; background: white; border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md); padding: 18px 22px; text-decoration: none;
+            color: var(--text-main); transition: all 0.2s; display: flex; flex-direction: column;
+        }
+        .nav-btn-step:hover { border-color: var(--primary); background: #f8fbf6; transform: translateY(-2px); }
+        .nav-step-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+        .nav-step-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-dark); }
+    </style>
+</head>
+
+<body>
+    <div id="progress-bar"></div>
+
+    <header class="header-nav">
+        <a href="index.html" class="nav-brand">
+            <span style="font-size: 1.4rem;">🌿</span>
+            <span>Memory Garden Hub</span>
+        </a>
+        <div class="nav-actions">
+            <div class="font-controls">
+                <button class="font-btn" onclick="setFontScale(0.9)">ก-</button>
+                <button class="font-btn active" id="font-btn-default" onclick="setFontScale(1)">ก</button>
+                <button class="font-btn" onclick="setFontScale(1.15)">ก+</button>
+            </div>
+            <a href="test.html" class="btn-test-nav">
+                <span>🌱</span> <span>เริ่มทำแบบทดสอบ</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="content-container">
+        <nav class="breadcrumb">
+            <a href="index.html">🏠 หน้าแรก</a>
+            <span>/</span>
+            <span>02 · 10 สัญญาณเตือนแรกเริ่ม</span>
+        </nav>
+
+        <header class="topic-header">
+            <span class="topic-tag">หมวดความรู้ที่ 02 / 07</span>
+            <h1 class="topic-title">สัญญาณเตือน — 10 สัญญาณเตือนแรกเริ่ม</h1>
+            <p class="topic-subtitle">สัญญาณเตือนที่สมาคมผู้ดูแลผู้ป่วยสมองเสื่อมแนะนำให้สังเกต ยิ่งสังเกตพบเร็ว ยิ่งเริ่มดูแลได้ทันเวลา</p>
+        </header>
+
+        <div class="sign-item">
+            <div class="sign-num">01</div>
+            <div class="sign-content">
+                <h3>1. หลงลืมเรื่องที่เพิ่งเกิดขึ้น (Memory Loss)</h3>
+                <p>ลืมข้อมูลใหม่ที่เพิ่งคุยไป ลืมวันนัดสำคัญ และถามคำถามเดิมซ้ำหลาย ๆ รอบ แม้เพิ่งได้รับคำตอบไปเมื่อไม่กี่นาทีก่อน</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> ถามว่า "เย็นนี้กินอะไร" ซ้ำกัน 5 ครั้งภายใน 1 ชั่วโมง หรือลืมว่าเพิ่งทานข้าวเสร็จไปเมื่อครู่</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">02</div>
+            <div class="sign-content">
+                <h3>2. วางแผนหรือแก้ปัญหายากขึ้น (Challenges in Planning)</h3>
+                <p>สูญเสียความสามารถในการทำตามขั้นตอน เช่น ปรุงอาหารตามสูตรเดิมที่เคยชำนาญไม่ได้ หรือคำนวณบิลค่าน้ำค่าไฟติดขัด</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> เคยทำกับข้าวอร่อยมาก แต่เริ่มลืมใส่เครื่องปรุงสำคัญ หรือใส่เกลือซ้ำหลายรอบ</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">03</div>
+            <div class="sign-content">
+                <h3>3. ทำกิจวัตรที่คุ้นเคยได้ยาก (Difficulty Completing Familiar Tasks)</h3>
+                <p>เริ่มทำสิ่งง่าย ๆ ในชีวิตประจำวันไม่ถูก เช่น ขับรถไปตลาดประจำแล้วหลงทาง ลืมวิธีใช้ไมโครเวฟ หรือลืมกติกาเกมที่เล่นประจำ</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> ขับรถออกจากบ้านแล้วจำทางกลับไม่ได้ หรือลืมขั้นตอนการเปิดโทรทัศน์</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">04</div>
+            <div class="sign-content">
+                <h3>4. สับสนเรื่องเวลาและสถานที่ (Confusion with Time or Place)</h3>
+                <p>ลืมวัน เดือน ปี ฤดูกาล หรือสับสนช่วงเวลา ไม่รู้ว่าตอนนี้เช้าหรือบ่าย และไม่เข้าใจว่าตนเองมาอยู่ที่นี่ได้อย่างไร</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> แต่งตัวจะไปทำงานตอนตี 2 หรือจำไม่ได้ว่าปีนี้คือ พ.ศ. อะไร</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">05</div>
+            <div class="sign-content">
+                <h3>5. มีปัญหาด้านภาพและมิติสัมพันธ์ (Trouble with Visual & Spatial)</h3>
+                <p>กะระยะทางลำบาก ขับรถเฉี่ยวชนบ่อยขึ้น อ่านหนังสือยากขึ้น หรือแยกแยะความเปรียบต่างของสีได้ยาก</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> วางแก้วน้ำไม่ตรงขอบโต๊ะจนตกแตก หรือมองกระจกแล้วคิดว่ามีคนแปลกหน้าอยู่ในห้อง</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">06</div>
+            <div class="sign-content">
+                <h3>6. มีปัญหาการใช้ภาษา (Problems with Words in Speaking/Writing)</h3>
+                <p>ชะงักกลางคันขณะพูด นึกคำศัพท์ไม่ออก หรือเรียกชื่อสิ่งของผิดด้วยคำแปลก ๆ</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> เรียก "นาฬิกาข้อมือ" เป็น "เครื่องบอกเวลาที่แขน" หรือพูดประโยคไม่จบแล้วลืมว่าจะพูดอะไร</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">07</div>
+            <div class="sign-content">
+                <h3>7. วางของผิดที่และหาไม่เจอ (Misplacing Things)</h3>
+                <p>นำสิ่งของไปวางไว้ในที่ที่ไม่สมควรวางอย่างยิ่ง และไม่สามารถนึกย้อนรอยหาได้ จนเริ่มระแวงว่าถูกคนอื่นขโมยไป</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> นำกุญแจบ้านไปใส่ในตู้เย็น นำรีโมตไปซ่อนในตู้เสื้อผ้า แล้วกล่าวหาว่าคนรับใช้ขโมย</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">08</div>
+            <div class="sign-content">
+                <h3>8. การตัดสินใจแย่ลง (Decreased or Poor Judgment)</h3>
+                <p>ถูกหลอกได้ง่าย ตัดสินใจเรื่องเงินทองผิดพลาดอย่างร้ายแรง หรือละเลยการอาบน้ำทำความสะอาดร่างกาย</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> โอนเงินจำนวนมากให้มิจฉาชีพทางโทรศัพท์ หรือสวมเสื้อกันหนาวหนาในวันที่มีแดดร้อนจัด</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">09</div>
+            <div class="sign-content">
+                <h3>9. ถอนตัวจากสังคมหรืองาน (Withdrawal from Work/Social Activities)</h3>
+                <p>เลิกทำงานอดิเรกที่เคยชื่นชอบ ไม่อยากพบปะเพื่อนฝูงเนื่องจากรู้สึกเหนื่อยล้าและตามบทสนทนาของคนอื่นไม่ทัน</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> เคยชอบไปสังสรรค์เล่นดนตรีกับชมรมผู้สูงอายุ แต่เริ่มเก็บตัวเงียบอยู่แต่ในห้อง</div>
+            </div>
+        </div>
+
+        <div class="sign-item">
+            <div class="sign-num">10</div>
+            <div class="sign-content">
+                <h3>10. บุคลิกภาพและอารมณ์เปลี่ยนแปลง (Changes in Mood & Personality)</h3>
+                <p>กลายเป็นคนขี้ระแวง หงุดหงิดง่าย วิตกกังวล ซึมเศร้า หรือโกรธรุนแรงเมื่อต้องออกจากพื้นที่คุ้นเคย</p>
+                <div class="real-case">💡 <strong>ตัวอย่าง:</strong> เคยเป็นคนใจเย็นและอารมณ์ดี แต่เปลี่ยนเป็นคนฉุนเฉียวและหวาดระแวงคนในครอบครัว</div>
+            </div>
+        </div>
+
+        <!-- Self Assessment Checklist -->
+        <section class="interactive-checker">
+            <h2 class="checker-title">📝 แบบเช็กสัญญาณเตือนเบื้องต้นด้วยตนเอง</h2>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 16px;">
+                ลองติ๊กเลือกข้อที่ท่านหรือคนใกล้ชิดกำลังประสบอยู่บ่อยครั้งในช่วง 3-6 เดือนที่ผ่านมา:
+            </p>
+
+            <label class="chk-row"><input type="checkbox" class="sign-chk" onchange="calcSigns()"> <span class="chk-text">หลงลืมเรื่องใหม่ ๆ ถามเรื่องเดิมซ้ำบ่อย</span></label>
+            <label class="chk-row"><input type="checkbox" class="sign-chk" onchange="calcSigns()"> <span class="chk-text">เริ่มคำนวณเงินหรือปรุงอาหารตามสูตรเดิมลำบาก</span></label>
+            <label class="chk-row"><input type="checkbox" class="sign-chk" onchange="calcSigns()"> <span class="chk-text">ขับรถในเส้นทางที่คุ้นเคยแล้วหลงทาง</span></label>
+            <label class="chk-row"><input type="checkbox" class="sign-chk" onchange="calcSigns()"> <span class="chk-text">สับสนวัน เดือน ปี หรือช่วงเวลา</span></label>
+            <label class="chk-row"><input type="checkbox" class="sign-chk" onchange="calcSigns()"> <span class="chk-text">วางของในที่แปลก ๆ และหาไม่เจอจนระแวงผู้อื่น</span></label>
+            <label class="chk-row"><input type="checkbox" class="sign-chk" onchange="calcSigns()"> <span class="chk-text">อารมณ์เปลี่ยนแปลง หงุดหงิดง่ายหรือแยกตัวจากสังคม</span></label>
+
+            <div id="checker-result"></div>
+        </section>
+
+        <!-- Navigation Next/Prev -->
+        <div class="page-navigation">
+            <a href="topic-1-overview.html" class="nav-btn-step">
+                <span class="nav-step-label">← หัวข้อก่อนหน้า</span>
+                <span class="nav-step-title">01 · ภาพรวมและกลไก</span>
+            </a>
+            <a href="topic-3-comparison.html" class="nav-btn-step" style="text-align: right;">
+                <span class="nav-step-label">หัวข้อถัดไป →</span>
+                <span class="nav-step-title">03 · หลงลืมตามวัย VS อัลไซเมอร์</span>
+            </a>
+        </div>
+    </main>
+
+    <script>
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (document.documentElement.scrollTop / h) * 100;
+            document.getElementById('progress-bar').style.width = scrolled + '%';
+        });
+
+        function setFontScale(scale) {
+            document.documentElement.style.setProperty('--font-scale', scale);
+            document.querySelectorAll('.font-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+        }
+
+        function calcSigns() {
+            const count = document.querySelectorAll('.sign-chk:checked').length;
+            const res = document.getElementById('checker-result');
+            res.style.display = 'block';
+
+            if (count === 0) {
+                res.style.background = '#f0f7ea';
+                res.style.color = '#2e5e1a';
+                res.innerHTML = '🟢 ยังไม่พบสัญญาณเตือนที่ชัดเจน แนะนำให้รักษาสุขภาพและออกกำลังสมองสม่ำเสมอครับ';
+            } else if (count <= 2) {
+                res.style.background = '#fff8e6';
+                res.style.color = '#945c08';
+                res.innerHTML = `🟡 พบสัญญาณเตือน ${count} ข้อ: แนะนำให้เฝ้าสังเกตอาการเพิ่มเติม และลองทำแบบทดสอบ Memory Garden เพื่อตรวจเช็กอย่างละเอียดครับ`;
+            } else {
+                res.style.background = '#fdeeed';
+                res.style.color = '#aa251b';
+                res.innerHTML = `🔴 พบสัญญาณเตือน ${count} ข้อ: แนะนำให้พาไปปรึกษาแพทย์เฉพาะทางด้านระบบประสาทหรือคลินิกความจำ เพื่อรับการตรวจวินิจฉัยอย่างละเอียดครับ`;
+            }
+        }
+    </script>
+</body>
+
+</html>

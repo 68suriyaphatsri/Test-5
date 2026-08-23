@@ -553,7 +553,7 @@ function renderTable(results) {
               })
             : "-";
 
-        const appScore = record.total_score !== undefined ? `${record.total_score} / 15` : "-";
+        const appScore = record.total_score !== undefined ? `${record.total_score} / 30` : "-";
         const appP = record.app_percentile !== undefined ? `P<sub>${record.app_percentile}%</sub>` : "-";
         const paperScore = record.paper_score !== null && record.paper_score !== undefined ? `${record.paper_score} / 30` : `<span style='color:#bbb;'>ยังไม่ลงคะแนน</span>`;
         const paperP = record.paper_percentile !== undefined && record.paper_score !== null ? `P<sub>${record.paper_percentile}%</sub>` : "-";

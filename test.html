@@ -519,14 +519,17 @@
                 </div>
 
                 <!-- Input และปุ่มไมโครโฟน / เพิ่มคำ -->
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                     <input type="text" id="fluency-input" placeholder="พิมพ์ชื่อสัตว์ เช่น ช้าง, ม้า, นก..." style="flex: 1; padding: 12px 14px; border: 1.5px solid #82954b; border-radius: 12px; font-size: 1rem; outline: none; font-family: 'Anuphan', sans-serif; box-sizing: border-box;">
-                    <button type="button" id="fluency-mic-btn" style="background: #e8ede0; border: 1.5px solid #82954b; border-radius: 12px; padding: 0 14px; font-size: 1.25rem; cursor: pointer; color: #4a5d23;" title="แตะเพื่อพูด">🎙️</button>
+                    <button type="button" id="fluency-mic-btn" style="background: #e8ede0; border: 1.5px solid #82954b; border-radius: 12px; padding: 0 14px; font-size: 1.25rem; cursor: pointer; color: #4a5d23; min-width: 48px;" title="แตะครั้งเดียว — ฟังต่อเนื่องตลอด 60 วินาที">🎙️</button>
                     <button type="button" id="fluency-add-btn" style="background: #82954b; color: white; border: none; border-radius: 12px; padding: 0 16px; font-size: 1rem; font-weight: bold; cursor: pointer;">เพิ่ม ➕</button>
                 </div>
+                <div style="font-size: 0.78rem; color: #888; margin-bottom: 8px; text-align: center;">
+                    🔵 กดไมค์ <strong>ครั้งเดียว</strong> — ระบบจะฟังต่อเนื่องจนหมดเวลาโดยอัตโนมัติ
+                </div>
 
-                <div id="fluency-speech-status" style="font-size: 0.85rem; color: #4a5d23; min-height: 1.4em; margin-bottom: 8px; display: none;">
-                    🎙️ กำลังฟังเสียง... พูดชื่อสัตว์ได้เลยครับ
+                <div id="fluency-speech-status" style="font-size: 0.88rem; color: #4a5d23; min-height: 1.6em; margin-bottom: 8px; display: none; padding: 4px 8px; background: #f0f7e6; border-radius: 8px;">
+                    🎙️ กำลังฟังอยู่... พูดชื่อสัตว์ได้เลยครับ
                 </div>
 
                 <!-- รายการคำศัพท์ที่ตอบแล้ว -->

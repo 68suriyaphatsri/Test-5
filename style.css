@@ -1598,3 +1598,168 @@ button:active, .btn-advice:active {
 .page-enter-fade      { animation: tx-fadeIn        0.5s ease both; }
 .page-enter-scale     { animation: tx-scaleIn       0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
 .page-enter-zoom      { animation: tx-zoomOutIn     0.4s ease both; }
+
+/* ===================================================
+   MOBILE RESPONSIVE FIXES — จอโทรศัพท์เล็ก
+   =================================================== */
+
+/* --- Fluency Test: จอแคบ / จอสั้น --- */
+@media (max-width: 480px) {
+    /* Fluency page layout */
+    #fluency-test-page {
+        padding: 16px 12px 70px 12px !important;
+        gap: 10px !important;
+    }
+    #fluency-test-page > div {
+        margin-top: 4px !important;
+        width: 100% !important;
+    }
+    #fluency-test-page h2 {
+        font-size: 1.05rem !important;
+    }
+    /* Input row ให้ fit จอเล็ก */
+    #fluency-test-page div[style*="display: flex"][style*="gap: 8px"] {
+        gap: 6px !important;
+    }
+    #fluency-input {
+        font-size: 0.95rem !important;
+        padding: 10px 10px !important;
+    }
+    #fluency-mic-btn {
+        padding: 0 10px !important;
+        font-size: 1.1rem !important;
+        min-width: 40px !important;
+    }
+    #fluency-add-btn {
+        padding: 0 10px !important;
+        font-size: 0.9rem !important;
+    }
+    /* Word container ความสูงลดลง */
+    #fluency-test-page div[style*="min-height: 90px"] {
+        min-height: 60px !important;
+        max-height: 120px !important;
+    }
+    #fluency-submit-btn {
+        padding: 12px !important;
+        font-size: 0.95rem !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Naming test */
+    #naming-test-page {
+        padding: 16px 10px 70px 10px !important;
+        gap: 10px !important;
+    }
+
+    /* Sentence Repeat */
+    #sentence-repeat-page {
+        padding: 16px 10px 70px 10px !important;
+    }
+
+    /* Math test */
+    #math-test-page {
+        padding: 20px 12px 70px 12px !important;
+    }
+
+    /* Orientation */
+    #orientation-test-page {
+        padding: 20px 12px 70px 12px !important;
+    }
+
+    /* Result page */
+    #result-page {
+        padding: 16px 10px 80px 10px !important;
+    }
+
+    /* Login card */
+    .login-card {
+        margin: 10px !important;
+        padding: 1.5rem 1rem !important;
+    }
+}
+
+/* --- จอสั้น: iPhone SE / Galaxy A / ความสูง ≤ 740px --- */
+@media (max-height: 740px) {
+    /* Fluency — ลดพื้นที่ส่วนบน */
+    #fluency-test-page {
+        padding-top: 10px !important;
+        gap: 8px !important;
+    }
+    #fluency-test-page > div {
+        margin-top: 0 !important;
+    }
+    #fluency-test-page h2 {
+        font-size: 1rem !important;
+        margin-bottom: 4px !important;
+    }
+    #fluency-timer-display {
+        font-size: 1.2rem !important;
+    }
+    /* ลด padding กล่องรายการคำ */
+    #fluency-test-page div[style*="min-height: 90px"] {
+        min-height: 50px !important;
+        max-height: 100px !important;
+        padding: 8px !important;
+    }
+    #fluency-submit-btn {
+        padding: 11px !important;
+        font-size: 0.9rem !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Sentence Repeat — ลดขนาด card */
+    #sentence-repeat-page {
+        padding-top: 10px !important;
+    }
+    #repeat-listen-card, #repeat-action-card {
+        padding: 16px 14px !important;
+    }
+
+    /* Naming — กล่องภาพเล็กลง */
+    #naming-test-page {
+        gap: 8px !important;
+        padding-top: 10px !important;
+    }
+}
+
+/* --- จอสั้นมาก: ≤ 600px height (จอพับ / landscape) --- */
+@media (max-height: 600px) {
+    body { font-size: 15px !important; }
+
+    #fluency-test-page {
+        padding: 6px 10px 60px 10px !important;
+        gap: 6px !important;
+    }
+    #fluency-test-page h2 { font-size: 0.95rem !important; }
+    #fluency-test-page p  { font-size: 0.85rem !important; margin-bottom: 4px !important; }
+    #fluency-test-page div[style*="min-height: 90px"] {
+        min-height: 40px !important;
+        max-height: 80px !important;
+    }
+    #fluency-submit-btn { padding: 9px !important; font-size: 0.85rem !important; }
+
+    /* ซ่อน heading ที่ไม่จำเป็น */
+    #clock-instruction-box h3,
+    #naming-header h2 { font-size: 1rem !important; }
+}
+
+/* --- Safe-area สำหรับ iPhone notch/Dynamic Island / Home indicator --- */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    #fluency-test-page,
+    #math-test-page,
+    #naming-test-page,
+    #sentence-repeat-page,
+    #recall-test-page,
+    #orientation-test-page,
+    #result-page {
+        padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
+/* --- แก้หน้าต่าง test ทุกหน้าให้ scroll ได้เสมอบนจอเล็ก --- */
+[id$="-test-page"],
+[id$="-page"] {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+

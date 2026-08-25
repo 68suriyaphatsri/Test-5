@@ -1685,11 +1685,13 @@ let fluencyWords = [];
 let fluencyTimerInterval = null;
 let fluencyTimeLeft = 60;
 let fluencyRecognition = null;
+let fluencyMicActive = false; // ควบคุม continuous mic loop
 
 function startFluencyTest() {
     fluencyWords = [];
     fluencyScore = 0;
     fluencyTimeLeft = 60;
+    fluencyMicActive = false;
     if (fluencyTimerInterval) clearInterval(fluencyTimerInterval);
 
     const page = document.getElementById('fluency-test-page');
@@ -1839,51 +1841,100 @@ function renderFluencyWord(word) {
     container.appendChild(chip);
 }
 
+// กดไมค์ครั้งเดียว ฟังต่อเนื่องตลอด 60 วินาที
 function toggleFluencyMic() {
     if (fluencyTimeLeft <= 0) return;
     const micBtn = document.getElementById('fluency-mic-btn');
-    const statusEl = document.getElementById('fluency-speech-status');
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         showCustomPopup('ขออภัย เบราว์เซอร์นี้ไม่รองรับการรับเสียงพูด กรุณาพิมพ์คำตอบแทนครับ', '⚠️');
         return;
     }
 
-    if (fluencyRecognition && micBtn.classList.contains('listening')) {
+    if (fluencyMicActive) { // กดซ้ำ = หยุด
         stopFluencyRecognition();
         return;
     }
 
+    fluencyMicActive = true;
+    if (micBtn) { micBtn.classList.add('listening'); micBtn.title = 'แตะเพื่อหยุดฟัง'; }
+    const statusEl = document.getElementById('fluency-speech-status');
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.color = '#4a5d23';
+        statusEl.textContent = '🎙️ กำลังฟังอยู่... พูดชื่อสัตว์ได้เลยครับ (ไม่ต้องกดซ้ำ)';
+    }
+    startFluencyListenLoop();
+}
+
+function startFluencyListenLoop() {
+    if (!fluencyMicActive || fluencyTimeLeft <= 0) { stopFluencyRecognition(); return; }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    fluencyRecognition = new SpeechRecognition();
-    fluencyRecognition.lang = 'th-TH';
-    fluencyRecognition.interimResults = false;
-    fluencyRecognition.maxAlternatives = 1;
-    fluencyRecognition.continuous = false;
+    const rec = new SpeechRecognition();
+    rec.lang = 'th-TH';
+    rec.interimResults = true;
+    rec.maxAlternatives = 3;
+    rec.continuous = false; // false + auto-restart = เสถียรกว่าบน Android/iOS
+    fluencyRecognition = rec;
 
-    fluencyRecognition.onresult = (event) => {
-        const spoken = event.results[0][0].transcript.trim();
-        if (spoken) {
-            const input = document.getElementById('fluency-input');
-            if (input) input.value = spoken;
-            addFluencyWord();
+    const statusEl = document.getElementById('fluency-speech-status');
+
+    rec.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                const spoken = event.results[i][0].transcript.trim();
+                if (spoken) {
+                    const words = spoken.split(/[\s,，、。]+/).filter(w => w.length > 0);
+                    words.forEach(w => {
+                        const inp = document.getElementById('fluency-input');
+                        if (inp) inp.value = w;
+                        addFluencyWord();
+                    });
+                    if (statusEl) statusEl.textContent = '🎙️ กำลังฟังอยู่... พูดชื่อสัตว์ได้เลยครับ';
+                }
+            } else {
+                const interim = event.results[i][0].transcript;
+                if (statusEl && interim) statusEl.textContent = `🎙️ ได้ยิน: "${interim}"...`;
+            }
         }
-        stopFluencyRecognition();
     };
-    fluencyRecognition.onerror = () => stopFluencyRecognition();
-    fluencyRecognition.onend = () => stopFluencyRecognition();
 
-    fluencyRecognition.start();
-    micBtn.classList.add('listening');
-    if (statusEl) statusEl.style.display = 'block';
+    rec.onerror = (e) => {
+        if (!fluencyMicActive) return;
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+            stopFluencyRecognition();
+            showCustomPopup('ไม่สามารถเข้าถึงไมโครโฟนได้ กรุณาอนุญาตและลองใหม่ครับ', '🎙️');
+        } else {
+            setTimeout(() => startFluencyListenLoop(), 250);
+        }
+    };
+
+    rec.onend = () => {
+        if (fluencyMicActive && fluencyTimeLeft > 0) {
+            setTimeout(() => startFluencyListenLoop(), 150);
+        } else {
+            stopFluencyRecognition();
+        }
+    };
+
+    try { rec.start(); } catch (e) {
+        setTimeout(() => { if (fluencyMicActive && fluencyTimeLeft > 0) startFluencyListenLoop(); }, 300);
+    }
 }
 
 function stopFluencyRecognition() {
+    fluencyMicActive = false;
     const micBtn = document.getElementById('fluency-mic-btn');
     const statusEl = document.getElementById('fluency-speech-status');
-    try { if (fluencyRecognition) fluencyRecognition.stop(); } catch (e) {}
+    try {
+        if (fluencyRecognition) {
+            fluencyRecognition.onend = null; // ป้องกัน ghost restart
+            fluencyRecognition.stop();
+        }
+    } catch (e) {}
     fluencyRecognition = null;
-    if (micBtn) micBtn.classList.remove('listening');
+    if (micBtn) { micBtn.classList.remove('listening'); micBtn.title = 'แตะเพื่อพูด'; }
     if (statusEl) statusEl.style.display = 'none';
 }
 

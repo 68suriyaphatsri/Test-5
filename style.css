@@ -1,17 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&family=Prompt:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap');
 
-/* --- 1. Reset & Global Styles --- */
+/* --- 1. Reset & Modern Senior-Friendly Theme --- */
+
+:root {
+    --vh: 1vh;
+    --full-height: 100vh;
+    --primary-green: #4a6b22;
+    --primary-accent: #6b8e23;
+    --nature-gradient: linear-gradient(135deg, #4a6b22 0%, #355115 100%);
+    --card-glass-bg: rgba(255, 255, 255, 0.92);
+    --card-shadow: 0 12px 36px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(74, 107, 34, 0.08);
+    --border-radius-lg: 28px;
+    --border-radius-md: 18px;
+}
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Prompt', 'Anuphan', sans-serif !important;
-    font-weight: 400;
+    font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body, html, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, div, a, label {
-    font-family: 'Prompt', 'Anuphan', sans-serif !important;
+    font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif !important;
 }
 
 button, input[type="button"], input[type="submit"] {
@@ -24,26 +36,21 @@ body,
 html {
     width: 100%;
     height: 100%;
-    overflow-x: hidden; /* เปลี่ยนจาก hidden เป็น overflow-x:hidden เพื่อให้ scroll แนวตั้งได้ */
-    background-color: #fcfcfc;
-    font-size: 16px;
+    overflow-x: hidden;
+    background-color: #f7f9f4;
+    font-size: 17px; /* ปรับขนาดฟอนต์อ่านง่ายสำหรับผู้สูงอายุ */
     line-height: 1.7;
-    color: #333;
+    color: #2b331f;
     -webkit-font-smoothing: antialiased;
 }
 
-/* ตั้ง CSS variable สำหรับ mobile viewport height ที่ถูกต้อง (exclude address bar) */
-:root {
-    --vh: 1vh;
-    --full-height: 100vh;
-}
+h1, h2, h3 { font-weight: 700; line-height: 1.35; color: #23350e; }
+h4, h5, h6 { font-weight: 600; color: #355115; }
+p { font-weight: 400; font-size: 1.05rem; }
+label { font-weight: 600; font-size: 1.1rem; color: #2d3b19; }
+button { font-weight: 600; font-family: 'Anuphan', sans-serif; font-size: 1.1rem; }
+input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; font-size: 1.1rem; }
 
-h1, h2, h3 { font-weight: 700; line-height: 1.4; color: #111; }
-h4, h5, h6 { font-weight: 600; }
-p { font-weight: 400; }
-label { font-weight: 600; }
-button { font-weight: 600; font-family: 'Anuphan', sans-serif; }
-input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 
 
 /* --- 2. Loader Section --- */
@@ -110,48 +117,70 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 }
 
 .login-card {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2.5rem;
-    border-radius: 25px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    max-width: 400px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 2.5rem 2rem;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(74, 107, 34, 0.1);
+    width: 92%;
+    max-width: 440px;
     text-align: center;
 }
 
 .input-group {
     text-align: left;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.4rem;
 }
 
 .input-group label {
     display: block;
-    margin-bottom: 5px;
-    color: #555;
-    font-weight: bold;
+    margin-bottom: 8px;
+    color: #2b3a16;
+    font-weight: 700;
+    font-size: 1.05rem;
 }
 
 .input-group input,
 .input-group select {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    font-size: 16px;
+    padding: 14px 16px;
+    border: 2px solid #d4dec3;
+    background: #fcfdfe;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    color: #1f2812;
     outline: none;
+    transition: all 0.25s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    border-color: #5c802b;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(92, 128, 43, 0.18);
 }
 
 #next-btn {
     width: 100%;
-    padding: 14px;
-    background: #764ba2;
+    padding: 16px;
+    background: linear-gradient(135deg, #4a6b22, #355115);
     color: white;
     border: none;
-    border-radius: 10px;
-    font-size: 1.1rem;
+    border-radius: 50px;
+    font-size: 1.15rem;
+    font-weight: bold;
     cursor: pointer;
-    transition: 0.3s;
+    box-shadow: 0 6px 20px rgba(74, 107, 34, 0.35);
+    transition: all 0.25s ease;
 }
+
+#next-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(74, 107, 34, 0.45);
+}
+
 
 .line-btn:hover {
     background-color: #05b34c !important;
@@ -294,12 +323,23 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 
 #clock-face {
     position: relative;
-    width: 300px;
-    height: 300px;
+    width: clamp(330px, 88vw, 370px);
+    height: clamp(330px, 88vw, 370px);
     margin: 0 auto;
     background: white;
     border-radius: 50%;
     box-shadow: 0 0 0 6px #e8e8e8, 0 0 0 10px #d0d0d0, 0 8px 32px rgba(0, 0, 0, 0.18);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+}
+
+.clock-snap-animate {
+    animation: clockSnapPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes clockSnapPop {
+    0% { transform: scale(0.85); opacity: 0.5; }
+    60% { transform: scale(1.04); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 
@@ -330,8 +370,8 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 
 .drop-zone {
     position: absolute;
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     border: 2px dashed #88b04b;
     border-radius: 50%;
     display: flex;
@@ -342,11 +382,17 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
     cursor: pointer;
     z-index: 2;
     background: rgba(136, 176, 75, 0.06);
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.15s;
+    -webkit-tap-highlight-color: rgba(136, 176, 75, 0.2);
 }
 
 .drop-zone:hover {
     background: rgba(136, 176, 75, 0.25);
+}
+
+.drop-zone:active {
+    background: rgba(136, 176, 75, 0.4);
+    transform: translate(-50%, -50%) scale(1.12);
 }
 
 .drop-zone.filled {
@@ -355,15 +401,15 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
 }
 
 .draggable-number {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     background: #3d3d3d;
     color: white;
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 50%;
-    font-weight: bold;
+    font-weight: 700;
     font-size: 0.95rem;
     cursor: pointer;
     z-index: 100;
@@ -373,12 +419,14 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
     transition: transform 0.1s, box-shadow 0.1s;
     flex-shrink: 0;
+    min-width: 34px;
+    min-height: 34px;
 }
 
 .draggable-number.selected {
     background: #88b04b !important;
     transform: scale(1.15);
-    box-shadow: 0 0 12px rgba(136, 176, 75, 0.8);
+    box-shadow: 0 0 14px rgba(136, 176, 75, 0.9);
     outline: 2px solid white;
 }
 
@@ -461,6 +509,73 @@ input, select { font-family: 'Anuphan', sans-serif; font-weight: 400; }
     box-shadow: 0 6px 20px rgba(130, 149, 75, 0.45);
 }
 
+/* --- Uniform Full-Bleed Background & Fixed Dark Overlay for All Test Pages --- */
+#memory-test-page,
+#clock-test-page,
+#math-test-page,
+#naming-test-page,
+#sentence-repeat-page,
+#fluency-test-page,
+#recall-test-page,
+#orientation-test-page,
+#farewell-page {
+    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif') center center / cover no-repeat fixed !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+/* หน้าที่มีเนื้อหายาว (scroll ได้) ต้องใช้ background-attachment: scroll
+   เพราะ fixed ทำให้ scroll เสียบน iOS Safari และ content ล้นจอ */
+#naming-test-page,
+#sentence-repeat-page,
+#fluency-test-page,
+#recall-test-page,
+#orientation-test-page {
+    background-attachment: scroll !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100vh;
+    height: var(--full-height, 100vh);
+    /* padding-bottom เผื่อปุ่มส่งคำตอบไม่ถูกบัง */
+    padding-bottom: 90px;
+}
+
+#memory-test-page::before,
+#clock-test-page::before,
+#math-test-page::before,
+#naming-test-page::before,
+#sentence-repeat-page::before,
+#fluency-test-page::before,
+#recall-test-page::before,
+#orientation-test-page::before,
+#farewell-page::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+    z-index: 0;
+}
+
+#memory-test-page > *,
+#clock-test-page > *,
+#math-test-page > *,
+#naming-test-page > *,
+#sentence-repeat-page > *,
+#fluency-test-page > *,
+#recall-test-page > *,
+#orientation-test-page > *,
+#farewell-page > * {
+    position: relative;
+    z-index: 1;
+}
 
 /* --- 6. Animations & Overlays --- */
 
@@ -930,21 +1045,7 @@ body.show-result {
 }
 
 
-/* --- Memory Test Page --- */
-
-#memory-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep.gif') center center / cover no-repeat;
-    position: fixed;
-}
-
-#memory-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 0;
-    pointer-events: none;
-}
+/* --- Memory Test Page Content Styles --- */
 
 #words-container {
     position: relative;
@@ -961,32 +1062,8 @@ body.show-result {
     z-index: 1;
 }
 
-#memory-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%202.gif') center center / cover no-repeat;
-}
 
-#memory-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    pointer-events: none;
-}
-
-
-/* --- Math Test Page --- */
-
-#math-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%203.png') center center / cover no-repeat;
-}
-
-#math-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    pointer-events: none;
-}
+/* --- Math Test Page Content Styles --- */
 
 #math-paper {
     position: relative;
@@ -1024,19 +1101,7 @@ body.show-result {
 }
 
 
-/* --- Naming Test Page --- */
-
-#naming-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%203.png') center center / cover no-repeat;
-}
-
-#naming-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    pointer-events: none;
-}
+/* --- Naming Test Page Content Styles --- */
 
 #naming-header {
     position: relative;
@@ -1076,20 +1141,48 @@ body.show-result {
     box-shadow: 0 6px 20px rgba(130, 149, 75, 0.45);
 }
 
+/* --- Category Fluency Test Page Content Styles --- */
 
-/* --- Recall Test Page --- */
-
-#recall-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep.gif') center center / cover no-repeat;
+.fluency-word-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #f0f7e6;
+    color: #4a5d23;
+    border: 1px solid #82954b;
+    border-radius: 20px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-#recall-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    pointer-events: none;
+.fluency-word-chip .chip-delete {
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #c0392b;
+    margin-left: 2px;
 }
+
+#fluency-mic-btn.listening {
+    background: #ff7675 !important;
+    color: white !important;
+    border-color: #d63031 !important;
+    animation: micPulse 1.2s infinite alternate;
+}
+
+@keyframes micPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 rgba(231, 76, 60, 0.4); }
+    100% { transform: scale(1.1); box-shadow: 0 0 16px rgba(231, 76, 60, 0.8); }
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+
+/* --- Recall Test Page Content Styles --- */
 
 #recall-input-container {
     position: relative;
@@ -1110,19 +1203,7 @@ body.show-result {
 }
 
 
-/* --- Orientation Test Page --- */
-
-#orientation-test-page {
-    background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/sleep%204.png') center center / cover no-repeat;
-}
-
-#orientation-test-page::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    pointer-events: none;
-}
+/* --- Orientation Test Page Content Styles --- */
 
 #orientation-input-container {
     position: relative;
@@ -1411,7 +1492,36 @@ body.show-result {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* --- Premium Button Global Styles --- */
+/* --- Senior Accessibility & Modern Glass Cards --- */
+
+.audio-btn, button[title*="ฟังเสียง"] {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.audio-btn:active, button[title*="ฟังเสียง"]:active {
+    transform: scale(0.92);
+}
+
+/* Glassmorphism Card Utilities */
+.glass-card {
+    background: rgba(255, 255, 255, 0.93) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.7) !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(74, 107, 34, 0.08) !important;
+}
+
+/* High Contrast Input Fields for Elderly Users */
+input[type="text"], input[type="number"], select {
+    font-size: 1.15rem !important;
+    line-height: 1.5 !important;
+}
+
+/* Premium Button Global Styles */
 button, .btn-advice {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     position: relative;
@@ -1422,8 +1532,8 @@ button, .btn-advice {
 
 button:hover, .btn-advice:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(130, 149, 75, 0.3) !important;
-    filter: brightness(1.08);
+    box-shadow: 0 6px 20px rgba(74, 107, 34, 0.3) !important;
+    filter: brightness(1.05);
 }
 
 button:active, .btn-advice:active {
@@ -1434,6 +1544,7 @@ button:active, .btn-advice:active {
 #close-hospital-modal:hover {
     transform: scale(1.15) !important;
 }
+
 
 
 /* ============================================================
@@ -1487,3 +1598,168 @@ button:active, .btn-advice:active {
 .page-enter-fade      { animation: tx-fadeIn        0.5s ease both; }
 .page-enter-scale     { animation: tx-scaleIn       0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
 .page-enter-zoom      { animation: tx-zoomOutIn     0.4s ease both; }
+
+/* ===================================================
+   MOBILE RESPONSIVE FIXES — จอโทรศัพท์เล็ก
+   =================================================== */
+
+/* --- Fluency Test: จอแคบ / จอสั้น --- */
+@media (max-width: 480px) {
+    /* Fluency page layout */
+    #fluency-test-page {
+        padding: 16px 12px 70px 12px !important;
+        gap: 10px !important;
+    }
+    #fluency-test-page > div {
+        margin-top: 4px !important;
+        width: 100% !important;
+    }
+    #fluency-test-page h2 {
+        font-size: 1.05rem !important;
+    }
+    /* Input row ให้ fit จอเล็ก */
+    #fluency-test-page div[style*="display: flex"][style*="gap: 8px"] {
+        gap: 6px !important;
+    }
+    #fluency-input {
+        font-size: 0.95rem !important;
+        padding: 10px 10px !important;
+    }
+    #fluency-mic-btn {
+        padding: 0 10px !important;
+        font-size: 1.1rem !important;
+        min-width: 40px !important;
+    }
+    #fluency-add-btn {
+        padding: 0 10px !important;
+        font-size: 0.9rem !important;
+    }
+    /* Word container ความสูงลดลง */
+    #fluency-test-page div[style*="min-height: 90px"] {
+        min-height: 60px !important;
+        max-height: 120px !important;
+    }
+    #fluency-submit-btn {
+        padding: 12px !important;
+        font-size: 0.95rem !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Naming test */
+    #naming-test-page {
+        padding: 16px 10px 70px 10px !important;
+        gap: 10px !important;
+    }
+
+    /* Sentence Repeat */
+    #sentence-repeat-page {
+        padding: 16px 10px 70px 10px !important;
+    }
+
+    /* Math test */
+    #math-test-page {
+        padding: 20px 12px 70px 12px !important;
+    }
+
+    /* Orientation */
+    #orientation-test-page {
+        padding: 20px 12px 70px 12px !important;
+    }
+
+    /* Result page */
+    #result-page {
+        padding: 16px 10px 80px 10px !important;
+    }
+
+    /* Login card */
+    .login-card {
+        margin: 10px !important;
+        padding: 1.5rem 1rem !important;
+    }
+}
+
+/* --- จอสั้น: iPhone SE / Galaxy A / ความสูง ≤ 740px --- */
+@media (max-height: 740px) {
+    /* Fluency — ลดพื้นที่ส่วนบน */
+    #fluency-test-page {
+        padding-top: 10px !important;
+        gap: 8px !important;
+    }
+    #fluency-test-page > div {
+        margin-top: 0 !important;
+    }
+    #fluency-test-page h2 {
+        font-size: 1rem !important;
+        margin-bottom: 4px !important;
+    }
+    #fluency-timer-display {
+        font-size: 1.2rem !important;
+    }
+    /* ลด padding กล่องรายการคำ */
+    #fluency-test-page div[style*="min-height: 90px"] {
+        min-height: 50px !important;
+        max-height: 100px !important;
+        padding: 8px !important;
+    }
+    #fluency-submit-btn {
+        padding: 11px !important;
+        font-size: 0.9rem !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Sentence Repeat — ลดขนาด card */
+    #sentence-repeat-page {
+        padding-top: 10px !important;
+    }
+    #repeat-listen-card, #repeat-action-card {
+        padding: 16px 14px !important;
+    }
+
+    /* Naming — กล่องภาพเล็กลง */
+    #naming-test-page {
+        gap: 8px !important;
+        padding-top: 10px !important;
+    }
+}
+
+/* --- จอสั้นมาก: ≤ 600px height (จอพับ / landscape) --- */
+@media (max-height: 600px) {
+    body { font-size: 15px !important; }
+
+    #fluency-test-page {
+        padding: 6px 10px 60px 10px !important;
+        gap: 6px !important;
+    }
+    #fluency-test-page h2 { font-size: 0.95rem !important; }
+    #fluency-test-page p  { font-size: 0.85rem !important; margin-bottom: 4px !important; }
+    #fluency-test-page div[style*="min-height: 90px"] {
+        min-height: 40px !important;
+        max-height: 80px !important;
+    }
+    #fluency-submit-btn { padding: 9px !important; font-size: 0.85rem !important; }
+
+    /* ซ่อน heading ที่ไม่จำเป็น */
+    #clock-instruction-box h3,
+    #naming-header h2 { font-size: 1rem !important; }
+}
+
+/* --- Safe-area สำหรับ iPhone notch/Dynamic Island / Home indicator --- */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    #fluency-test-page,
+    #math-test-page,
+    #naming-test-page,
+    #sentence-repeat-page,
+    #recall-test-page,
+    #orientation-test-page,
+    #result-page {
+        padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
+/* --- แก้หน้าต่าง test ทุกหน้าให้ scroll ได้เสมอบนจอเล็ก --- */
+[id$="-test-page"],
+[id$="-page"] {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+

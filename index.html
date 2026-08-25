@@ -3,669 +3,731 @@
 
 <head>
     <meta charset="UTF-8">
-    <script>
-        (function() {
-            var ua = navigator.userAgent || navigator.vendor || window.opera;
-            var isLine = ua.indexOf('Line') > -1 || ua.indexOf('LINE') > -1;
-            if (isLine) {
-                var currentUrl = window.location.href;
-                if (currentUrl.indexOf('openExternalBrowser=1') === -1) {
-                    var connector = currentUrl.indexOf('?') > -1 ? '&' : '?';
-                    var targetUrl = currentUrl + connector + 'openExternalBrowser=1';
-                    
-                    // สั่งเปิดผ่าน External Browser ของ LINE
-                    window.location.href = targetUrl;
-                }
-            }
-        })();
-    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Garden - แบบทดสอบความจำ</title>
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
-    <link rel="stylesheet" href="style.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&family=Prompt:wght@300;400;600;700&display=swap"
-        rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <title>Memory Garden — ศูนย์ความรู้โรคอัลไซเมอร์และประเมินสุขภาพสมอง</title>
+    <meta name="description" content="เข้าใจอัลไซเมอร์ ก่อนที่ความทรงจำจะร่วงหล่น คู่มือความรู้ครบวงจร 7 หมวดหมู่ อ้างอิงสมาคมผู้ดูแลผู้ป่วยสมองเสื่อมแห่งประเทศไทย พร้อมแบบทดสอบความจำ Memory Garden">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --clock-size: 300px;
+            --primary: #3d5e23;
+            --primary-light: #527a32;
+            --primary-dark: #273d16;
+            --accent: #82954b;
+            --accent-gold: #d49a37;
+            --accent-warm: #d97736;
+            --bg-main: #f5f8f2;
+            --bg-card: #ffffff;
+            --text-main: #27341d;
+            --text-muted: #57664d;
+            --border-color: #dbe5d2;
+            --shadow-sm: 0 4px 12px rgba(45, 66, 23, 0.06);
+            --shadow-md: 0 10px 30px rgba(45, 66, 23, 0.1);
+            --shadow-lg: 0 18px 45px rgba(45, 66, 23, 0.14);
+            --radius-md: 20px;
+            --radius-lg: 28px;
+            --radius-full: 9999px;
+            --font-scale: 1;
         }
 
-        @media (min-width: 768px) {
-            :root {
-                --clock-size: 350px;
-            }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- สไตล์หน้า Farewell (หน้าบอกลา) --- */
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            font-size: calc(17px * var(--font-scale));
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(130, 149, 75, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(61, 94, 35, 0.06) 0%, transparent 40%);
+            overflow-x: hidden;
+        }
 
-        #farewell-page {
-            display: none;
+        /* Top Progress Bar */
+        #progress-bar {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            flex-direction: column;
-            justify-content: flex-end;
+            height: 5px;
+            width: 0%;
+            background: linear-gradient(90deg, #82954b, #d49a37);
+            z-index: 1000;
+        }
+
+        /* Header Navigation */
+        .header-nav {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 900;
+            padding: 12px 24px;
+            display: flex;
             align-items: center;
-            z-index: 9000;
-            text-align: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--primary-dark);
+            font-weight: 700;
+            font-size: 1.18rem;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .font-controls {
+            display: flex;
+            background: #eef4e8;
+            border-radius: var(--radius-full);
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .font-btn {
+            background: transparent;
+            border: none;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .font-btn.active, .font-btn:hover {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        }
+
+        .btn-test-nav {
+            background: linear-gradient(135deg, var(--accent), var(--primary));
             color: white;
-            padding-bottom: 10vh;
+            text-decoration: none;
+            padding: 9px 20px;
+            border-radius: var(--radius-full);
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(61, 94, 35, 0.25);
+            transition: all 0.2s;
         }
 
-        #farewell-text {
-            font-size: 1.3rem;
-            line-height: 1.8;
-            max-width: 85%;
-            font-weight: 300;
-            color: #ffffff;
-            margin-bottom: 20px;
+        .btn-test-nav:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(61, 94, 35, 0.35);
         }
 
-        .loading-dots {
+        .btn-admin-nav {
+            background: rgba(130, 149, 75, 0.12);
+            color: var(--primary-dark);
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            font-size: 0.88rem;
+            border: 1px solid rgba(130, 149, 75, 0.25);
+        }
+
+        /* Container */
+        .portal-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 30px 20px 80px 20px;
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            background: linear-gradient(145deg, #ffffff, #f0f7ea);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 46px 30px 40px 30px;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 35px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-banner::before {
+            content: '🍃';
+            position: absolute;
+            font-size: 8rem;
+            opacity: 0.08;
+            top: -20px;
+            left: 20px;
+            pointer-events: none;
+            transform: rotate(-25deg);
+        }
+
+        .hero-banner::after {
+            content: '🌿';
+            position: absolute;
+            font-size: 8rem;
+            opacity: 0.08;
+            bottom: -20px;
+            right: 20px;
+            pointer-events: none;
+            transform: rotate(20deg);
+        }
+
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e4eee0;
+            color: var(--primary);
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
             font-size: 0.9rem;
-            opacity: 0.6;
-            color: #aaaaaa;
+            font-weight: 600;
+            margin-bottom: 18px;
+            border: 1px solid #cfddc8;
         }
 
-        /* ส่วนอื่นๆ คงเดิม */
+        .source-badge a {
+            color: var(--primary-dark);
+            text-decoration: underline;
+            font-weight: 700;
+        }
+
+        .hero-h1 {
+            font-size: 2.3rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            line-height: 1.35;
+            margin-bottom: 16px;
+        }
+
+        .hero-desc {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 720px;
+            margin: 0 auto 26px auto;
+            line-height: 1.75;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .btn-hero-primary {
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            color: white;
+            text-decoration: none;
+            padding: 15px 32px;
+            border-radius: var(--radius-full);
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 6px 20px rgba(61, 94, 35, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s;
+        }
+
+        .btn-hero-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(61, 94, 35, 0.4);
+        }
+
+        .btn-hero-secondary {
+            background: white;
+            color: var(--primary-dark);
+            text-decoration: none;
+            padding: 15px 26px;
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            font-size: 1.05rem;
+            border: 1.5px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-hero-secondary:hover {
+            border-color: var(--primary);
+            background: #fafcf8;
+        }
+
+        /* 4 Key Metrics */
+        .metrics-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 35px;
+        }
+
+        .metric-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px 18px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .metric-val {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Section Heading */
+        .section-title-wrap {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .section-title-wrap h2 {
+            font-size: 1.7rem;
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .section-title-wrap p {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+
+        /* 7 Topic Cards Grid */
+        .topics-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+            margin-bottom: 40px;
+        }
+
+        .topic-entry-card {
+            background: white;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 26px 24px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topic-entry-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            background: #fbfdf9;
+        }
+
+        .topic-left {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .topic-icon-badge {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            background: #f0f7ea;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            border: 1px solid #d4e5c6;
+        }
+
+        .topic-info h3 {
+            font-size: 1.25rem;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .topic-badge-num {
+            background: #eef5e8;
+            color: var(--primary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+        }
+
+        .topic-info p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .topic-arrow {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f4f8f0;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .topic-entry-card:hover .topic-arrow {
+            background: var(--primary);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        /* Memory Garden Test Feature Box */
+        .garden-feature-box {
+            background: linear-gradient(135deg, #2e4d1b, #456b26);
+            color: white;
+            border-radius: var(--radius-lg);
+            padding: 42px 30px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 35px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .garden-feature-box::before {
+            content: '🌸';
+            position: absolute;
+            font-size: 9rem;
+            opacity: 0.08;
+            top: -25px;
+            right: -10px;
+            pointer-events: none;
+        }
+
+        .garden-feature-h2 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .garden-feature-p {
+            font-size: 1.05rem;
+            max-width: 680px;
+            margin: 0 auto 28px auto;
+            color: #e2edd8;
+            line-height: 1.75;
+        }
+
+        .btn-launch-test {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #ffffff;
+            color: var(--primary-dark);
+            text-decoration: none;
+            padding: 16px 36px;
+            border-radius: var(--radius-full);
+            font-size: 1.15rem;
+            font-weight: 700;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+            transition: all 0.25s;
+        }
+
+        .btn-launch-test:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+        }
+
+        /* Disclaimer & Footer */
+        .disclaimer-strip {
+            background: #fff9e6;
+            border: 1px solid #ffe082;
+            border-radius: var(--radius-md);
+            padding: 18px 22px;
+            font-size: 0.88rem;
+            color: #6d5400;
+            line-height: 1.7;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .portal-footer {
+            text-align: center;
+            padding: 30px 20px 10px 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 650px) {
+            .hero-h1 { font-size: 1.75rem; }
+            .topic-entry-card { flex-direction: column; align-items: flex-start; gap: 14px; }
+            .topic-arrow { align-self: flex-end; }
+        }
     </style>
 </head>
 
 <body>
+    <div id="progress-bar"></div>
 
-    <div id="loader-wrapper">
-        <p
-            style="color: white; margin-top: 20px; position: relative; z-index: 10; text-shadow: 0 2px 12px rgba(0,0,0,0.8); font-size: 1.1rem; letter-spacing: 2px;">
-            กําลังโหลด...</p>
-        <div class="progress-container" style="position: relative; z-index: 10;">
-            <div id="progress-bar"></div>
-        </div>
-    </div>
+    <!-- Header Navigation -->
+    <header class="header-nav">
+        <a href="index.html" class="nav-brand">
+            <span style="font-size: 1.5rem;">🌿</span>
+            <span>Memory Garden</span>
+        </a>
 
-    <div id="white-fade-overlay"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; z-index: 99999; opacity: 0; pointer-events: none;">
-    </div>
-
-    <!-- Page Transition Overlay -->
-    <div id="page-transition-overlay"></div>
-
-    <!-- หน้า LINE Login -->
-    <div id="line-login-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; z-index: 540; background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif') center/cover no-repeat; overflow-y: auto;">
-        <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.55); pointer-events: none; z-index: 0;"></div>
-        <div class="login-card"
-            style="position: relative; z-index: 1; background: rgba(255,255,255,0.95); border-radius: 28px; padding: 40px 30px; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.3);">
-            <div style="font-size: 3.5rem; margin-bottom: 12px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));">🧠
-            </div>
-            <h2 style="color: #4a5d23; font-size: 1.6rem; margin-bottom: 6px; font-weight: 700;">Memory Garden</h2>
-            <p style="color: #666; font-size: 0.95rem; margin-bottom: 30px;">ยินดีต้อนรับสู่ระบบประเมินสุขภาพสมอง</p>
-
-            <!-- สำหรับคนที่ยังไม่ได้ Login -->
-            <div id="line-unauth-section">
-                <button id="line-login-btn" class="line-btn"
-                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; background: #06C755; color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(6,199,85,0.3); margin-bottom: 10px;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                        style="fill: white;">
-                        <path
-                            d="M12 2C6.477 2 2 5.82 2 10.53C2 12.87 3.12 14.97 4.96 16.4C4.58 17.75 3.91 19.89 3.73 20.46C3.51 21.14 4.04 21.05 4.3 20.89C6.41 19.5 8.91 17.89 9.61 17.47C10.37 17.73 11.17 17.87 12 17.87C17.52 17.87 22 14.05 22 9.34C22 4.63 17.52 2 12 2ZM8.82 12.18H7.3V8.89H8.82V12.18ZM11.66 10.45H10.14V8.89H11.66V10.45ZM14.5 12.18H12.98V8.89H14.5V12.18ZM17.34 10.45H15.82V8.89H17.34V10.45Z" />
-                    </svg>
-                    เข้าสู่ระบบด้วย LINE
-                </button>
+        <div class="nav-actions">
+            <!-- Senior Font Size Controls -->
+            <div class="font-controls" title="ปรับขนาดตัวหนังสือ">
+                <button class="font-btn" onclick="setFontScale(0.9)">ก-</button>
+                <button class="font-btn active" id="font-btn-default" onclick="setFontScale(1)">ก</button>
+                <button class="font-btn" onclick="setFontScale(1.15)">ก+</button>
             </div>
 
-            <!-- สำหรับคนที่ Login แล้ว -->
-            <div id="line-auth-section" style="display: none;">
-                <div
-                    style="display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 24px;">
-                    <img id="line-user-avatar" src="" alt="LINE Avatar"
-                        style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #82954b; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-                    <div>
-                        <p style="color: #888; font-size: 0.85rem; margin-bottom: 2px;">เข้าสู่ระบบในชื่อ</p>
-                        <p id="line-user-name" style="font-size: 1.15rem; font-weight: 700; color: #333;"></p>
-                    </div>
-                </div>
-                <button id="line-continue-btn"
-                    style="width: 100%; padding: 14px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(130,149,75,0.35); margin-bottom: 10px;">ดำเนินการต่อ
-                    →</button>
-                <button id="line-history-btn"
-                    style="width: 100%; padding: 12px; background: rgba(130,149,75,0.1); color: #82954b; border: 2px solid rgba(130,149,75,0.35); border-radius: 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <span style="font-size: 1.1rem;">📊</span> ดูประวัติผลการทดสอบ
-                </button>
-                <a href="admin.html" target="_blank"
-                    style="color: #4a5d23; font-size: 0.88rem; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 12px; background: rgba(130,149,75,0.12); padding: 8px 18px; border-radius: 50px;">🔐 เข้าสู่ระบบผู้ดูแลระบบ (Admin Dashboard)</a>
-            </div>
+            <a href="admin.html" target="_blank" class="btn-admin-nav" title="Admin Panel">🔐 Admin</a>
+
+            <a href="test.html" class="btn-test-nav">
+                <span>🌱</span>
+                <span>เริ่มทำแบบทดสอบ</span>
+            </a>
         </div>
-    </div>
+    </header>
 
-    <!-- หน้าแนะนำแอป -->
-    <div id="intro-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 550; background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif') center/cover no-repeat; overflow-y: auto;">
-        <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); pointer-events: none; z-index: 0;"></div>
-        <div
-            style="position: relative; z-index: 1; background: rgba(255,255,255,0.97); border-radius: 28px; padding: 36px 28px; max-width: 480px; width: 92%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.25); margin: 24px 0 40px 0;">
+    <main class="portal-container">
 
-            <div style="font-size: 3rem; margin-bottom: 8px;">🧠</div>
-            <h2 style="color: #4a5d23; font-size: 1.5rem; margin-bottom: 4px;">การประเมินสุขภาพสมองเบื้องต้น</h2>
-            <p style="color: #82954b; font-size: 0.95rem; margin-bottom: 6px; font-weight: bold;">สำหรับผู้สูงอายุ</p>
-            <p style="color: #888; font-size: 0.88rem; margin-bottom: 24px;">⏱ ใช้เวลาประมาณ 10–15 นาที &nbsp;|&nbsp;
-                ทำได้ตามจังหวะของตัวเอง</p>
-
-            <!-- แอปนี้คืออะไร -->
-            <div
-                style="background: #f0f7e6; border-radius: 16px; padding: 16px 18px; margin-bottom: 14px; text-align: left;">
-                <p style="font-weight: bold; color: #4a5d23; margin-bottom: 6px; font-size: 1rem;">💡 แอปนี้คืออะไร?</p>
-                <p style="margin: 0; color: #3a3a3a; font-size: 0.92rem; line-height: 1.7;">
-                    แอปนี้ช่วยประเมินการทำงานของสมองในด้านต่างๆ เช่น ความจำ สมาธิ และการรับรู้วันเวลา
-                    เพื่อให้คุณและครอบครัวได้รู้จักสุขภาพสมองของตัวเองมากขึ้น และนำผลไปปรึกษาแพทย์ได้</p>
+        <!-- Hero Section -->
+        <section class="hero-banner">
+            <div class="source-badge">
+                <span>📖</span>
+                <span>อ้างอิงข้อมูล: <a href="https://www.azthai.org/" target="_blank" rel="noopener">สมาคมผู้ดูแลผู้ป่วยสมองเสื่อมแห่งประเทศไทย (azthai.org)</a></span>
             </div>
 
-            <!-- ขั้นตอนทั้งหมด -->
-            <div style="text-align: left; margin-bottom: 14px;">
-                <p style="font-weight: bold; color: #4a5d23; margin-bottom: 10px; font-size: 1rem;">📋 ขั้นตอนและหมวดการประเมิน (เต็ม 15 คะแนน)</p>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-
-                    <div
-                        style="display: flex; align-items: flex-start; gap: 12px; background: #f9f9f9; border-radius: 12px; padding: 12px 14px; border-left: 4px solid #82954b;">
-                        <span style="font-size: 1.3rem; min-width: 28px;">1️⃣</span>
-                        <div>
-                            <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                กรอกข้อมูลส่วนตัว</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">กรอกอายุ เพศ ระดับการศึกษา และโรคประจำตัว ข้อมูลใช้ปรับเทียบการคำนวณคะแนน</p>
-                        </div>
-                    </div>
-
-                    <div
-                        style="display: flex; align-items: flex-start; gap: 12px; background: #f9f9f9; border-radius: 12px; padding: 12px 14px; border-left: 4px solid #82954b;">
-                        <span style="font-size: 1.3rem; min-width: 28px;">2️⃣</span>
-                        <div>
-                            <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                🧠 ด้านความจำ (เต็ม 3 คะแนน)</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">จดจำคำศัพท์ 3 คำที่แสดงช่วงแรก แล้วพิมพ์ระลึกกลับมาในภายหลัง (หากใช้คำใบ้จะได้ 0 คะแนน)</p>
-                        </div>
-                    </div>
-
-                    <div
-                        style="display: flex; align-items: flex-start; gap: 12px; background: #f9f9f9; border-radius: 12px; padding: 12px 14px; border-left: 4px solid #82954b;">
-                        <span style="font-size: 1.3rem; min-width: 28px;">3️⃣</span>
-                        <div>
-                            <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                🎯 ด้านสมาธิและการคิดคำนวณ (เต็ม 7 คะแนน)</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">วางเลขและปรับเข็มนาฬิกา (4 คะแนน) ร่วมกับการคิดเลขลบจำนวนต่อเนื่อง 5 ครั้ง (3 คะแนน)</p>
-                        </div>
-                    </div>
-
-                    <div
-                        style="display: flex; align-items: flex-start; gap: 12px; background: #f9f9f9; border-radius: 12px; padding: 12px 14px; border-left: 4px solid #82954b;">
-                        <span style="font-size: 1.3rem; min-width: 28px;">4️⃣</span>
-                        <div>
-                            <p style="margin: 0 0 3px 0; font-weight: bold; color: #3a3a3a; font-size: 0.92rem;">
-                                🗺️ ด้านการรับรู้และการบอกชื่อ (เต็ม 5 คะแนน)</p>
-                            <p style="margin: 0; color: #666; font-size: 0.87rem; line-height: 1.6;">พิมพ์บอกชื่อสัตว์จากภาพ (2 คะแนน) และตอบคำถามวันที่ เดือน ปี วันสัปดาห์ รวมถึงจังหวัด (3 คะแนน)</p>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- คะแนนและผลลัพธ์ -->
-            <div
-                style="background: #f0f7e6; border-radius: 16px; padding: 16px 18px; margin-bottom: 14px; text-align: left;">
-                <p style="font-weight: bold; color: #4a5d23; margin-bottom: 6px; font-size: 1rem;">📊 ผลลัพธ์ที่จะได้รับ
-                </p>
-                <p style="margin: 0; color: #3a3a3a; font-size: 0.92rem; line-height: 1.7;">คะแนนรวมสูงสุด 15 คะแนน
-                    แบ่งเป็น 3 ระดับ ได้แก่ ปกติ เสี่ยงบกพร่องเล็กน้อย และควรได้รับการดูแลพิเศษ
-                    พร้อมคำแนะนำเฉพาะบุคคลและกราฟแสดงผลแต่ละด้าน</p>
-            </div>
-
-            <!-- คำเตือน -->
-            <div
-                style="display: flex; align-items: flex-start; gap: 12px; background: #fff8e1; border-radius: 14px; padding: 14px; border: 1px solid #ffe082; margin-bottom: 24px; text-align: left;">
-                <span style="font-size: 1.3rem; min-width: 24px;">⚠️</span>
-                <p style="margin: 0; color: #7a6000; font-size: 0.88rem; line-height: 1.7;">
-                    แบบประเมินนี้เป็นการคัดกรองเบื้องต้นเท่านั้น ไม่สามารถใช้วินิจฉัยโรคได้
-                    หากมีข้อสงสัยหรือกังวลเกี่ยวกับสุขภาพสมอง กรุณาปรึกษาแพทย์หรือผู้เชี่ยวชาญโดยตรงครับ</p>
-            </div>
-
-            <button id="intro-start-btn"
-                style="width: 100%; padding: 16px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(130,149,75,0.35);">เข้าใจแล้ว
-                เริ่มเลย →</button>
-        </div>
-    </div>
-
-    <div id="login-container" style="display: none;">
-        <div class="login-card">
-            <h2>ข้อมูลเบื้องต้น</h2>
-            <form id="info-form">
-                <div class="input-group"><label>ชื่อ - นามสกุล</label><input type="text" id="user-name" placeholder="เช่น สมชาย ใจดี"
-                        required></div>
-                <div class="input-group"><label>อายุ</label><input type="number" id="user-age" placeholder="เช่น 50"
-                        required></div>
-                <div class="input-group">
-                    <label>เพศ</label>
-                    <select id="user-gender" required>
-                        <option value="" disabled selected>เลือกเพศ</option>
-                        <option value="male">ชาย</option>
-                        <option value="female">หญิง</option>
-                        <option value="other">อื่นๆ</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>ระดับวุฒิการศึกษา</label>
-                    <select id="user-education" required>
-                        <option value="" disabled selected>เลือกระดับวุฒิการศึกษา</option>
-                        <option value="ตํ่ากว่ามัธยมศึกษาปีที่ 6">ตํ่ากว่ามัธยมศึกษาปีที่ 6</option>
-                        <option value="สูงกว่ามัธยมศึกษาปีที่ 6 หรือเทียบเท่า">สูงกว่ามัธยมศึกษาปีที่ 6 หรือเทียบเท่า
-                        </option>
-                    </select>
-                </div>
-                <div class="input-group"><label>โรคประจำตัว (ถ้ามี)</label><input type="text" id="user-disease"
-                        placeholder="ระบุ หรือพิมพ์ 'ไม่มี'"></div>
-                <button type="submit" id="next-btn">ถัดไป</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="userid-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; z-index: 600; background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif') center/cover no-repeat;">
-        <div
-            style="background: rgba(255,255,255,0.92); backdrop-filter: blur(10px); border-radius: 28px; padding: 40px 36px; max-width: 360px; width: 88%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.15);">
-            <div style="font-size: 2.5rem; margin-bottom: 12px;">🪪</div>
-            <p style="color: #82954b; font-size: 1rem; margin-bottom: 8px;">รหัสประจำตัวของคุณคือ</p>
-            <h1 id="userid-display" style="font-size: 3rem; color: #4a5d23; letter-spacing: 6px; margin: 0 0 16px 0;">
-            </h1>
-            <p style="color: #888; font-size: 0.95rem; line-height: 1.7; margin-bottom: 28px;">
-                กรุณาจดรหัสนี้ไว้<br>เพื่อใช้อ้างอิงในภายหลัง</p>
-            <button id="userid-next-btn"
-                style="padding: 14px 60px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-size: 1.05rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(130,149,75,0.35);">เริ่มต้น</button>
-        </div>
-    </div>
-
-    <div id="welcome-garden-page" style="display: none; opacity: 0;">
-        <div id="white-fade-overlay"></div>
-        <div class="video-overlay"></div>
-        <div class="welcome-container">
-            <h1 id="typing-text" style="font-size: 20px; color: #ffffff; text-align: center; padding: 0 20px;"></h1>
-            <button id="start-journey-btn" style="display: none; opacity: 0;">เริ่มเดินทาง</button>
-        </div>
-    </div>
-
-    <div id="memory-test-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; overflow: hidden;">
-        <button type="button" onclick="showCustomPopup('📌 คำอธิบายการจดจำคำศัพท์:\n\nระบบจะแสดงคำศัพท์ 3 คำบนหน้าจอเป็นเวลา 4.5 วินาที ให้ท่านตั้งใจจดจำคำทั้ง 3 คำนี้ไว้ เพื่อนำไปตอบในขั้นตอนระลึกถึงด้านหลังครับ', '💡')" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.25); color: white; border: 1.5px solid rgba(255,255,255,0.6); border-radius: 50%; width: 36px; height: 36px; font-weight: bold; cursor: pointer; font-size: 1.1rem; z-index: 1001;" title="คำอธิบาย">ℹ️</button>
-        <div id="words-container" style="display: none; opacity: 0; text-align: center; width: 90%;">
-            <h2 id="memory-words-display"
-                style="color: white; font-size: 8vw; font-weight: bold; letter-spacing: 4px; margin-bottom: 20px;"></h2>
-        </div>
-        <div style="position: absolute; bottom: 12%; width: 100%; text-align: center; padding: 0 20px;">
-            <p id="instruction-text" style="color: white; font-size: 20px; font-family: sans-serif; min-height: 1.5em;">
+            <h1 class="hero-h1">🌿 เข้าใจอัลไซเมอร์<br><span style="color: var(--primary-light);">ก่อนที่ความทรงจำจะร่วงหล่น</span></h1>
+            <p class="hero-desc">
+                อัลไซเมอร์เริ่มต้นอย่างเงียบ ๆ เหมือนใบไม้ที่ค่อย ๆ ร่วงทีละใบ ยิ่งรู้เร็ว ยิ่งดูแลได้ทัน รวบรวมข้อมูลทางการแพทย์ครบวงจรทั้ง 7 หมวดหมู่ พร้อมระบบคัดกรองความจำเบื้องต้น
             </p>
-        </div>
-    </div>
 
-    <div id="clock-test-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: center; align-items: center; z-index: 2000;">
-        <div id="clock-instruction-box" style="text-align: center; max-width: 90%; margin-bottom: 8px; position: relative;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">🕰️ ทดสอบวาดนาฬิกา</span>
-                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบนาฬิกา:\n\n1. แตะนำตัวเลข 1 ถึง 12 ไปวางบนตำแหน่งของหน้าปัดนาฬิกาให้ถูกต้อง\n2. ปรับเข็มสั้นและเข็มยาวให้ชี้ตรงเวลาที่กำหนดคำสั่งครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
-            </div>
-            <p id="clock-instruction"
-                style="font-size: 1rem; color: #444; font-weight: bold; min-height: 2.5em; line-height: 1.5; margin-bottom: 4px;">
-            </p>
-            <p id="clock-hint" style="font-size: 0.85rem; color: #777; margin: 0; display: none;">💡 หากวางเลขผิด
-                สามารถ<b>แตะตัวเลขที่อยู่บนหน้าปัด</b>เพื่อดึงกลับลงมาได้ครับ</p>
-        </div>
-        <div id="numbers-pile"
-            style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 0; width: 90%; max-width: 380px;">
-        </div>
-        <button id="clock-reset-btn"
-            style="display: none; padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(231,76,60,0.3); margin-top: 4px; transition: 0.2s;">🔄
-            เริ่มใหม่ (ล้างหน้าปัด)</button>
-        <div id="clock-face">
-            <div id="clock-hands"
-                style="display: none; position: absolute; width: 100%; height: 100%; pointer-events: none;">
-                <div id="hour-hand" class="hand"></div>
-                <div id="minute-hand" class="hand"></div>
-                <div class="clock-center"></div>
-            </div>
-        </div>
-        <div id="clock-hand-btns"
-            style="display: none; gap: 12px; justify-content: center; flex-wrap: wrap; width: 90%; max-width: 380px;">
-            <button id="btn-hour"
-                style="flex:1; min-width:140px; padding:12px 16px; background:#3d3d3d; color:white; border:none; border-radius:50px; font-size:1rem; cursor:pointer;">🕐
-                เข็มสั้น (ชั่วโมง)</button>
-            <button id="btn-minute"
-                style="flex:1; min-width:140px; padding:12px 16px; background:#e74c3c; color:white; border:none; border-radius:50px; font-size:1rem; cursor:pointer;">🕐
-                เข็มยาว (นาที)</button>
-        </div>
-        <button id="clock-submit-btn" style="display: none;">ส่งคำตอบนาฬิกา</button>
-    </div>
-
-    <div id="naming-test-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2600; padding: 40px 24px; gap: 20px; box-sizing: border-box; overflow-y: auto; backdrop-filter: blur(5px);">
-        <div id="naming-header" style="position: relative;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 8px;">
-                <h2 style="font-size: 1.6rem; color: #3a3a3a; text-align: center; margin: 0;">🌿 การบอกชื่อสิ่งของ</h2>
-                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบการบอกชื่อสิ่งของ:\n\nจะแสดงรูปภาพสิ่งของ 2 ภาพ ให้สังเกตภาพแล้วพิมพ์ชื่อสิ่งของที่เห็นให้ถูกต้องในช่องพิมพ์ด้านล่างแต่ละภาพครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
-            </div>
-            <p style="font-size: 0.95rem; color: #777; margin: 6px 0 0 0; text-align: center;">ดูภาพแล้วพิมพ์ชื่อสิ่งของที่เห็น
-            </p>
-        </div>
-        <div id="naming-cards-container"
-            style="display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 420px;">
-        </div>
-        <button id="naming-submit-btn"
-            style="padding: 14px 60px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-size: 1.05rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(130,149,75,0.35);">ส่งคำตอบ</button>
-    </div>
-
-    <div id="math-test-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2500; overflow-y: auto; padding: 40px 20px 20px 20px; box-sizing: border-box;">
-        <div id="math-paper"
-            style="text-align: center; width: 85%; max-width: 450px; padding: 40px 30px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 30px solid #ffcfcf; position: relative;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px;">
-                <span style="font-size: 1rem; font-weight: bold; color: #4a5d23;">🔢 ทดสอบลบเลขคณิต</span>
-                <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบคำนวณสมาธิ:\n\nระบบจะกำหนดตัวเลขตั้งต้นและตัวเลขลบ ให้ท่านลบเลขต่อเนื่องจำนวน 5 ครั้ง กรอกคำตอบทีละข้อแล้วกดปุ่มถัดไปครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
-            </div>
-            <div id="math-question-container" style="opacity: 0;">
-                <div id="math-display" style="font-size: 4rem; font-weight: bold; color: #333; margin-bottom: 20px;">
-                    <span id="current-num">100</span> - <span id="math-subtractor">7</span>
-                </div>
-                <div style="font-size: 2rem; color: #333; margin-bottom: 30px;">= ?</div>
-                <input type="number" id="math-answer" placeholder="คำตอบ"
-                    style="width: 160px; padding: 15px; font-size: 1.8rem; text-align: center; border: none; border-bottom: 2px solid #82954b; outline: none; background: transparent;">
-            </div>
-            <p style="color: #bbb; font-size: 0.9rem;">ข้อที่ <span id="math-step">1</span> / 5</p>
-        </div>
-        <div id="math-caption" style="margin-top: 40px; opacity: 0;">
-            <p style="color: #5d4037; font-size: 1.3rem; font-weight: bold; text-align: center;">"ลืมไปเลยว่ามีการบ้าน!
-                คุณช่วยเราทําหน่อยได้มั้ย?"
-            </p>
-        </div>
-        <button id="math-next-btn"
-            style="margin-top: 30px; padding: 12px 60px; background: #82954b; color: white; border: none; border-radius: 50px; cursor: pointer; opacity: 0;">ถัดไป</button>
-    </div>
-
-    <div id="recall-test-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2800; padding: 20px 20px 32px; overflow-y: auto; box-sizing: border-box;">
-        <div style="width: 100%; max-width: 420px; margin-top: 30px;">
-            <div id="recall-card"
-                style="width: 100%; text-align: center; background: rgba(255,255,255,0.97); padding: 28px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); backdrop-filter: blur(10px); box-sizing: border-box;">
-                <div id="recall-progress-container" style="width: 100%; margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px;">
-                        <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">💭 ทดสอบการระลึกถึง (ความจำ)</span>
-                        <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบระลึกคำศัพท์:\n\nพิมพ์คำศัพท์ 3 คำที่ท่านได้จำไว้จากช่วงต้นของการทดสอบ หากนึกไม่ออกมีปุ่มคำใบ้ช่วยเหลือ (แต่จะไม่ได้คะแนนในข้อนั้น)', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
-                    </div>
-                </div>
-                <p id="recall-caption" style="color: #000000 !important; font-weight: bold; text-align: center; margin-top: 16px; margin-bottom: 22px; font-size: 1.1rem; padding: 0 8px; line-height: 1.6;"></p>
-                <div id="recall-input-container" style="opacity: 0; width: 100%; text-align: center;">
-                    <input type="text" id="recall-1" placeholder="คำที่ 1" class="recall-in"
-                        style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; border:1px solid #ddd; font-family:'Anuphan', sans-serif; box-sizing:border-box;">
-                    <input type="text" id="recall-2" placeholder="คำที่ 2" class="recall-in"
-                        style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; border:1px solid #ddd; font-family:'Anuphan', sans-serif; box-sizing:border-box;">
-                    <input type="text" id="recall-3" placeholder="คำที่ 3" class="recall-in"
-                        style="width:100%; padding:15px; margin-bottom:16px; border-radius:12px; border:1px solid #ddd; font-family:'Anuphan', sans-serif; box-sizing:border-box;">
-                    <button id="recall-hint-btn"
-                        style="width:100%; padding:12px; margin-bottom:16px; background:transparent; color:#82954b; border:2px solid #82954b; border-radius:50px; font-size:1rem; cursor:pointer; font-family:'Anuphan', sans-serif;">💡
-                        ขอคำใบ้ (จะได้ 0 คะแนน)</button>
-                    <div id="recall-hint-box"
-                        style="display:none; background:#fffbe6; border:1px solid #f0c040; border-radius:12px; padding:14px; margin-bottom:16px; text-align:left;">
-                        <p style="margin:0; color:#7a6000; font-size:0.95rem;" id="recall-hint-text"></p>
-                    </div>
-                    <button id="recall-next-btn"
-                        style="width:100%; padding: 15px; background: #82954b; color: white; border: none; border-radius: 50px; font-size:1.05rem; font-weight:bold; cursor:pointer; font-family:'Anuphan', sans-serif; box-sizing:border-box;">ไปต่อ</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="orientation-test-page"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 2900; padding: 20px 20px 32px; overflow-y: auto; box-sizing: border-box;">
-        <div style="width: 100%; max-width: 420px;">
-            <div id="orientation-input-container"
-                style="opacity: 0; width: 100%; text-align: center; background: rgba(255,255,255,0.97); padding: 28px 28px 28px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); backdrop-filter: blur(10px);">
-                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px;">
-                    <span style="font-size: 1.1rem; font-weight: bold; color: #4a5d23;">🗺️ การรับรู้วันเวลาและสถานที่</span>
-                    <button type="button" onclick="showCustomPopup('📌 คำอธิบายการทดสอบการรับรู้วันเวลาและสถานที่:\n\nเลือกและระบุ วันที่, เดือน, ปี, วันในสัปดาห์ปัจจุบัน และพิมพ์เลือกจังหวัดที่ท่านอาศัยอยู่ ณ ปัจจุบันครับ', '💡')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" title="คำอธิบาย">ℹ️</button>
-                </div>
-                <!-- Caption อยู่ในกล่องขาว ไม่ตกออกนอกจอ -->
-                <p id="orientation-caption"
-                    style="color: #1a1a1a; font-weight: 600; text-align: center; width: 100%; line-height: 1.8; font-family:'Anuphan', sans-serif; font-size: 1.2rem; margin: 0 0 22px 0; min-height: 2em;">
-                </p>
-                <input type="number" id="ori-date" placeholder="โปรดระบุวันที่ (เช่น 9)"
-                    style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; border:1px solid #ddd; font-family:'Anuphan', sans-serif; box-sizing:border-box;">
-                <select id="ori-month"
-                    style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; border:1px solid #ddd; font-size:1rem; background:white; color:#333; font-family:'Anuphan', sans-serif;">
-                    <option value="" disabled selected>โปรดระบุเดือน</option>
-                    <option value="1">มกราคม</option>
-                    <option value="2">กุมภาพันธ์</option>
-                    <option value="3">มีนาคม</option>
-                    <option value="4">เมษายน</option>
-                    <option value="5">พฤษภาคม</option>
-                    <option value="6">มิถุนายน</option>
-                    <option value="7">กรกฎาคม</option>
-                    <option value="8">สิงหาคม</option>
-                    <option value="9">กันยายน</option>
-                    <option value="10">ตุลาคม</option>
-                    <option value="11">พฤศจิกายน</option>
-                    <option value="12">ธันวาคม</option>
-                </select>
-                <input type="number" id="ori-year" placeholder="โปรดระบุปี (พ.ศ. หรือ ค.ศ.)"
-                    style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; border:1px solid #ddd; font-family:'Anuphan', sans-serif; box-sizing:border-box;">
-                <select id="ori-day"
-                    style="width:100%; padding:15px; margin-bottom:12px; border-radius:12px; border:1px solid #ddd; font-size:1rem; background:white; color:#333; font-family:'Anuphan', sans-serif;">
-                    <option value="" disabled selected>โปรดระบุวันในสัปดาห์</option>
-                    <option value="0">วันอาทิตย์</option>
-                    <option value="1">วันจันทร์</option>
-                    <option value="2">วันอังคาร</option>
-                    <option value="3">วันพุธ</option>
-                    <option value="4">วันพฤหัสบดี</option>
-                    <option value="5">วันศุกร์</option>
-                    <option value="6">วันเสาร์</option>
-                </select>
-                <div style="position:relative; width:100%; margin-bottom:20px;">
-                    <input type="text" id="ori-province-search" placeholder="พิมพ์เพื่อค้นหาจังหวัด..."
-                        style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; font-size:1rem; box-sizing:border-box; font-family:'Anuphan', sans-serif;">
-                    <div id="ori-province-dropdown"
-                        style="display:none; position:absolute; top:100%; left:0; width:100%; max-height:200px; overflow-y:auto; background:white; border:1px solid #ddd; border-radius:12px; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.12);">
-                    </div>
-                    <input type="hidden" id="ori-province-value">
-                </div>
-                <button id="ori-next-btn"
-                    style="width: 100%; padding: 16px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(130, 149, 75, 0.3);">ส่งคำตอบ</button>
-            </div>
-        </div>
-    </div>
-
-
-
-    <div id="farewell-page">
-        <p id="farewell-text"></p>
-        <div class="loading-dots">กำลังบันทึกความทรงจำ...</div>
-    </div>
-    <div id="result-page" style="display: none; position: relative;">
-        <div
-            style="position: relative; z-index: 1; width: 100%; display: flex; flex-direction: column; align-items: center; padding: 40px 15px 100px 15px; box-sizing: border-box;">
-            <header class="result-header">
-                <h1>สรุปผลการประเมิน</h1>
-                <p>เราขอขอบคุณที่คุณได้ร่วมแบ่งปันข้อมูลกับเราในวันนี้</p>
-            </header>
-
-            <div class="result-content-wrapper">
-
-                <div id="risk-card" class="risk-card">
-                    <div class="icon-heart">🤍</div>
-                    <p class="risk-label">ระดับความเสี่ยง</p>
-                    <h2 id="risk-level-title">กำลังคำนวณ...</h2>
-                    <div class="risk-box">
-                        <p id="risk-description"></p>
-                    </div>
-                </div>
-            </div>
-            <div class="advice-card">
-                <div class="advice-content">
-                    <h3>💡 คำแนะนำพื้นฐานสำหรับคุณ</h3>
-                    <ul id="advice-list">
-                    </ul>
-                </div>
-            </div>
-
-            <div class="action-buttons">
-                <button onclick="location.reload()" class="btn-advice"
-                    style="background: #82954b;">ทำแบบทดสอบอีกครั้ง</button>
-                <button id="find-hospital-btn" class="btn-advice"
-                    style="background: #0275d8;">โรงพยาบาลอัลไซเมอร์ใกล้ฉัน 📍</button>
-                <button onclick="openSatisfactionForm()" class="btn-advice"
-                    style="background: #673ab7;">ทำแบบประเมินความพึงพอใจ (กรอกรหัสให้อัตโนมัติ)</button>
-                <a href="https://line.me/R/ti/p/@683ypjyr" target="_blank" class="btn-advice"
-                    style="background: #06C755; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; font-weight: bold;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: white;">
-                        <path d="M12 2C6.477 2 2 5.82 2 10.53C2 12.87 3.12 14.97 4.96 16.4C4.58 17.75 3.91 19.89 3.73 20.46C3.51 21.14 4.04 21.05 4.3 20.89C6.41 19.5 8.91 17.89 9.61 17.47C10.37 17.73 11.17 17.87 12 17.87C17.52 17.87 22 14.05 22 9.34C22 4.63 17.52 2 12 2Z"/>
-                    </svg>
-                    แอดเพื่อน LINE (@683ypjyr)
+            <div class="hero-cta-group">
+                <a href="test.html" class="btn-hero-primary">
+                    <span>🌱</span>
+                    <span>เริ่มทำแบบทดสอบ Memory Garden</span>
+                    <span>→</span>
+                </a>
+                <a href="#knowledge-topics" class="btn-hero-secondary">
+                    <span>📚</span>
+                    <span>สำรวจความรู้ 7 หมวดหมู่</span>
                 </a>
             </div>
+        </section>
 
-            <!-- กล่องแสดงผลลัพธ์โรงพยาบาลใกล้ที่สุด (Modal Popup) -->
-            <div id="hospital-modal"
-                style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 99999; justify-content: center; align-items: center;">
-                <div class="login-card"
-                    style="position: relative; background: white; max-width: 480px; width: 92%; padding: 35px 25px; border-radius: 28px; text-align: left; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
-                    <button id="close-hospital-modal"
-                        style="position: absolute; top: 15px; right: 20px; background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: #888;">&times;</button>
-                    <h3
-                        style="font-size: 1.35rem; color: #4a5d23; margin-bottom: 15px; font-weight: bold; text-align: center; border-bottom: 2px solid #f0f7e6; padding-bottom: 10px;">
-                        🏥 โรงพยาบาลใกล้ที่สุดของคุณ</h3>
+        <!-- 4 Quick Key Metrics -->
+        <section class="metrics-strip">
+            <div class="metric-card">
+                <div class="metric-val">60–80%</div>
+                <div class="metric-label">สาเหตุหลักของภาวะสมองเสื่อม</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-val">10 ข้อ</div>
+                <div class="metric-label">สัญญาณเตือนแรกเริ่มที่ต้องสังเกต</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-val">3 ระยะ</div>
+                <div class="metric-label">การดำเนินโรค (จากใบเขียวสู่กิ่งโกร๋น)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-val" style="color: #c94a3d;">1323</div>
+                <div class="metric-label">สายด่วนสุขภาพจิต โทรฟรี 24 ชม.</div>
+            </div>
+        </section>
 
-                    <div id="hospital-loading" style="text-align: center; padding: 20px 0;">
-                        <p style="color: #666; font-size: 1.05rem;">กำลังค้นหาตำแหน่งและคำนวณระยะทาง...</p>
-                    </div>
+        <!-- 7 Knowledge Topics Section -->
+        <section id="knowledge-topics">
+            <div class="section-title-wrap">
+                <h2>📚 คลังความรู้เรื่องอัลไซเมอร์ (7 หมวดหมู่เจาะลึก)</h2>
+                <p>เลือกหัวข้อที่ท่านสนใจ เพื่อศึกษาข้อมูลทางการแพทย์และคำแนะนำอย่างละเอียดในแต่ละหน้า</p>
+            </div>
 
-                    <div id="hospital-result" style="display: none;">
-                        <h4 id="hosp-name"
-                            style="font-size: 1.15rem; font-weight: 700; color: #333; margin-bottom: 6px;"></h4>
-                        <p style="color: #82954b; font-weight: bold; font-size: 0.95rem; margin-bottom: 12px; display: inline-block; background: #e0f2f1; padding: 4px 10px; border-radius: 20px;"
-                            id="hosp-distance"></p>
+            <div class="topics-grid">
 
-                        <div
-                            style="background: #f9f9f9; border-radius: 12px; padding: 14px; margin-bottom: 18px; border-left: 4px solid #0275d8;">
-                            <p style="margin: 0 0 6px 0; font-size: 0.9rem; color: #555; font-weight: 600;">ℹ️
-                                ข้อมูลคลินิกความจำ/บริการเฉพาะทาง:</p>
-                            <p id="hosp-desc" style="margin: 0; font-size: 0.88rem; color: #666; line-height: 1.6;"></p>
+                <!-- Topic 1 -->
+                <a href="topic-1-overview.html" class="topic-entry-card">
+                    <div class="topic-left">
+                        <div class="topic-icon-badge">🧠</div>
+                        <div class="topic-info">
+                            <h3><span class="topic-badge-num">01</span> ภาพรวมและกลไก — อัลไซเมอร์คืออะไร</h3>
+                            <p>สาเหตุ 60-80% ของสมองเสื่อม กลไกโปรตีน Amyloid-Beta, Tau Protein, สารสื่อประสาท Acetylcholine และปัจจัยเสี่ยง</p>
                         </div>
+                    </div>
+                    <div class="topic-arrow">→</div>
+                </a>
 
-                        <p style="font-size: 0.88rem; color: #666; margin-bottom: 18px;" id="hosp-address"></p>
-
-                        <div style="display: flex; gap: 12px;">
-                            <a id="hosp-call-btn" href="#"
-                                style="flex: 1; text-decoration: none; text-align: center; padding: 12px; background: #28a745; color: white; border-radius: 10px; font-weight: bold; font-size: 0.95rem; transition: 0.3s; display: block; box-shadow: 0 4px 12px rgba(40,167,69,0.25);">📞
-                                โทรศัพท์</a>
-                            <a id="hosp-map-btn" target="_blank" href="#"
-                                style="flex: 1; text-decoration: none; text-align: center; padding: 12px; background: #0275d8; color: white; border-radius: 10px; font-weight: bold; font-size: 0.95rem; transition: 0.3s; display: block; box-shadow: 0 4px 12px rgba(2,117,216,0.25);">📍
-                                นำทาง</a>
+                <!-- Topic 2 -->
+                <a href="topic-2-warning-signs.html" class="topic-entry-card">
+                    <div class="topic-left">
+                        <div class="topic-icon-badge" style="background: #fff7eb; color: #d97736; border-color: #f7dfb0;">⚠️</div>
+                        <div class="topic-info">
+                            <h3><span class="topic-badge-num">02</span> สัญญาณเตือน — 10 สัญญาณเตือนแรกเริ่ม</h3>
+                            <p>เจาะลึกอาการ 10 ประการ พร้อมตัวอย่างสถานการณ์จริงและแบบประเมินเช็กลิสต์อาการเบื้องต้น</p>
                         </div>
                     </div>
-                </div>
-            </div>
+                    <div class="topic-arrow">→</div>
+                </a>
 
-            <div
-                style="background: rgba(255,255,255,0.9); border: 1.5px solid #ffe082; border-radius: 20px; padding: 24px 20px; margin-top: 20px; width: 100%; max-width: 850px; text-align: center; box-sizing: border-box;">
-                <p style="font-size: 1.1rem; color: #7a6000; font-weight: bold; margin-bottom: 10px;">📌
-                    อย่าลืมจดบันทึกผลการประเมินของคุณไว้นะครับ</p>
-                <p style="font-size: 0.95rem; color: #3a3a3a; line-height: 1.7; margin: 0;">รหัสประจำตัวของคุณคือ
-                    <strong id="result-userid-display"
-                        style="font-size: 1.2rem; letter-spacing: 4px; color: #4a5d23;"></strong><br>
-                    สามารถนำรหัสนี้ไปอ้างอิงกับเจ้าหน้าที่หรือแพทย์ได้ในภายหลัง
-                    <br>
-                    <span style="font-size: 0.88rem; opacity: 0.7;">หากต้องการปรึกษาแพทย์ กรุณานำผลนี้ไปแสดงด้วย</span>
-                </p>
-            </div>
-
-            <div class="footer-icons">☘️ 🌸 🧠</div>
-        </div>
-        <!-- end inner wrapper -->
-    </div>
-
-    <!-- ===== หน้าประวัติผลการทดสอบ ===== -->
-    <div id="history-page"
-        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 99999; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 20px 0 40px;">
-        <div style="background: white; max-width: 520px; width: 92%; border-radius: 28px; box-shadow: 0 24px 60px rgba(0,0,0,0.3); overflow: hidden; margin: 20px auto;">
-
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, #4a5d23, #82954b); padding: 28px 24px 20px; position: relative;">
-                <button id="close-history-btn"
-                    style="position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">✕</button>
-                <div style="display: flex; align-items: center; gap: 14px;">
-                    <img id="history-avatar" src="" alt="" style="width: 56px; height: 56px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.6); object-fit: cover;">
-                    <div>
-                        <p style="color: rgba(255,255,255,0.8); font-size: 0.8rem; margin: 0;">ประวัติการทดสอบ</p>
-                        <h2 id="history-username" style="color: white; font-size: 1.2rem; margin: 2px 0 0; font-weight: 700;"></h2>
+                <!-- Topic 3 -->
+                <a href="topic-3-comparison.html" class="topic-entry-card">
+                    <div class="topic-left">
+                        <div class="topic-icon-badge" style="background: #eef8f2; color: #2e7d32; border-color: #cce5c6;">⚖️</div>
+                        <div class="topic-info">
+                            <h3><span class="topic-badge-num">03</span> เทียบให้เห็นชัด — หลงลืมตามวัย VS อัลไซเมอร์</h3>
+                            <p>ตารางเปรียบเทียบความแตกต่าง 6 มิติในชีวิตประจำวัน เช่น การลืมความจำ การใช้อุปกรณ์ การสนทนา และการวางของ</p>
+                        </div>
                     </div>
-                </div>
-                <div id="history-stats-row" style="display: flex; gap: 12px; margin-top: 18px;">
-                    <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 10px 16px; flex: 1; text-align: center;">
-                        <p style="color: rgba(255,255,255,0.75); font-size: 0.7rem; margin: 0;">ครั้งที่ทำ</p>
-                        <p id="history-total-count" style="color: white; font-size: 1.4rem; font-weight: 700; margin: 2px 0 0;">-</p>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 10px 16px; flex: 1; text-align: center;">
-                        <p style="color: rgba(255,255,255,0.75); font-size: 0.7rem; margin: 0;">คะแนนสูงสุด</p>
-                        <p id="history-best-score" style="color: white; font-size: 1.4rem; font-weight: 700; margin: 2px 0 0;">-</p>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 10px 16px; flex: 1; text-align: center;">
-                        <p style="color: rgba(255,255,255,0.75); font-size: 0.7rem; margin: 0;">คะแนนล่าสุด</p>
-                        <p id="history-last-score" style="color: white; font-size: 1.4rem; font-weight: 700; margin: 2px 0 0;">-</p>
-                    </div>
-                </div>
-            </div>
+                    <div class="topic-arrow">→</div>
+                </a>
 
-            <!-- Body -->
-            <div style="padding: 20px 20px 24px;">
-                <div id="history-loading" style="text-align: center; padding: 40px 20px; display: block;">
-                    <div style="font-size: 2.5rem; animation: spin 1s linear infinite; display: inline-block;">⌛</div>
-                    <p style="color: #888; margin-top: 12px; font-size: 0.95rem;">กำลังโหลดประวัติ...</p>
-                </div>
-                <div id="history-empty" style="text-align: center; padding: 40px 20px; display: none;">
-                    <div style="font-size: 3rem; margin-bottom: 12px;">🌱</div>
-                    <p style="color: #888; font-size: 1rem; line-height: 1.6;">ยังไม่มีประวัติการทดสอบ<br>เริ่มทำแบบทดสอบครั้งแรกเพื่อดูผลได้เลย</p>
-                </div>
-                <div id="history-list" style="display: none; display: flex; flex-direction: column; gap: 14px;"></div>
-            </div>
+                <!-- Topic 4 -->
+                <a href="topic-4-stages.html" class="topic-entry-card">
+                    <div class="topic-left">
+                        <div class="topic-icon-badge" style="background: #fdf6ec; color: #9c5c00; border-color: #fae8ca;">🍂</div>
+                        <div class="topic-info">
+                            <h3><span class="topic-badge-num">04</span> การดำเนินโรค — จากใบไม้เขียวสู่กิ่งโกร๋น</h3>
+                            <p>3 ระยะของโรค (ระยะเริ่มต้น Mild, ระยะปานกลาง Moderate, ระยะรุนแรง Severe) การถดถอยและแนวทางรับมือ</p>
+                        </div>
+                    </div>
+                    <div class="topic-arrow">→</div>
+                </a>
 
-            <!-- Footer -->
-            <div style="padding: 0 20px 24px; text-align: center;">
-                <button id="history-start-btn"
-                    style="width: 100%; padding: 14px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(130,149,75,0.3);">
-                    🧠 ทำแบบทดสอบใหม่
-                </button>
-            </div>
-        </div>
-    </div>
+                <!-- Topic 5 -->
+                <a href="topic-5-homecare.html" class="topic-entry-card">
+                    <div class="topic-left">
+                        <div class="topic-icon-badge" style="background: #f2f7ec; color: #3d5e23; border-color: #d8e8ce;">🏠</div>
+                        <div class="topic-info">
+                            <h3><span class="topic-badge-num">05</span> ดูแลที่บ้าน — แนวทางการดูแลผู้ป่วยที่บ้าน</h3>
+                            <p>ศิลปะการสื่อสาร การปรับสภาพแวดล้อมห้องต่อห้อง การจัดการพฤติกรรม และการป้องกัน Caregiver Burnout</p>
+                        </div>
+                    </div>
+                    <div class="topic-arrow">→</div>
+                </a>
 
-    <!-- Custom Premium Popup Modal -->
-    <div id="custom-alert-modal"
-        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); z-index: 999999; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.25s ease;">
-        <div style="background: white; max-width: 420px; width: 90%; padding: 32px 24px; border-radius: 28px; text-align: center; box-shadow: 0 20px 45px rgba(0,0,0,0.2); transform: scale(0.85); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); border: 2px dashed rgba(130, 149, 75, 0.25);">
-            <div id="custom-alert-icon" style="font-size: 3.5rem; margin-bottom: 16px;">⚠️</div>
-            <h3 id="custom-alert-title" style="font-size: 1.3rem; color: #4a5d23; margin: 0 0 10px 0; font-weight: bold;">แจ้งเตือน</h3>
-            <p id="custom-alert-message" style="font-size: 1rem; color: #555; line-height: 1.6; margin: 0 0 26px 0; white-space: pre-line; word-break: break-word;"></p>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button id="custom-alert-cancel-btn"
-                    style="display: none; padding: 12px 28px; background: #e0e0e0; color: #555; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.2s;">ยกเลิก</button>
-                <button id="custom-alert-ok-btn"
-                    style="padding: 12px 36px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(130,149,75,0.35);">ตกลง</button>
+                <!-- Topic 6 -->
+                <a href="topic-6-diagnosis-treatment.html" class="topic-entry-card">
+                    <div class="topic-left">
+                        <div class="topic-icon-badge" style="background: #f1f8fc; color: #1e6091; border-color: #c7e2f5;">🩺</div>
+                        <div class="topic-info">
+                            <h3><span class="topic-badge-num">06</span> วินิจฉัยและรักษา — การตรวจทางการแพทย์</h3>
+                            <p>ขั้นตอนการตรวจด้วย MoCA, MMSE, MRI ตลอดจนแนวทางการชะลอโรคด้วยยา กิจกรรมบำบัด และโภชนาการ MIND Diet</p>
+                        </div>
+                    </div>
+                    <div class="topic-arrow">→</div>
+                </a>
+
+                <!-- Topic 7 -->
+                <a href="topic-7-resources.html" class="topic-entry-card">
+                    <div class="topic-left">
+                        <div class="topic-icon-badge" style="background: #fdf3f2; color: #c94a3d; border-color: #f7c9c3;">📞</div>
+                        <div class="topic-info">
+                            <h3><span class="topic-badge-num">07</span> แหล่งข้อมูลอ้างอิงและสายด่วนช่วยเหลือ</h3>
+                            <p>เบอร์โทรสายด่วนสุขภาพจิต 1323 (โทรฟรี 24 ชม.), AZTHAI, สถาบันประสาทวิทยา, คลินิกความจำ และสิทธิบัตรทอง</p>
+                        </div>
+                    </div>
+                    <div class="topic-arrow">→</div>
+                </a>
+
+            </div>
+        </section>
+
+        <!-- Memory Garden Screening Banner -->
+        <section class="garden-feature-box">
+            <h2 class="garden-feature-h2">🌱 สนใจเช็กความจำของตัวเองหรือคนที่คุณรัก?</h2>
+            <p class="garden-feature-p">
+                ลองทำแบบทดสอบ <strong>Memory Garden (สวนความทรงจำ)</strong> — เว็บแอปพลิเคชันคัดกรองภาวะรู้คิดบกพร่องเล็กน้อย (MCI) และความเสี่ยงอัลไซเมอร์เบื้องต้น ครอบคลุม 5 โดเมนสมอง อ้างอิงตามมาตรฐาน MoCA & MMSE ใช้งานง่ายด้วยเสียงพูดภาษาไทย
+            </p>
+            <a href="test.html" class="btn-launch-test">
+                <span>🌸</span>
+                <span>เริ่มทำแบบทดสอบ Memory Garden</span>
+                <span>→</span>
+            </a>
+        </section>
+
+        <!-- Medical Disclaimer -->
+        <div class="disclaimer-strip">
+            <span style="font-size: 1.4rem;">⚠️</span>
+            <div>
+                <strong>ข้อสงวนสิทธิ์ทางการแพทย์ (Medical Disclaimer):</strong><br>
+                เนื้อหาและแบบทดสอบในเว็บไซต์นี้จัดทำขึ้นเพื่อการให้ความรู้และการคัดกรองเบื้องต้นเท่านั้น ไม่สามารถใช้แทนคำแนะนำ การวินิจฉัย หรือการรักษาทางการแพทย์จากแพทย์ผู้เชี่ยวชาญได้ อ้างอิงข้อมูลหลักจาก <a href="https://www.azthai.org/" target="_blank" rel="noopener" style="color: #6d5400; font-weight: bold;">สมาคมผู้ดูแลผู้ป่วยสมองเสื่อมแห่งประเทศไทย (azthai.org)</a>, สถาบันประสาทวิทยา กรมการแพทย์, Alzheimer's Association และ WHO
             </div>
         </div>
-    </div>
 
-    <script src="mcp.js"></script>
+        <footer class="portal-footer">
+            <p>© 2025-2026 สวนความทรงจำ (Memory Garden) | มุ่งมั่นส่งเสริมสุขภาวะสมองของผู้สูงอายุไทย</p>
+        </footer>
+
+    </main>
+
     <script>
-        document.write('<script src="script.js?v=' + Date.now() + '"><\/script>');
+        // Reading Progress
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (document.documentElement.scrollTop / h) * 100;
+            document.getElementById('progress-bar').style.width = scrolled + '%';
+        });
+
+        // Font scaler
+        function setFontScale(scale) {
+            document.documentElement.style.setProperty('--font-scale', scale);
+            document.querySelectorAll('.font-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+        }
     </script>
 </body>
 

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>06 · วินิจฉัยและรักษา — การตรวจและการรักษา | Memory Garden</title>
+    <meta name="description" content="ขั้นตอนการตรวจวินิจฉัยทางการแพทย์ MoCA, MMSE, MRI และแนวทางการรักษาชะลอโรคด้วยยา กิจกรรมบำบัด และโภชนาการ">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩺</text></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #3d5e23;
+            --primary-dark: #273d16;
+            --accent: #82954b;
+            --bg-main: #f5f8f2;
+            --text-main: #27341d;
+            --text-muted: #57664d;
+            --border-color: #dbe5d2;
+            --shadow-sm: 0 4px 12px rgba(45, 66, 23, 0.06);
+            --shadow-md: 0 10px 30px rgba(45, 66, 23, 0.1);
+            --radius-md: 20px;
+            --radius-lg: 28px;
+            --radius-full: 9999px;
+            --font-scale: 1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif; }
+        body {
+            background-color: var(--bg-main); color: var(--text-main); line-height: 1.8;
+            font-size: calc(17px * var(--font-scale));
+            background-image: radial-gradient(circle at 10% 20%, rgba(130, 149, 75, 0.07) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(61, 94, 35, 0.05) 0%, transparent 40%);
+        }
+
+        #progress-bar { position: fixed; top: 0; left: 0; height: 5px; width: 0%; background: linear-gradient(90deg, #82954b, #d49a37); z-index: 1000; }
+        .header-nav { position: sticky; top: 0; background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); z-index: 900; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--primary-dark); font-weight: 700; font-size: 1.15rem; }
+        .nav-actions { display: flex; align-items: center; gap: 12px; }
+        .font-controls { display: flex; background: #eef4e8; border-radius: var(--radius-full); padding: 3px; gap: 2px; }
+        .font-btn { background: transparent; border: none; padding: 4px 10px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+        .font-btn.active, .font-btn:hover { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+        .btn-test-nav { background: linear-gradient(135deg, var(--accent), var(--primary)); color: white; text-decoration: none; padding: 8px 18px; border-radius: var(--radius-full); font-weight: 600; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; }
+
+        .content-container { max-width: 880px; margin: 0 auto; padding: 24px 20px 80px 20px; }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; flex-wrap: wrap; }
+        .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+        .topic-header { background: linear-gradient(145deg, #ffffff, #f0f7ea); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 36px 28px; margin-bottom: 30px; box-shadow: var(--shadow-md); text-align: center; }
+        .topic-tag { display: inline-block; background: #e2edd9; color: var(--primary-dark); font-weight: 700; font-size: 0.9rem; padding: 4px 14px; border-radius: var(--radius-full); margin-bottom: 12px; }
+        .topic-title { font-size: 2.1rem; color: var(--primary-dark); margin-bottom: 14px; line-height: 1.35; }
+        .topic-subtitle { font-size: 1.12rem; color: var(--text-muted); max-width: 680px; margin: 0 auto; }
+
+        .card-box {
+            background: white; border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+            padding: 30px; margin-bottom: 24px; box-shadow: var(--shadow-sm);
+        }
+        .card-h2 { font-size: 1.35rem; color: var(--primary-dark); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+
+        .diag-steps { display: flex; flex-direction: column; gap: 14px; }
+        .diag-step-item {
+            background: #fbfdf9; border: 1px solid var(--border-color); border-radius: 14px;
+            padding: 16px 20px; display: flex; gap: 16px; align-items: flex-start;
+        }
+        .step-badge {
+            background: #eef5e8; color: var(--primary); font-weight: 800; font-size: 1rem;
+            width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+
+        .treatment-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+        @media (max-width: 650px) { .treatment-grid { grid-template-columns: 1fr; } }
+        .treat-box { background: #fafcf8; border: 1px solid #dce8d5; border-radius: 14px; padding: 20px; }
+        .treat-box h4 { font-size: 1.1rem; color: var(--primary-dark); margin-bottom: 8px; }
+
+        .mind-diet-banner {
+            background: linear-gradient(135deg, #f0f7ea, #e2f0d9); border-radius: 14px; padding: 20px;
+            border-left: 4px solid var(--accent); margin-top: 18px;
+        }
+
+        .page-navigation { display: flex; justify-content: space-between; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
+        .nav-btn-step {
+            flex: 1; min-width: 240px; background: white; border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md); padding: 18px 22px; text-decoration: none;
+            color: var(--text-main); transition: all 0.2s; display: flex; flex-direction: column;
+        }
+        .nav-btn-step:hover { border-color: var(--primary); background: #f8fbf6; transform: translateY(-2px); }
+        .nav-step-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+        .nav-step-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-dark); }
+    </style>
+</head>
+
+<body>
+    <div id="progress-bar"></div>
+
+    <header class="header-nav">
+        <a href="index.html" class="nav-brand">
+            <span style="font-size: 1.4rem;">🌿</span>
+            <span>Memory Garden Hub</span>
+        </a>
+        <div class="nav-actions">
+            <div class="font-controls">
+                <button class="font-btn" onclick="setFontScale(0.9)">ก-</button>
+                <button class="font-btn active" id="font-btn-default" onclick="setFontScale(1)">ก</button>
+                <button class="font-btn" onclick="setFontScale(1.15)">ก+</button>
+            </div>
+            <a href="test.html" class="btn-test-nav">
+                <span>🌱</span> <span>เริ่มทำแบบทดสอบ</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="content-container">
+        <nav class="breadcrumb">
+            <a href="index.html">🏠 หน้าแรก</a>
+            <span>/</span>
+            <span>06 · การตรวจวินิจฉัยและรักษา</span>
+        </nav>
+
+        <header class="topic-header">
+            <span class="topic-tag">หมวดความรู้ที่ 06 / 07</span>
+            <h1 class="topic-title">วินิจฉัยและรักษา — การตรวจทางการแพทย์</h1>
+            <p class="topic-subtitle">ขั้นตอนการตรวจมาตรฐานทางประสาทวิทยา และแนวทางการรักษาเพื่อชะลอการลุกลามของโรค</p>
+        </header>
+
+        <!-- 1. การตรวจวินิจฉัย -->
+        <section class="card-box">
+            <h2 class="card-h2"><span>🔍</span> 4 ขั้นตอนการตรวจวินิจฉัย</h2>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 16px;">
+                การวินิจฉัยอัลไซเมอร์ต้องอาศัยการประเมินรอบด้านเพื่อแยกแยะโรคอื่นที่รักษาหายได้:
+            </p>
+
+            <div class="diag-steps">
+                <div class="diag-step-item">
+                    <div class="step-badge">1</div>
+                    <div>
+                        <h3 style="font-size: 1.1rem; color: var(--primary-dark); margin-bottom: 4px;">การซักประวัติและพฤติกรรม</h3>
+                        <p style="font-size: 0.92rem; color: var(--text-muted); margin: 0;">แพทย์จะสัมภาษณ์ทั้งผู้ป่วยและญาติใกล้ชิดเกี่ยวกับอาการหลงลืม การเปลี่ยนแปลงทางอารมณ์ และประวัติสุขภาพครอบครัว</p>
+                    </div>
+                </div>
+
+                <div class="diag-step-item">
+                    <div class="step-badge">2</div>
+                    <div>
+                        <h3 style="font-size: 1.1rem; color: var(--primary-dark); margin-bottom: 4px;">การทดสอบสมรรถภาพสมอง (Cognitive Assessment)</h3>
+                        <p style="font-size: 0.92rem; color: var(--text-muted); margin: 0;">ตรวจวัดความจำ มิติสัมพันธ์ สมาธิ และภาษา ด้วยแบบทดสอบมาตรฐาน เช่น <strong>MoCA</strong> หรือ <strong>MMSE</strong> (เช่นเดียวกับเกณฑ์ที่ใช้ในแอป Memory Garden)</p>
+                    </div>
+                </div>
+
+                <div class="diag-step-item">
+                    <div class="step-badge">3</div>
+                    <div>
+                        <h3 style="font-size: 1.1rem; color: var(--primary-dark); margin-bottom: 4px;">การตรวจภาพสมอง (Brain Imaging)</h3>
+                        <p style="font-size: 0.92rem; color: var(--text-muted); margin: 0;">ตรวจ MRI หรือ CT Scan เพื่อดูการฝ่อของสมองส่วนฮิปโปแคมปัส และแยกภาวะเลือดออกในสมองหรือเนื้องอก</p>
+                    </div>
+                </div>
+
+                <div class="diag-step-item">
+                    <div class="step-badge">4</div>
+                    <div>
+                        <h3 style="font-size: 1.1rem; color: var(--primary-dark); margin-bottom: 4px;">การตรวจเลือดทางห้องปฏิบัติการ</h3>
+                        <p style="font-size: 0.92rem; color: var(--text-muted); margin: 0;">คัดกรองภาวะขาดวิตามิน B12 การทำงานของต่อมไทรอยด์ และการตรวจสารบ่งชี้ในเลือด (Blood Biomarkers)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. การรักษา -->
+        <section class="card-box">
+            <h2 class="card-h2"><span>💊</span> แนวทางการรักษาและการชะลอโรค</h2>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 16px;">
+                แม้ปัจจุบันยังไม่มีวิธีรักษาให้หายขาด แต่การรักษาแบบผสมผสานช่วยชะลออาการและคงคุณภาพชีวิตได้นานขึ้น:
+            </p>
+
+            <div class="treatment-grid">
+                <div class="treat-box">
+                    <h4>💊 1. การรักษาด้วยยา</h4>
+                    <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
+                        • <strong>Cholinesterase Inhibitors:</strong> (เช่น Donepezil, Rivastigmine) ช่วยเพิ่มระดับสารสื่อประสาทแอซิติลโคลีน
+                        <br>• <strong>NMDA Antagonist:</strong> (Memantine) ควบคุมสารกลูตาเมต ปกป้องเซลล์สมองในระยะปานกลาง-รุนแรง
+                    </p>
+                </div>
+
+                <div class="treat-box">
+                    <h4>🎨 2. การบำบัดแบบไม่ใช้ยา</h4>
+                    <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
+                        • <strong>Cognitive Stimulation:</strong> เล่นเกมฝึกสมอง แก้ปริศนา เล่าเรื่องในอดีต (Reminiscence)
+                        <br>• <strong>ดนตรีและศิลปะบำบัด:</strong> กระตุ้นอารมณ์บวกและลดความวิตกกังวล
+                    </p>
+                </div>
+            </div>
+
+            <div class="mind-diet-banner">
+                <h4 style="color: var(--primary-dark); font-size: 1.05rem; margin-bottom: 6px;">🥗 โภชนาการ MIND Diet & การออกกำลังกาย</h4>
+                <p style="font-size: 0.92rem; color: var(--text-main); margin: 0;">
+                    เน้นทานผักใบเขียว เบอร์รี่ ถั่ว ธัญพืชไม่ขัดสี ปลาทะเลน้ำลึก ใช้น้ำมันมะกอก และออกกำลังกายแบบแอโรบิกเบา ๆ วันละ 30 นาที ช่วยลดการสะสมของคราบโปรตีนในสมอง
+                </p>
+            </div>
+        </section>
+
+        <!-- Navigation Next/Prev -->
+        <div class="page-navigation">
+            <a href="topic-5-homecare.html" class="nav-btn-step">
+                <span class="nav-step-label">← หัวข้อก่อนหน้า</span>
+                <span class="nav-step-title">05 · แนวทางการดูแลที่บ้าน</span>
+            </a>
+            <a href="topic-7-resources.html" class="nav-btn-step" style="text-align: right;">
+                <span class="nav-step-label">หัวข้อถัดไป →</span>
+                <span class="nav-step-title">07 · สายด่วน & แหล่งข้อมูล</span>
+            </a>
+        </div>
+    </main>
+
+    <script>
+        window.addEventListener('scroll', () => {
+            const h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (document.documentElement.scrollTop / h) * 100;
+            document.getElementById('progress-bar').style.width = scrolled + '%';
+        });
+
+        function setFontScale(scale) {
+            document.documentElement.style.setProperty('--font-scale', scale);
+            document.querySelectorAll('.font-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

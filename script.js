@@ -450,14 +450,23 @@ function renderHistoryCard(record, index) {
     const orientation = details.orientation ?? '-';
     const pct = Math.round((score / 30) * 100);
 
-    // สีแถบและ badge
+    // สีแถบและ badge — ใช้ score ตัวเลขแทน string matching (เสถียรกว่า ไม่เปลี่ยนตามข้อความ)
     let barColor = '#82954b'; // เขียว
     let badgeClass = 'normal';
     let badgeIcon = '✅';
-    if (risk.includes('MCI') || risk.includes('บกพร่อง')) {
-        barColor = '#f5a623'; badgeClass = 'mci'; badgeIcon = '⚠️';
-    } else if (risk.includes('พิเศษ') || risk.includes('เสี่ยง') || risk.includes('ดูแล')) {
-        barColor = '#e06666'; badgeClass = 'high'; badgeIcon = '🆘';
+    if (score !== null && score !== undefined) {
+        if (score < 18) {
+            barColor = '#e06666'; badgeClass = 'high'; badgeIcon = '🆘';
+        } else if (score < 25) {
+            barColor = '#f5a623'; badgeClass = 'mci'; badgeIcon = '⚠️';
+        }
+    } else {
+        // fallback: ถ้าไม่มี score ใช้ risk string
+        if (risk === 'MCI' || risk.includes('บกพร่อง')) {
+            barColor = '#f5a623'; badgeClass = 'mci'; badgeIcon = '⚠️';
+        } else if (risk.includes('ดูแลพิเศษ') || risk.includes('ควรดูแล')) {
+            barColor = '#e06666'; badgeClass = 'high'; badgeIcon = '🆘';
+        }
     }
 
     // แปลงวันที่
@@ -2463,7 +2472,7 @@ function calculateAndShowResult() {
         disease: document.getElementById('user-disease').value || "ไม่มี",
         totalScore: totalScore,
         maxScore: 30,
-        riskLevel: document.getElementById('risk-level-title').innerText,
+        riskLevel: totalScore >= 25 ? 'ปกติ' : totalScore >= 18 ? 'MCI' : 'ควรดูแลพิเศษ',
         latitude: userLatitude,
         longitude: userLongitude,
         details: {

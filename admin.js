@@ -190,13 +190,14 @@ function computePercentilesAndStats() {
         maePct = calculateMAE(paperRecords);
 
         // Clinical validity metrics & Optimal Cutoff using Youden's Index
-        const best = findOptimalCutoff(paperRecords, 26);
+        // ใช้ cutoff = 25 ตรงกับ App (score >= 25 = ปกติ, ตามมาตรฐาน MoCA)
+        const best = findOptimalCutoff(paperRecords, 25);
         optCutoff = best.cutoff;
         sensitivity = best.sens;
         specificity = best.spec;
         diagnosticAccuracy = best.accuracy;
 
-        const aucResult = computeAUCROC(paperRecords, 26);
+        const aucResult = computeAUCROC(paperRecords, 25);
         auc = aucResult.auc;
     }
 
@@ -286,11 +287,12 @@ function renderMetrics(totalUsers, paperCount, paperPct, spearmanRs, maePct, sen
 // --- Clinical Validity Functions ---
 
 // คำนวณ Sensitivity, Specificity และ Diagnostic Accuracy ((TP + TN) / N)
-function computeSensSpec(records, appCutoff, paperCutoff = 26) {
+// paperCutoff = 25: ตรงกับ App (score >= 25 = ปกติ / score < 25 = MCI)
+function computeSensSpec(records, appCutoff, paperCutoff = 25) {
     let TP = 0, FP = 0, TN = 0, FN = 0;
     records.forEach(r => {
         const appPos = (r.total_score || 0) < appCutoff;  // แอปบอกว่าเป็น MCI
-        const paperPos = r.paper_score < paperCutoff;     // กระดาษบอกว่าเป็น MCI
+        const paperPos = r.paper_score < paperCutoff;     // กระดาษบอกว่าเป็น MCI (< 25)
         if (appPos && paperPos)   TP++;
         else if (appPos && !paperPos) FP++;
         else if (!appPos && !paperPos) TN++;
@@ -304,7 +306,7 @@ function computeSensSpec(records, appCutoff, paperCutoff = 26) {
 }
 
 // หา cutoff ที่ดีที่สุดด้วย Youden's Index (Sens + Spec - 1)
-function findOptimalCutoff(records, paperCutoff = 26) {
+function findOptimalCutoff(records, paperCutoff = 25) {
     let best = { cutoff: 25, youden: -Infinity, sens: 0, spec: 0, accuracy: 0 };
     for (let c = 1; c <= 30; c++) {
         const { sensitivity, specificity, accuracy } = computeSensSpec(records, c, paperCutoff);
@@ -317,7 +319,7 @@ function findOptimalCutoff(records, paperCutoff = 26) {
 }
 
 // คำนวณ AUC-ROC ด้วย Trapezoidal Rule
-function computeAUCROC(records, paperCutoff = 26) {
+function computeAUCROC(records, paperCutoff = 25) {
     const points = [];
     for (let c = 0; c <= 30; c++) {
         const { sensitivity, specificity } = computeSensSpec(records, c, paperCutoff);
@@ -368,6 +370,7 @@ function renderCharts(allRecords, paperRecords) {
                     type: "line",
                     borderColor: "rgba(200,200,200,0.6)",
                     borderDash: [6, 4],
+                    borderWidth: 2,
                     pointRadius: 0,
                     fill: false
                 }
@@ -480,7 +483,7 @@ function renderCharts(allRecords, paperRecords) {
                 }
             });
         } else {
-            const { rocPoints } = computeAUCROC(paperRecords, 26);
+            const { rocPoints } = computeAUCROC(paperRecords, 25);
             const rocData = rocPoints.map(p => ({
                 x: parseFloat(p.fpr.toFixed(4)),
                 y: parseFloat(p.tpr.toFixed(4))
@@ -491,7 +494,7 @@ function renderCharts(allRecords, paperRecords) {
                 data: {
                     datasets: [
                         {
-                            label: "ROC Curve (App vs MoCA < 26)",
+                            label: "ROC Curve (App vs MoCA < 25)",
                             data: rocData,
                             borderColor: "#7b5ea7",
                             backgroundColor: "rgba(123, 94, 167, 0.12)",
@@ -499,10 +502,11 @@ function renderCharts(allRecords, paperRecords) {
                             pointRadius: 4, pointHoverRadius: 7
                         },
                         {
-                            label: "\u0e40\u0e2a\u0e49\u0e19\u0e2a\u0e38\u0e48\u0e21 (Random Classifier)",
+                            label: "เส้นสุ่ม (Random Classifier)",
                             data: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
                             borderColor: "rgba(180,180,180,0.6)",
                             borderDash: [6, 4],
+                            borderWidth: 2,
                             pointRadius: 0,
                             showLine: true, fill: false
                         }

@@ -82,6 +82,18 @@ function bindAdminEvents() {
         paperForm.addEventListener("submit", handlePaperScoreSubmit);
     }
 
+    // Auto-update paper risk level เมื่อกรอกคะแนนกระดาษ
+    const paperScoreInput = document.getElementById("input-paper-score");
+    if (paperScoreInput) {
+        paperScoreInput.addEventListener("input", () => {
+            const score = parseInt(paperScoreInput.value);
+            if (!isNaN(score) && score >= 0 && score <= 30) {
+                const riskDropdown = document.getElementById("input-paper-risk");
+                if (riskDropdown) riskDropdown.value = calcRiskLevel(score);
+            }
+        });
+    }
+
     // Edit Modal Cancel
     const cancelEditBtn = document.getElementById("btn-cancel-edit");
     if (cancelEditBtn) {
@@ -92,6 +104,18 @@ function bindAdminEvents() {
     const editForm = document.getElementById("edit-record-form");
     if (editForm) {
         editForm.addEventListener("submit", handleEditSubmit);
+    }
+
+    // Auto-update risk_level dropdown เมื่อ Admin เปลี่ยนคะแนนใน Edit Modal
+    const editScoreInput = document.getElementById("edit-total-score");
+    if (editScoreInput) {
+        editScoreInput.addEventListener("input", () => {
+            const score = parseInt(editScoreInput.value);
+            if (!isNaN(score)) {
+                const riskDropdown = document.getElementById("edit-risk-level");
+                if (riskDropdown) riskDropdown.value = calcRiskLevel(score);
+            }
+        });
     }
 
     // Delete Confirm Modal: Cancel
@@ -190,14 +214,14 @@ function computePercentilesAndStats() {
         maePct = calculateMAE(paperRecords);
 
         // Clinical validity metrics & Optimal Cutoff using Youden's Index
-        // ใช้ cutoff = 25 ตรงกับ App (score >= 25 = ปกติ, ตามมาตรฐาน MoCA)
-        const best = findOptimalCutoff(paperRecords, 25);
+        // ใช้ paperCutoff = 26 ตามมาตรฐาน MoCA (ปกติ >= 26, MCI < 26)
+        const best = findOptimalCutoff(paperRecords, 26);
         optCutoff = best.cutoff;
         sensitivity = best.sens;
         specificity = best.spec;
         diagnosticAccuracy = best.accuracy;
 
-        const aucResult = computeAUCROC(paperRecords, 25);
+        const aucResult = computeAUCROC(paperRecords, 26);
         auc = aucResult.auc;
     }
 
@@ -287,12 +311,12 @@ function renderMetrics(totalUsers, paperCount, paperPct, spearmanRs, maePct, sen
 // --- Clinical Validity Functions ---
 
 // คำนวณ Sensitivity, Specificity และ Diagnostic Accuracy ((TP + TN) / N)
-// paperCutoff = 25: ตรงกับ App (score >= 25 = ปกติ / score < 25 = MCI)
-function computeSensSpec(records, appCutoff, paperCutoff = 25) {
+// paperCutoff = 26: มาตรฐาน MoCA (ปกติ >= 26, MCI < 26)
+function computeSensSpec(records, appCutoff, paperCutoff = 26) {
     let TP = 0, FP = 0, TN = 0, FN = 0;
     records.forEach(r => {
         const appPos = (r.total_score || 0) < appCutoff;  // แอปบอกว่าเป็น MCI
-        const paperPos = r.paper_score < paperCutoff;     // กระดาษบอกว่าเป็น MCI (< 25)
+        const paperPos = r.paper_score < paperCutoff;     // กระดาษบอกว่าเป็น MCI (< 26 = MoCA มาตรฐาน)
         if (appPos && paperPos)   TP++;
         else if (appPos && !paperPos) FP++;
         else if (!appPos && !paperPos) TN++;
@@ -306,8 +330,8 @@ function computeSensSpec(records, appCutoff, paperCutoff = 25) {
 }
 
 // หา cutoff ที่ดีที่สุดด้วย Youden's Index (Sens + Spec - 1)
-function findOptimalCutoff(records, paperCutoff = 25) {
-    let best = { cutoff: 25, youden: -Infinity, sens: 0, spec: 0, accuracy: 0 };
+function findOptimalCutoff(records, paperCutoff = 26) {
+    let best = { cutoff: 26, youden: -Infinity, sens: 0, spec: 0, accuracy: 0 };
     for (let c = 1; c <= 30; c++) {
         const { sensitivity, specificity, accuracy } = computeSensSpec(records, c, paperCutoff);
         const youden = sensitivity + specificity - 1;
@@ -319,25 +343,30 @@ function findOptimalCutoff(records, paperCutoff = 25) {
 }
 
 // คำนวณ AUC-ROC ด้วย Trapezoidal Rule
-function computeAUCROC(records, paperCutoff = 25) {
+function computeAUCROC(records, paperCutoff = 26) {
     const points = [];
-    for (let c = 0; c <= 30; c++) {
+    for (let c = 0; c <= 31; c++) {
         const { sensitivity, specificity } = computeSensSpec(records, c, paperCutoff);
         points.push({ fpr: 1 - specificity, tpr: sensitivity, cutoff: c });
     }
     // เรียงตาม FPR จากน้อยไปหามาก
-    points.sort((a, b) => a.fpr - b.fpr || a.tpr - b.tpr);
+    // เมื่อ FPR เท่ากัน ให้เรียง TPR จากมากไปน้อย (descending) เพื่อ staircase ที่ถูกต้อง
+    points.sort((a, b) => a.fpr - b.fpr || b.tpr - a.tpr);
+    // ลบ duplicate points
+    const unique = points.filter((p, i, arr) =>
+        i === 0 || p.fpr !== arr[i-1].fpr || p.tpr !== arr[i-1].tpr
+    );
     // เพิ่ม (0,0) และ (1,1) ถ้ายังไม่มี
-    if (!points.find(p => p.fpr === 0 && p.tpr === 0)) points.unshift({ fpr: 0, tpr: 0 });
-    if (!points.find(p => p.fpr === 1 && p.tpr === 1)) points.push({ fpr: 1, tpr: 1 });
+    if (!unique.find(p => p.fpr === 0 && p.tpr === 0)) unique.unshift({ fpr: 0, tpr: 0 });
+    if (!unique.find(p => p.fpr === 1 && p.tpr === 1)) unique.push({ fpr: 1, tpr: 1 });
 
     let auc = 0;
-    for (let i = 1; i < points.length; i++) {
-        const dx = points[i].fpr - points[i - 1].fpr;
-        const avgY = (points[i].tpr + points[i - 1].tpr) / 2;
+    for (let i = 1; i < unique.length; i++) {
+        const dx = unique[i].fpr - unique[i - 1].fpr;
+        const avgY = (unique[i].tpr + unique[i - 1].tpr) / 2;
         auc += dx * avgY;
     }
-    return { auc: Math.max(0, Math.min(1, auc)), rocPoints: points };
+    return { auc: Math.max(0, Math.min(1, auc)), rocPoints: unique };
 }
 
 // --- Render Charts ---
@@ -396,7 +425,7 @@ function renderCharts(allRecords, paperRecords) {
                     callbacks: {
                         label: (ctx) => {
                             const p = ctx.raw;
-                            return `${p.name}: แอป P${p.x} vs กระดาษ P${p.y}`;
+                            return `${p.name} | แอป (X): P${p.x} | กระดาษ (Y): P${p.y}`;
                         }
                     }
                 }
@@ -483,7 +512,7 @@ function renderCharts(allRecords, paperRecords) {
                 }
             });
         } else {
-            const { rocPoints } = computeAUCROC(paperRecords, 25);
+            const { rocPoints } = computeAUCROC(paperRecords, 26);
             const rocData = rocPoints.map(p => ({
                 x: parseFloat(p.fpr.toFixed(4)),
                 y: parseFloat(p.tpr.toFixed(4))
@@ -494,7 +523,7 @@ function renderCharts(allRecords, paperRecords) {
                 data: {
                     datasets: [
                         {
-                            label: "ROC Curve (App vs MoCA < 25)",
+                            label: "ROC Curve (App vs MoCA < 26)",
                             data: rocData,
                             borderColor: "#7b5ea7",
                             backgroundColor: "rgba(123, 94, 167, 0.12)",
@@ -516,14 +545,14 @@ function renderCharts(allRecords, paperRecords) {
                     responsive: true, maintainAspectRatio: false,
                     scales: {
                         x: { type: "linear", min: 0, max: 1, title: { display: true, text: "1 - Specificity (False Positive Rate)" } },
-                        y: { min: 0, max: 1, title: { display: true, text: "Sensitivity (True Positive Rate)" } }
+                        y: { type: "linear", min: 0, max: 1, title: { display: true, text: "Sensitivity (True Positive Rate)" } }
                     },
                     plugins: {
                         tooltip: {
                             callbacks: {
                                 label: (ctx) => {
                                     const p = ctx.raw;
-                                    return `FPR: ${(p.x * 100).toFixed(1)}%, TPR: ${(p.y * 100).toFixed(1)}%`;
+                                    return `FPR: ${(p.x * 100).toFixed(1)}% | TPR: ${(p.y * 100).toFixed(1)}%`;
                                 }
                             }
                         }
@@ -540,7 +569,7 @@ function renderTable(results) {
     tbody.innerHTML = "";
 
     if (!results || results.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:30px; color:#888;">ไม่พบข้อมูลผลการทดสอบ</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:30px; color:#888;">ไม่พบข้อมูลผลการทดสอบ</td></tr>`;
         return;
     }
 
@@ -566,6 +595,13 @@ function renderTable(results) {
             : appP;
         const normDiff = record.norm_score_diff !== undefined && record.paper_score !== null ? `|Δ| ${record.norm_score_diff}%` : "-";
 
+        // ปุ่มแผนที่ — แสดงเฉพาะถ้ามีข้อมูล GPS
+        const hasGPS = record.latitude !== null && record.latitude !== undefined
+                    && record.longitude !== null && record.longitude !== undefined;
+        const mapBtn = hasGPS
+            ? `<button class="btn-action-map" onclick="openMap(${record.latitude}, ${record.longitude}, '${(record.name || record.user_id).replace(/'/g, "\\'")}')" title="ดูตำแหน่งบน Google Maps">🗺️ ดูตำแหน่ง</button>`
+            : `<button class="btn-action-map btn-action-map--disabled" disabled title="ไม่มีข้อมูล GPS">📍 ไม่มี GPS</button>`;
+
         tr.innerHTML = `
             <td>${dateStr}</td>
             <td><strong>${record.name || "ไม่ระบุชื่อ"}</strong><br><span style="font-size:0.78rem;color:#888;">ID: ${record.user_id}</span></td>
@@ -576,6 +612,7 @@ function renderTable(results) {
             <td>${paperP}</td>
             <td title="เปรียบเทียบ app (ในกลุ่ม) vs กระดาษ">${compareP} → ${paperP}</td>
             <td style="color:#2e7d32;"><strong>${normDiff}</strong></td>
+            <td>${mapBtn}</td>
             <td>
                 <div class="action-cell">
                     <button class="btn-action" onclick="openPaperModal('${record.id}')">📝 บันทึกคะแนน</button>
@@ -588,6 +625,7 @@ function renderTable(results) {
         tbody.appendChild(tr);
     });
 }
+
 
 function filterTableData(query) {
     if (!query) {
@@ -687,11 +725,45 @@ function openEditModal(id) {
     document.getElementById("edit-paper-notes").value = record.paper_notes || "";
 
     document.getElementById("edit-modal").style.display = "flex";
-}
+
+    // Live-update risk_level dropdown เมื่อแก้คะแนน
+    const scoreInput = document.getElementById("edit-total-score");
+    const riskSelect = document.getElementById("edit-risk-level");
+    // ถอด listener เก่าออกก่อน (ป้องกัน duplicate)
+    const newScoreInput = scoreInput.cloneNode(true);
+    scoreInput.parentNode.replaceChild(newScoreInput, scoreInput);
+    newScoreInput.value = record.total_score !== undefined ? record.total_score : "";
+    newScoreInput.addEventListener("input", () => {
+        const s = parseInt(newScoreInput.value);
+        if (!isNaN(s) && s >= 0 && s <= 30) {
+            riskSelect.value = calcRiskLevel(s);
+        }
+    });
+
+    // Live-update paper_risk เมื่อพิมพ์คะแนนกระดาษ
+    const paperScoreInput = document.getElementById("edit-paper-score");
+    const paperRiskSelect = document.getElementById("edit-paper-risk");
+    const newPaperScoreInput = paperScoreInput.cloneNode(true);
+    paperScoreInput.parentNode.replaceChild(newPaperScoreInput, paperScoreInput);
+    newPaperScoreInput.value = record.paper_score !== null && record.paper_score !== undefined ? record.paper_score : "";
+    newPaperScoreInput.addEventListener("input", () => {
+        const ps = parseInt(newPaperScoreInput.value);
+        if (!isNaN(ps) && ps >= 0 && ps <= 30) {
+            paperRiskSelect.value = calcRiskLevel(ps);
+        }
+    });
+} // end openEditModal
 
 function closeEditModal() {
     document.getElementById("edit-modal").style.display = "none";
     activeEditResult = null;
+}
+
+// คำนวณ risk_level จากคะแนน (ใช้มาตรฐาน MoCA: ปกติ >= 26)
+function calcRiskLevel(score) {
+    if (score >= 26) return 'ปกติ (Normal)';
+    if (score >= 18) return 'เสี่ยงบกพร่องเล็กน้อย (MCI)';
+    return 'ควรได้รับการดูแลพิเศษ';
 }
 
 async function handleEditSubmit(e) {
@@ -703,6 +775,7 @@ async function handleEditSubmit(e) {
     submitBtn.textContent = "กำลังบันทึก...";
     submitBtn.disabled = true;
 
+    const newTotalScore = parseInt(document.getElementById("edit-total-score").value);
     const paperScoreVal = document.getElementById("edit-paper-score").value;
     const updatedData = {
         name: document.getElementById("edit-name").value.trim() || null,
@@ -710,8 +783,9 @@ async function handleEditSubmit(e) {
         gender: document.getElementById("edit-gender").value,
         education: document.getElementById("edit-education").value,
         disease: document.getElementById("edit-disease").value.trim() || null,
-        total_score: parseInt(document.getElementById("edit-total-score").value),
-        risk_level: document.getElementById("edit-risk-level").value,
+        total_score: newTotalScore,
+        // ถ้า Admin ไม่ได้เปลี่ยน dropdown เอง ให้คำนวณใหม่จากคะแนน
+        risk_level: document.getElementById("edit-risk-level").value || calcRiskLevel(newTotalScore),
         paper_score: paperScoreVal !== "" ? parseInt(paperScoreVal) : null,
         paper_risk_level: document.getElementById("edit-paper-risk").value || null,
         paper_notes: document.getElementById("edit-paper-notes").value.trim() || null,
@@ -821,4 +895,13 @@ function showToast(message, type = "success") {
         toast.style.opacity = "0";
         setTimeout(() => toast.remove(), 500);
     }, 3000);
+}
+
+// =====================================================
+// Map Helper — เปิด Google Maps ด้วย GPS coordinates
+// =====================================================
+function openMap(lat, lon, name = '') {
+    const label = encodeURIComponent(name || 'ตำแหน่งผู้ทดสอบ');
+    const url = `https://www.google.com/maps?q=${lat},${lon}&z=15&t=m`;
+    window.open(url, '_blank', 'noopener,noreferrer');
 }

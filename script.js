@@ -2472,7 +2472,7 @@ function calculateAndShowResult() {
         disease: document.getElementById('user-disease').value || "ไม่มี",
         totalScore: totalScore,
         maxScore: 30,
-        riskLevel: totalScore >= 25 ? 'ปกติ' : totalScore >= 18 ? 'MCI' : 'ควรดูแลพิเศษ',
+        riskLevel: totalScore >= 26 ? 'ปกติ (Normal)' : totalScore >= 18 ? 'เสี่ยงบกพร่องเล็กน้อย (MCI)' : 'ควรได้รับการดูแลพิเศษ',
         latitude: userLatitude,
         longitude: userLongitude,
         details: {

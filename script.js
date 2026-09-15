@@ -1302,7 +1302,7 @@ async function startNamingTest() {
         rightDiv.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;';
 
         const label = document.createElement('label');
-        label.textContent = `สิ่งของ/สัตว์ในภาพที่ ${i + 1} (ข้อที่ ${i + 1}/5)`;
+        label.textContent = `สิ่งของในภาพที่ ${i + 1} (ข้อที่ ${i + 1}/5)`;
         label.style.cssText = 'font-size:0.85rem;color:#4a5d23;font-weight:bold;white-space:normal;word-break:break-word;line-height:1.3;';
 
         // Input Row: ช่องพิมพ์ + ปุ่มไมค์
@@ -1334,7 +1334,7 @@ async function startNamingTest() {
         // Choice suggestions for easier tapping
         const chipsDiv = document.createElement('div');
         chipsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;';
-        const distractorOptions = ['จอบ', 'บัวรดน้ำ', 'กรรไกรตัดกิ่ง', 'กระถางต้นไม้', 'ผีเสื้อ', 'แมว', 'กระรอก', 'เสียม', 'สายยาง', 'นก'];
+        const distractorOptions = ['จอบ', 'บัวรดน้ำ', 'กรรไกรตัดกิ่ง', 'กระถางต้นไม้', 'เสียม', 'สายยาง', 'หมวกสาน', 'ถุงมือทำสวน', 'กรรไกร', 'ร่ม', 'นาฬิกา', 'เก้าอี้', 'ครก', 'เคียว', 'ตะกร้า'];
         const quickOptions = [...new Set([obj.name, ...distractorOptions.filter(d => d !== obj.name).slice(0, 2)])].sort(() => Math.random() - 0.5);
         quickOptions.forEach(opt => {
             const btn = document.createElement('button');

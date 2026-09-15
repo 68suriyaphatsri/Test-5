@@ -349,16 +349,34 @@ function computeAUCROC(records, paperCutoff = 26) {
         const { sensitivity, specificity } = computeSensSpec(records, c, paperCutoff);
         points.push({ fpr: 1 - specificity, tpr: sensitivity, cutoff: c });
     }
+
     // เรียงตาม FPR จากน้อยไปหามาก
-    // เมื่อ FPR เท่ากัน ให้เรียง TPR จากมากไปน้อย (descending) เพื่อ staircase ที่ถูกต้อง
+    // เมื่อ FPR เท่ากัน ให้เรียง TPR จากมากไปน้อย (highest first) เพื่อ staircase ที่ถูกต้อง
     points.sort((a, b) => a.fpr - b.fpr || b.tpr - a.tpr);
-    // ลบ duplicate points
+
+    // [BUG FIX] dedup ตาม FPR โดยใช้ epsilon-comparison:
+    // เก็บเฉพาะจุดแรก (TPR สูงสุด) สำหรับแต่ละ FPR ที่ไม่ซ้ำกัน
+    // เดิมใช้ strict equality ซึ่งทำให้ cutoff หลายค่าที่มี FPR เท่ากัน
+    // แต่ TPR ต่างกันถูกพล็อตแยกกัน → เส้นหยักย้อนกลับ (non-monotonic)
+    const EPS = 1e-9;
     const unique = points.filter((p, i, arr) =>
-        i === 0 || p.fpr !== arr[i-1].fpr || p.tpr !== arr[i-1].tpr
+        i === 0 || Math.abs(p.fpr - arr[i - 1].fpr) > EPS
     );
-    // เพิ่ม (0,0) และ (1,1) ถ้ายังไม่มี
-    if (!unique.find(p => p.fpr === 0 && p.tpr === 0)) unique.unshift({ fpr: 0, tpr: 0 });
-    if (!unique.find(p => p.fpr === 1 && p.tpr === 1)) unique.push({ fpr: 1, tpr: 1 });
+
+    // Safety net: บังคับให้ TPR เป็น non-decreasing (monotonic) ตลอดเส้น
+    for (let i = 1; i < unique.length; i++) {
+        if (unique[i].tpr < unique[i - 1].tpr) {
+            unique[i].tpr = unique[i - 1].tpr;
+        }
+    }
+
+    // เพิ่ม anchor (0,0) และ (1,1) ถ้ายังไม่มี
+    if (unique.length === 0 || unique[0].fpr > EPS || unique[0].tpr > EPS) {
+        unique.unshift({ fpr: 0, tpr: 0 });
+    }
+    if (unique[unique.length - 1].fpr < 1 - EPS || unique[unique.length - 1].tpr < 1 - EPS) {
+        unique.push({ fpr: 1, tpr: 1 });
+    }
 
     let auc = 0;
     for (let i = 1; i < unique.length; i++) {
@@ -527,7 +545,7 @@ function renderCharts(allRecords, paperRecords) {
                             data: rocData,
                             borderColor: "#7b5ea7",
                             backgroundColor: "rgba(123, 94, 167, 0.12)",
-                            showLine: true, fill: true, tension: 0.2,
+                            showLine: true, fill: true, tension: 0,  // tension: 0 = เส้นตรง (piecewise linear) ป้องกัน bezier โค้งเกินจุด
                             pointRadius: 4, pointHoverRadius: 7
                         },
                         {

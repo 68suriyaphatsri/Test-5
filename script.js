@@ -1509,7 +1509,7 @@ function showRepeatRound(index) {
 
     const listenCard = document.getElementById('repeat-listen-card');
     const actionCard = document.getElementById('repeat-action-card');
-    
+
     // เริ่มต้นแสดงการ์ดฟังประโยคก่อน (Step 1)
     if (listenCard) listenCard.style.display = 'block';
     if (actionCard) actionCard.style.display = 'none';
@@ -1520,6 +1520,7 @@ function showRepeatRound(index) {
     const inputEl = document.getElementById('repeat-input');
     const statusEl = document.getElementById('repeat-speech-status');
     const feedbackEl = document.getElementById('repeat-feedback');
+    const submitBtn = document.getElementById('repeat-submit-btn');
 
     if (listenRoundLabel) listenRoundLabel.textContent = `ประโยคที่ ${index + 1} / ${sentenceRepeatParts.length}`;
     if (actionRoundLabel) actionRoundLabel.textContent = `ประโยคที่ ${index + 1} / ${sentenceRepeatParts.length}`;
@@ -1527,6 +1528,11 @@ function showRepeatRound(index) {
     if (inputEl) { inputEl.value = ''; }
     if (statusEl) statusEl.style.display = 'none';
     if (feedbackEl) { feedbackEl.textContent = ''; feedbackEl.style.display = 'none'; }
+
+    // Reset mode selector — กลับไปโหมดเริ่มต้น (พูดตอบ) ทุกรอบใหม่
+    setRepeatMode('speak', false); // false = ไม่ focus input
+    // ซ่อนปุ่ม submit จนกว่าจะมีการกรอก/พูด (เฉพาะ mode พิมพ์)
+    if (submitBtn) submitBtn.style.display = 'none';
 
     // อ่านเสียงประโยค
     speakText(`ฟังให้ดีและจดจำประโยค: ${part}`);
@@ -1541,12 +1547,11 @@ function showRepeatRound(index) {
         readyBtn.onclick = () => {
             if (listenCard) listenCard.style.display = 'none';
             if (actionCard) actionCard.style.display = 'block';
-            if (inputEl) {
-                inputEl.value = '';
-                inputEl.focus();
-            }
-            // Auto-speak พร้อมคำแนะนำเมื่อเข้า Step 2
-            setTimeout(() => speakText('โปรดพูดหรือพิมพ์ประโยคที่ท่านได้ยินเมื่อสักครู่ครับ'), 200);
+            // Reset mode เมื่อเข้า Step 2
+            setRepeatMode('speak', false);
+            if (submitBtn) submitBtn.style.display = 'none';
+            // Auto-speak คำแนะนำ
+            setTimeout(() => speakText('เลือกพูดตอบหรือพิมพ์ตอบได้เลยครับ'), 200);
         };
     }
 
@@ -1554,13 +1559,83 @@ function showRepeatRound(index) {
     const micBtn = document.getElementById('repeat-mic-btn');
     if (micBtn) micBtn.onclick = () => toggleRepeatMic(part);
 
-    // Wire submit button  
-    const submitBtn = document.getElementById('repeat-submit-btn');
+    // Wire submit button
     if (submitBtn) submitBtn.onclick = () => submitRepeat(part);
 
-    // Wire Enter key
+    // Wire Enter key สำหรับ input
     if (inputEl) {
-        inputEl.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); submitRepeat(part); } };
+        inputEl.onkeydown = (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); submitRepeat(part); }
+        };
+        // แสดงปุ่ม submit เมื่อมีการพิมพ์
+        inputEl.oninput = () => {
+            if (submitBtn) submitBtn.style.display = inputEl.value.trim() ? 'block' : 'none';
+        };
+    }
+}
+
+// เลือก mode: 'speak' หรือ 'type'
+function setRepeatMode(mode, focusInput = true) {
+    const speakPanel = document.getElementById('repeat-speak-panel');
+    const typePanel = document.getElementById('repeat-type-panel');
+    const speakBtn = document.getElementById('repeat-mode-speak-btn');
+    const typeBtn = document.getElementById('repeat-mode-type-btn');
+    const submitBtn = document.getElementById('repeat-submit-btn');
+    const inputEl = document.getElementById('repeat-input');
+
+    if (!speakPanel || !typePanel) return;
+
+    if (mode === 'speak') {
+        // แสดง panel พูด, ซ่อน panel พิมพ์
+        speakPanel.style.display = 'block';
+        typePanel.style.display = 'none';
+        // ปุ่ม active
+        if (speakBtn) {
+            speakBtn.style.background = 'linear-gradient(135deg, #82954b, #6a7a3a)';
+            speakBtn.style.color = 'white';
+            speakBtn.style.border = 'none';
+            speakBtn.style.boxShadow = '0 3px 10px rgba(130,149,75,0.4)';
+        }
+        if (typeBtn) {
+            typeBtn.style.background = '#e8ede0';
+            typeBtn.style.color = '#4a5d23';
+            typeBtn.style.border = '2px solid #82954b';
+            typeBtn.style.boxShadow = 'none';
+        }
+        // ซ่อนปุ่ม submit (mic จะ submit อัตโนมัติ)
+        if (submitBtn) submitBtn.style.display = 'none';
+        // Reset mic button
+        const micBtn = document.getElementById('repeat-mic-btn');
+        if (micBtn) {
+            micBtn.innerHTML = '🎙️ กดเพื่อเริ่มพูด';
+            micBtn.style.background = '#e8ede0';
+            micBtn.style.color = '#4a5d23';
+            micBtn.style.borderColor = '#82954b';
+        }
+    } else {
+        // แสดง panel พิมพ์, ซ่อน panel พูด
+        speakPanel.style.display = 'none';
+        typePanel.style.display = 'block';
+        // ปุ่ม active
+        if (typeBtn) {
+            typeBtn.style.background = 'linear-gradient(135deg, #82954b, #6a7a3a)';
+            typeBtn.style.color = 'white';
+            typeBtn.style.border = 'none';
+            typeBtn.style.boxShadow = '0 3px 10px rgba(130,149,75,0.4)';
+        }
+        if (speakBtn) {
+            speakBtn.style.background = '#e8ede0';
+            speakBtn.style.color = '#4a5d23';
+            speakBtn.style.border = '2px solid #82954b';
+            speakBtn.style.boxShadow = 'none';
+        }
+        // แสดงปุ่ม submit (ถ้ามีข้อความ)
+        if (submitBtn) {
+            submitBtn.style.display = (inputEl && inputEl.value.trim()) ? 'block' : 'none';
+        }
+        // หยุด mic ถ้ากำลังทำงาน
+        stopRepeatMic();
+        if (focusInput && inputEl) setTimeout(() => inputEl.focus(), 100);
     }
 }
 
@@ -1612,7 +1687,7 @@ function stopRepeatMic() {
     repeatRecognition = null;
     // เรียกคืน visual กลับเดิม
     if (micBtn) {
-        micBtn.innerHTML = '🎙️ พูด';
+        micBtn.innerHTML = '🎙️ กดเพื่อเริ่มพูด';
         micBtn.style.background = '#e8ede0';
         micBtn.style.color = '#4a5d23';
         micBtn.style.borderColor = '#82954b';
@@ -1660,30 +1735,83 @@ function fuzzyMatch(answer, expected) {
 
 // --- 8.5 ด่านความคล่องแคล่วทางภาษา (Category Fluency Test - 4 คะแนน พร้อม Thai Animal Dictionary) ---
 const THAI_ANIMALS_SET = new Set([
+    // --- สัตว์บก (เดิม + ใหม่) ---
     "หมา", "สุนัข", "แมว", "ช้าง", "ม้า", "วัว", "ควาย", "หมู", "เป็ด", "ไก่", "ห่าน",
-    "นก", "นกแก้ว", "นกพิราบ", "นกกระจอก", "นกขุนทอง", "นกฮูก", "นกอินทรี", "นกยูง", "นกกระจอกเทศ", "นกนางนวล",
-    "ปลา", "ปลาดุก", "ปลาช่อน", "ปลาทู", "ปลากัด", "ปลาทอง", "ปลาวาฬ", "ปลาโลมา", "ปลาฉลาม", "ปลากระพง", "ปลาแซลมอน",
-    "ลิง", "ชะนี", "ค่าง", "กอริลลา", "ค่างแว่น", "เสือ", "สิงโต", "เสือดาว", "เสือดำ", "เสือชีตาห์", "แมวดาว",
-    "หมี", "หมีควาย", "หมีแพนด้า", "หมีขอ", "กวาง", "เก้ง", "ละองละมั่ง", "กระจง", "ยีราฟ", "ม้าลาย",
-    "ฮิปโป", "ฮิปโปโปเตมัส", "แรด", "สมเสร็จ", "จิงโจ้", "โคอาล่า", "แพะ", "แกะ", "อูฐ", "ลามะ",
-    "กระต่าย", "กระรอก", "กระแต", "หนู", "บ่าง", "พังพอน", "ตัวตุ่น", "ตัวกินมด", "เม่น", "ลิ่น",
-    "จระเข้", "เต่า", "เต่าตนุ", "ตะพาบ", "งู", "งูจงอาง", "งูเห่า", "งูเหลือม", "งูหลาม", "งูเขียว",
-    "กบ", "เขียด", "คางคก", "อึ่งอ่าง", "ปาด", "ซาลาแมนเดอร์",
-    "จิ้งจก", "ตุ๊กแก", "กิ้งก่า", "กิ้งก่าคาเมเลี่ยน", "ตัวเงินตัวทอง", "เหี้ย", "ตะกวด",
-    "กุ้ง", "กุ้งมังกร", "กุ้งก้ามกราม", "ปู", "ปูม้า", "ปูดำ", "ปูเสฉวน", "หอย", "หอยแครง", "หอยแมลงภู่", "หอยทาก", "หอยเชลล์",
-    "หมึก", "ปลาหมึก", "หมึกยักษ์", "หมึกกล้วย", "แมงกะพรุน", "ดาวทะเล", "ปลาดาว", "ม้าน้ำ", "เม่นทะเล", "ปลิงทะเล",
-    "ผึ้ง", "ต่อ", "แตน", "มด", "ปลวก", "แมลงวัน", "ยุง", "แมลงสาบ", "ผีเสื้อ", "ตั๊กแตน", "จิ้งหรีด", "ด้วง", "แมลงปอ", "จักจั่น",
-    "แมงมุม", "แมงป่อง", "ตะขาบ", "กิ้งกือ", "ไส้เดือน", "หนอน", "ดักแด้", "หิ่งห้อย", "หมัด", "เห็บ", "เหา",
-    "ค้างคาว", "วาฬ", "โลมา", "พะยูน", "แมวน้ำ", "สิงโตทะเล", "วอลรัส", "เพนกวิน"
+    "เสือ", "สิงโต", "ช้าง", "ยีราฟ", "ม้าลาย", "หมีพูห์", "หมีกริซลี", "หมีควาย",
+    "หมาป่า", "สุนัขจิ้งจอก", "ไฮยีน่า", "ชีตาห์", "เสือดาว", "เสือเมฆ", "แมวป่า",
+    "กระรอก", "กระแต", "พ่น", "หนูพุก", "แรคคูน", "โอโปสซัม", "สล็อต",
+    "ลิงแสม", "ลิงกัง", "ค่าง", "ชะนี", "กอริลลา", "ชิมแปนซี", "อุรังอุตัง", "โบโนโบ", "เลเมอร์",
+    "ตัวเมียร์แคต", "พังพอน", "วัว", "ควาย", "ม้า", "ลา", "ล่อ", "แพะ", "แกะ",
+    "อูฐ", "อัลปาก้า", "ลามา", "กวาง", "ละมั่ง", "ละมั่งเก้ง", "กระจง",
+    "หมูป่า", "แรด", "สมเสร็จ", "ตัวลิ่น", "ตัวกินมด", "อาร์มาดิลโล",
+    "เม่น", "บีเวอร์", "ตัวนาก", "วอลรัส", "พะยูน", "ตุ่นปากเป็ด", "ตัวอีคิดนา",
+    "จิ้งจอกอาร์กติก", "วัวไบสัน", "วัวมัสก์", "ตัวทัสมาเนียนเดวิล",
+    "วอมแบท", "จิงโจ้", "โคอาลา", "ควอกกา", "วอลลาบี",
+    "กระต่าย", "หนูแฮมสเตอร์", "หนูแกสบี้", "ชินชิลล่า", "เฟอร์เรท",
+    "พญากระรอก", "ตัวนากหญ้า", "คาปิบารา", "ตุ่น",
+    // เดิม
+    "ลิง", "เสือดำ", "เสือชีตาห์", "แมวดาว", "หมี", "หมีแพนด้า", "หมีขอ",
+    "เก้ง", "ละองละมั่ง", "ฮิปโป", "ฮิปโปโปเตมัส", "ลามะ",
+    "กระแต", "หนู", "บ่าง", "ตัวตุ่น", "ลิ่น",
+    "ค้างคาว", "วาฬ", "โลมา", "แมวน้ำ", "สิงโตทะเล",
+
+    // --- สัตว์น้ำ + ครึ่งบกครึ่งน้ำ ---
+    "ปลาวาฬสีน้ำเงิน", "ปลาวาฬหลังค่อม", "โลมา", "โลมาหัวกะโหลก",
+    "ฉลามขาว", "ฉลามวาฬ", "ฉลามเสือ", "ฉลามหัวค้อน",
+    "ปลากระเบน", "ปลากระเบนแมนตา", "ปลาการ์ตูน", "ปลาเสือโตนด",
+    "ปลาหมอสี", "ปลาคาร์ป", "ปลาทอง", "ปลากัด", "ปลาช่อน", "ปลาดุก",
+    "ปลาตะเพียน", "ปลาแซลมอน", "ปลาทูน่า", "ปลาซาร์ดีน",
+    "ปลากระพง", "ปลาเก๋า", "ปลาปักเป้า", "ปลาไหลไฟฟ้า", "ปลาปิรันย่า",
+    "ม้าน้ำ", "หมึกยักษ์", "หมึกกล้วย", "หมึกกระดอง", "หมึกสาย",
+    "หอยเชลล์", "หอยแมลงภู่", "หอยนางรม", "หอยงวงช้าง",
+    "กุ้งกุลาดำ", "กุ้งมังกร", "กุ้งเครฟิช",
+    "ปูม้า", "ปูทะเล", "ปูอลัสกา", "ปูเสฉวน",
+    "ดาวทะเล", "เม่นทะเล", "แตงกวาทะเล", "แมงกะพรุน",
+    "กบ", "เขียด", "ปาด", "อึ่งอ่าง", "คางคก", "ซาลาแมนเดอร์",
+    "หมาน้ำ", "ปลาตีน", "ปลาปอด", "ปลากระเบนราหู", "หอยทากทะเล", "ฟองน้ำทะเล",
+    // เดิม
+    "ปลา", "ปลาดุก", "ปลาช่อน", "ปลาทู", "ปลาวาฬ", "ปลาโลมา", "ปลาฉลาม",
+    "กุ้ง", "กุ้งก้ามกราม", "ปู", "ปูดำ", "หอย", "หอยแครง", "หอยทาก",
+    "ปลาหมึก", "ปลาดาว", "ปลิงทะเล",
+
+    // --- สัตว์ปีก ---
+    "นกอินทรี", "นกเหยี่ยว", "นกแร้ง", "นกเค้าแมว", "นกฮูก",
+    "นกพิราบ", "นกกะจอก", "นกกระจอกเทศ", "นกอีมู", "นกเพนกวิน",
+    "นกฟลามิงโก", "นกยูง", "นกแก้ว", "นกเค้าโม่ง", "นกขุนทอง",
+    "นกกะตั้ว", "นกหงส์หยก", "นกคีรีบูน", "นกเอี้ยง", "นกกางเขน",
+    "นกปรอด", "นกเงือก", "นกนางนวล", "นกปากห่าง", "นกกาน้ำ", "นกกระสา",
+    "ไก่", "เป็ด", "ห่าน", "หงส์",
+    // เดิม
+    "นก", "นกกระจอก", "เพนกวิน",
+
+    // --- สัตว์เลื้อยคลาน ---
+    "งูเหลือม", "งูจงอาง", "งูเห่า", "งูเขียว", "งูหลาม",
+    "จระเข้", "ตะกวด", "ตัวเงินตัวทอง", "กิ้งก่า", "กิ้งก่าคาเมเลียน",
+    "อีกวาน่า", "ตุ๊กแก", "จิ้งจก", "เต่าบก", "เต่าทะเล",
+    "ตะกวดซูคาต้า", "ตะพาบ",
+    // เดิม
+    "งู", "เต่า", "เต่าตนุ", "เหี้ย", "กิ้งก่าคาเมเลี่ยน",
+
+    // --- แมลง / สัตว์ขาปล้อง ---
+    "แมงมุม", "แมงป่อง", "ตะขาบ", "กิ้งกือ",
+    "ผึ้ง", "ต่อ", "แตน", "มด", "ผีเสื้อ", "แมลงปอ",
+    "ด้วงกว่าง", "จั๊กจั่น", "ตั๊กแตน",
+    // เดิม
+    "ปลวก", "แมลงวัน", "ยุง", "แมลงสาบ", "จิ้งหรีด", "ด้วง", "จักจั่น",
+    "ไส้เดือน", "หนอน", "ดักแด้", "หิ่งห้อย", "หมัด", "เห็บ", "เหา",
 ]);
 
 function isValidAnimalWord(rawWord) {
     if (!rawWord) return false;
     const word = rawWord.trim().replace(/\s+/g, '');
     if (THAI_ANIMALS_SET.has(word)) return true;
-    
+
     // Check animal prefixes in Thai
-    const prefixes = ["นก", "ปลา", "แมลง", "กุ้ง", "หอย", "ปู", "เป็ด", "ไก่", "หมู", "หมา", "แมว", "งู", "เต่า", "กบ", "หนู", "ลิง", "เสือ", "หมี", "มด", "ผึ้ง", "หนอน"];
+    const prefixes = [
+        "นก", "ปลา", "แมลง", "กุ้ง", "หอย", "ปู", "เป็ด", "ไก่", "หมู", "หมา",
+        "แมว", "งู", "เต่า", "กบ", "หนู", "ลิง", "เสือ", "หมี", "มด", "ผึ้ง",
+        "หนอน", "ฉลาม", "จระเข้", "กวาง", "กระ", "ตัว", "ควาย", "โลมา", "วาฬ"
+    ];
     for (const p of prefixes) {
         if (word.startsWith(p) && word.length > p.length) return true;
     }

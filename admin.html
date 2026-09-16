@@ -349,6 +349,31 @@
             background: #1565c0;
         }
 
+        .btn-action-map {
+            padding: 8px 16px;
+            background: #0288d1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-action-map:hover {
+            background: #01579b;
+        }
+
+        .btn-action-map--disabled,
+        .btn-action-map:disabled {
+            background: #e0e0e0 !important;
+            color: #aaa !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
         .btn-action-delete {
             padding: 8px 16px;
             background: #f44336;
@@ -603,12 +628,12 @@
                 <div class="metric-card" style="border-left: 4px solid #2e7d32;">
                     <span class="title">🔍 Sensitivity (ไวต่อ MCI)</span>
                     <span class="value" id="metric-sensitivity" style="color: #2e7d32;">-</span>
-                    <span class="sub">Optimal Cutoff (MoCA &lt; 26)</span>
+                    <span class="sub">Optimal Cutoff (MoCA &lt; 26 = MCI)</span>
                 </div>
                 <div class="metric-card" style="border-left: 4px solid #1565c0;">
                     <span class="title">🛡️ Specificity (ไม่หลงว่าปกติเป็น MCI)</span>
                     <span class="value" id="metric-specificity" style="color: #1565c0;">-</span>
-                    <span class="sub">Optimal Cutoff (MoCA &lt; 26)</span>
+                    <span class="sub">Optimal Cutoff (MoCA &lt; 26 = MCI)</span>
                 </div>
                 <div class="metric-card" style="border-left: 4px solid #6a1b9a;">
                     <span class="title">📈 AUC-ROC</span>
@@ -648,8 +673,8 @@
 
             <!-- ROC Curve Chart -->
             <div style="background:white; border-radius:24px; padding:24px; box-shadow:0 4px 20px rgba(0,0,0,0.04); border:1px solid #eef2e6; margin-bottom:24px;">
-                <h3 style="font-size:1.1rem; color:#333; margin-bottom:8px;">&#128200; ROC Curve — ความแม่นยำในการวินิจฉัย MCI (App vs MoCA &lt; 26)</h3>
-                <p style="font-size:0.82rem; color:#888; margin-bottom:16px;">แกน X = False Positive Rate (1-Specificity) | แกน Y = True Positive Rate (Sensitivity) | AUC ยิ่งใกล้ 1 ยิ่งดี</p>
+                <h3 style="font-size:1.1rem; color:#333; margin-bottom:8px;">&#128200; ROC Curve — ความแม่นยำในการวินิจฉัย MCI (App vs MoCA &lt; 26 = MCI, ปกติ &ge; 26/30)</h3>
+                <p style="font-size:0.82rem; color:#888; margin-bottom:16px;">แกน X = False Positive Rate (1-Specificity) | แกน Y = True Positive Rate (Sensitivity) | AUC ยิ่งใกล้ 1 ยิ่งดี (&gt;0.8 = ดี, &gt;0.9 = ดีมาก)</p>
                 <div style="position:relative; height:300px;">
                     <canvas id="rocChart"></canvas>
                 </div>
@@ -674,6 +699,7 @@
                                 <th>Percentile กระดาษ</th>
                                 <th>Percentile แอป (กลุ่มเดียวกัน) → กระดาษ</th>
                                 <th>Normalized Diff (|%App - %Paper|)</th>
+                                <th>🗺️ ตำแหน่ง GPS</th>
                                 <th>การจัดการ</th>
                             </tr>
                         </thead>
@@ -762,9 +788,9 @@
                     <div class="form-group">
                         <label>ระดับความเสี่ยง (แอป)</label>
                         <select id="edit-risk-level" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #ddd; font-size:1rem;">
-                            <option value="ปกติ (Normal)">ปกติ (Normal)</option>
-                            <option value="เสี่ยงบกพร่องเล็กน้อย (MCI)">เสี่ยงบกพร่องเล็กน้อย (MCI)</option>
-                            <option value="ควรได้รับการดูแลพิเศษ">ควรได้รับการดูแลพิเศษ</option>
+                            <option value="ปกติ (Normal)">ปกติ (Normal) — &ge; 26</option>
+                            <option value="เสี่ยงบกพร่องเล็กน้อย (MCI)">เสี่ยงบกพร่องเล็กน้อย (MCI) — 18-25</option>
+                            <option value="ควรได้รับการดูแลพิเศษ">ควรได้รับการดูแลพิเศษ — &lt; 18</option>
                         </select>
                     </div>
                     <div class="form-group">

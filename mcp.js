@@ -166,18 +166,13 @@ const MemoryGardenTools = {
 
     // ---------- 9. ดึงรายการสิ่งของ/เครื่องมือสำหรับ Naming Test จาก naming_pool ----------
     async fetchNamingItems(limit = 5) {
-        // Fallback: เครื่องมือทำสวน อุปกรณ์วิถีไทย และสัตว์ในสวน
+        // Fallback: เครื่องมือทำสวน และของใช้ในชีวิตประจำวัน (จาก bucket item 2)
         const FALLBACK_NAMING = [
-            { id: null, name: 'จอบ', image_url: 'https://images.unsplash.com/photo-1617576683096-00fc8eecb3af?w=300&auto=format&fit=crop&q=60' },
-            { id: null, name: 'บัวรดน้ำ', image_url: 'https://images.unsplash.com/photo-1599423300746-b62533397364?w=300&auto=format&fit=crop&q=60' },
-            { id: null, name: 'กรรไกรตัดกิ่ง', image_url: 'https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=300&auto=format&fit=crop&q=60' },
-            { id: null, name: 'กระถางต้นไม้', image_url: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=300&auto=format&fit=crop&q=60' },
-            { id: null, name: 'ผีเสื้อ', image_url: `${SUPABASE_URL}/storage/v1/object/public/animal/butterfly.jpg` },
-            { id: null, name: 'แมว', image_url: `${SUPABASE_URL}/storage/v1/object/public/animal/cat.jpg` },
-            { id: null, name: 'กระรอก', image_url: 'https://images.unsplash.com/photo-1507666405895-422eee7d517f?w=300&auto=format&fit=crop&q=60' },
-            { id: null, name: 'เสียม', image_url: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=300&auto=format&fit=crop&q=60' },
-            { id: null, name: 'สายยาง', image_url: 'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=300&auto=format&fit=crop&q=60' },
-            { id: null, name: 'นก', image_url: 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=300&auto=format&fit=crop&q=60' }
+            { id: null, name: 'จอบ', image_url: `${SUPABASE_URL}/storage/v1/object/public/item%202/hoe.jpg` },
+            { id: null, name: 'บัวรดน้ำ', image_url: `${SUPABASE_URL}/storage/v1/object/public/item%202/watering_can.jpg` },
+            { id: null, name: 'ครก', image_url: `${SUPABASE_URL}/storage/v1/object/public/item%202/mortar.jpg` },
+            { id: null, name: 'เคียว', image_url: `${SUPABASE_URL}/storage/v1/object/public/item%202/sickle.jpg` },
+            { id: null, name: 'ตะกร้า', image_url: `${SUPABASE_URL}/storage/v1/object/public/item%202/basket.jpg` }
         ];
 
         try {

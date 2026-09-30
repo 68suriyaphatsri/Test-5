@@ -12,6 +12,7 @@
     --card-shadow: 0 12px 36px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(74, 107, 34, 0.08);
     --border-radius-lg: 28px;
     --border-radius-md: 18px;
+    --font-scale: 1; /* ระบบขยายตัวอักษร — ถูกปรับโดย setFontScale() */
 }
 
 * {
@@ -38,7 +39,7 @@ html {
     height: 100%;
     overflow-x: hidden;
     background-color: #f7f9f4;
-    font-size: 17px; /* ปรับขนาดฟอนต์อ่านง่ายสำหรับผู้สูงอายุ */
+    font-size: calc(17px * var(--font-scale)); /* ขนาดฟอนต์ปรับได้ผ่านปุ่ม ก-/ก/ก+ */
     line-height: 1.7;
     color: #2b331f;
     -webkit-font-smoothing: antialiased;

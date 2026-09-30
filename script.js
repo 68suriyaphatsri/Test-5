@@ -2,6 +2,7 @@
 // --- High-Quality Thai Voice Engine ---
 let cachedThaiVoice = null;
 let currentUtterance = null;
+let _ttsKeepAliveTimer = null;
 
 function getBestThaiVoice() {
     if (!('speechSynthesis' in window)) return null;
@@ -11,19 +12,20 @@ function getBestThaiVoice() {
     if (!voices || voices.length === 0) return null;
 
     // หาเสียงภาษาไทยทั้งหมด
-    const thaiVoices = voices.filter(v => 
+    const thaiVoices = voices.filter(v =>
         v.lang === 'th-TH' || v.lang === 'th_TH' || v.lang.toLowerCase().startsWith('th')
     );
 
     if (thaiVoices.length === 0) return null;
 
     // ลำดับเสียงที่คมชัดและเป็นธรรมชาติที่สุด (Natural / Neural / Cloud Voices)
-    const preferred = thaiVoices.find(v => v.name.includes('Google') || v.name.includes('ภาษาไทย')) ||
-                      thaiVoices.find(v => v.name.includes('Natural') || v.name.includes('Premwadee') || v.name.includes('Niwat')) ||
-                      thaiVoices.find(v => v.name.includes('Kanya') || v.name.includes('Narisa') || v.name.includes('Siri')) ||
-                      thaiVoices.find(v => v.name.includes('Enhanced') || v.name.includes('Premium')) ||
-                      thaiVoices.find(v => !v.localService) || // เสียง Cloud ความละเอียดสูง
-                      thaiVoices[0];
+    const preferred =
+        thaiVoices.find(v => v.name.includes('Google') || v.name.includes('ภาษาไทย')) ||
+        thaiVoices.find(v => v.name.includes('Natural') || v.name.includes('Premwadee') || v.name.includes('Niwat')) ||
+        thaiVoices.find(v => v.name.includes('Kanya') || v.name.includes('Narisa') || v.name.includes('Siri')) ||
+        thaiVoices.find(v => v.name.includes('Enhanced') || v.name.includes('Premium')) ||
+        thaiVoices.find(v => !v.localService) || // เสียง Cloud ความละเอียดสูง
+        thaiVoices[0];
 
     cachedThaiVoice = preferred;
     return preferred;
@@ -34,39 +36,73 @@ if ('speechSynthesis' in window) {
         cachedThaiVoice = null;
         getBestThaiVoice();
     };
-    getBestThaiVoice();
+    // รอให้ voices โหลดครบก่อน (บางเบราว์เซอร์ใช้เวลา)
+    setTimeout(() => getBestThaiVoice(), 200);
+}
+
+// Chrome KeepAlive: ป้องกัน speechSynthesis หยุดกลางคัน (Chrome bug)
+function _startTTSKeepAlive() {
+    _stopTTSKeepAlive();
+    _ttsKeepAliveTimer = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+            _stopTTSKeepAlive();
+            return;
+        }
+        // pause + resume เพื่อป้องกัน Chrome หยุดกลางคัน
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+    }, 10000);
+}
+
+function _stopTTSKeepAlive() {
+    if (_ttsKeepAliveTimer) {
+        clearInterval(_ttsKeepAliveTimer);
+        _ttsKeepAliveTimer = null;
+    }
 }
 
 function speakText(text) {
     if (!('speechSynthesis' in window)) {
-        alert("เบราว์เซอร์นี้ไม่รองรับการอ่านเสียง");
+        console.warn('[TTS] ไม่รองรับการอ่านเสียง');
         return;
     }
 
     try {
-        window.speechSynthesis.cancel(); // ล้างคิวเสียงเก่า
-        if (window.speechSynthesis.paused) {
-            window.speechSynthesis.resume();
-        }
+        // หยุดและล้างคิวเก่า จากนั้นรอ 60ms ให้ Chrome reset ก่อน speak ใหม่
+        _stopTTSKeepAlive();
+        window.speechSynthesis.cancel();
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'th-TH';
+        setTimeout(() => {
+            try {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'th-TH';
 
-        const voice = getBestThaiVoice();
-        if (voice) {
-            utterance.voice = voice;
-        }
+                // ลอง get voice — ถ้ายังไม่พร้อม ใช้ lang fallback
+                const voice = getBestThaiVoice();
+                if (voice) utterance.voice = voice;
 
-        // ปรับแต่งความเร็วและระดับเสียงให้ออกเสียง ร/ล และวรรณยุกต์ชัดเจนที่สุด
-        utterance.rate = 0.93;  // ความเร็วกำลังดี ชัดถ้อยชัดคำ
-        utterance.pitch = 1.02; // โทนเสียงสดใสฟังง่าย
-        utterance.volume = 1.0;
+                // ปรับแต่งความเร็วและระดับเสียงให้ออกเสียง ร/ล และวรรณยุกต์ชัดเจนที่สุด
+                utterance.rate = 0.93;   // ความเร็วกำลังดี ชัดถ้อยชัดคำ
+                utterance.pitch = 1.02;  // โทนเสียงสดใสฟังง่าย
+                utterance.volume = 1.0;
 
-        currentUtterance = utterance;
-        utterance.onend = () => { currentUtterance = null; };
-        utterance.onerror = () => { currentUtterance = null; };
+                utterance.onstart = () => { _startTTSKeepAlive(); };
+                utterance.onend   = () => { currentUtterance = null; _stopTTSKeepAlive(); };
+                utterance.onerror = (e) => {
+                    // interrupted เกิดจาก cancel() ปกติ — ไม่ต้อง log
+                    if (e.error !== 'interrupted') {
+                        console.warn('[TTS Error]:', e.error);
+                    }
+                    currentUtterance = null;
+                    _stopTTSKeepAlive();
+                };
 
-        window.speechSynthesis.speak(utterance);
+                currentUtterance = utterance;
+                window.speechSynthesis.speak(utterance);
+            } catch (innerErr) {
+                console.warn('[TTS speak error]:', innerErr);
+            }
+        }, 60);
     } catch (e) {
         console.warn('[TTS Error]:', e);
     }
@@ -1482,6 +1518,8 @@ const SENTENCE_REPEAT_POOLS = [
 
 let sentenceRepeatParts = [];
 let currentRepeatIndex = 0;
+let repeatRecognition = null;
+let currentRepeatMode = 'speak';
 
 function startSentenceRepeatTest() {
     sentenceRepeatScore = 0;
@@ -1526,13 +1564,12 @@ function showRepeatRound(index) {
     if (actionRoundLabel) actionRoundLabel.textContent = `ประโยคที่ ${index + 1} / ${sentenceRepeatParts.length}`;
     if (sentenceEl) sentenceEl.textContent = part;
     if (inputEl) { inputEl.value = ''; }
-    if (statusEl) statusEl.style.display = 'none';
+    if (statusEl) { statusEl.style.display = 'none'; statusEl.innerHTML = ''; }
     if (feedbackEl) { feedbackEl.textContent = ''; feedbackEl.style.display = 'none'; }
 
     // Reset mode selector — กลับไปโหมดเริ่มต้น (พูดตอบ) ทุกรอบใหม่
-    setRepeatMode('speak', false); // false = ไม่ focus input
-    // ซ่อนปุ่ม submit จนกว่าจะมีการกรอก/พูด (เฉพาะ mode พิมพ์)
-    if (submitBtn) submitBtn.style.display = 'none';
+    setRepeatMode('speak', false);
+    updateRepeatActionButtons();
 
     // อ่านเสียงประโยค
     speakText(`ฟังให้ดีและจดจำประโยค: ${part}`);
@@ -1547,9 +1584,8 @@ function showRepeatRound(index) {
         readyBtn.onclick = () => {
             if (listenCard) listenCard.style.display = 'none';
             if (actionCard) actionCard.style.display = 'block';
-            // Reset mode เมื่อเข้า Step 2
             setRepeatMode('speak', false);
-            if (submitBtn) submitBtn.style.display = 'none';
+            updateRepeatActionButtons();
             // Auto-speak คำแนะนำ
             setTimeout(() => speakText('เลือกพูดตอบหรือพิมพ์ตอบได้เลยครับ'), 200);
         };
@@ -1562,34 +1598,61 @@ function showRepeatRound(index) {
     // Wire submit button
     if (submitBtn) submitBtn.onclick = () => submitRepeat(part);
 
-    // Wire Enter key สำหรับ input
+    // Wire Input listeners
     if (inputEl) {
         inputEl.onkeydown = (e) => {
             if (e.key === 'Enter') { e.preventDefault(); submitRepeat(part); }
         };
-        // แสดงปุ่ม submit เมื่อมีการพิมพ์
         inputEl.oninput = () => {
-            if (submitBtn) submitBtn.style.display = inputEl.value.trim() ? 'block' : 'none';
+            updateRepeatActionButtons();
         };
     }
 }
 
+// อัปเดตการแสดงปุ่ม Submit และปุ่ม Clear
+function updateRepeatActionButtons() {
+    const inputEl = document.getElementById('repeat-input');
+    const submitBtn = document.getElementById('repeat-submit-btn');
+    const clearBtn = document.getElementById('repeat-clear-btn');
+    const hasText = inputEl && inputEl.value.trim().length > 0;
+
+    if (submitBtn) {
+        submitBtn.style.display = hasText ? 'block' : 'none';
+    }
+    if (clearBtn) {
+        clearBtn.style.display = hasText ? 'inline-flex' : 'none';
+    }
+}
+
+// ล้างข้อความในกล่อง
+function clearRepeatInput() {
+    const inputEl = document.getElementById('repeat-input');
+    const statusEl = document.getElementById('repeat-speech-status');
+    if (inputEl) {
+        inputEl.value = '';
+        inputEl.focus();
+    }
+    if (statusEl) {
+        statusEl.style.display = 'none';
+        statusEl.innerHTML = '';
+    }
+    updateRepeatActionButtons();
+}
+
 // เลือก mode: 'speak' หรือ 'type'
 function setRepeatMode(mode, focusInput = true) {
+    currentRepeatMode = mode;
     const speakPanel = document.getElementById('repeat-speak-panel');
-    const typePanel = document.getElementById('repeat-type-panel');
     const speakBtn = document.getElementById('repeat-mode-speak-btn');
     const typeBtn = document.getElementById('repeat-mode-type-btn');
-    const submitBtn = document.getElementById('repeat-submit-btn');
+    const inputLabel = document.getElementById('repeat-input-label');
     const inputEl = document.getElementById('repeat-input');
 
-    if (!speakPanel || !typePanel) return;
+    if (!speakPanel) return;
 
     if (mode === 'speak') {
-        // แสดง panel พูด, ซ่อน panel พิมพ์
         speakPanel.style.display = 'block';
-        typePanel.style.display = 'none';
-        // ปุ่ม active
+        if (inputLabel) inputLabel.textContent = '✏️ คำตอบของคุณ (แตะเพื่อแก้ไขข้อความได้):';
         if (speakBtn) {
             speakBtn.style.background = 'linear-gradient(135deg, #82954b, #6a7a3a)';
             speakBtn.style.color = 'white';
@@ -1602,21 +1665,11 @@ function setRepeatMode(mode, focusInput = true) {
             typeBtn.style.border = '2px solid #82954b';
             typeBtn.style.boxShadow = 'none';
         }
-        // ซ่อนปุ่ม submit (mic จะ submit อัตโนมัติ)
-        if (submitBtn) submitBtn.style.display = 'none';
-        // Reset mic button
-        const micBtn = document.getElementById('repeat-mic-btn');
-        if (micBtn) {
-            micBtn.innerHTML = '🎙️ กดเพื่อเริ่มพูด';
-            micBtn.style.background = '#e8ede0';
-            micBtn.style.color = '#4a5d23';
-            micBtn.style.borderColor = '#82954b';
-        }
+        stopRepeatMic();
     } else {
-        // แสดง panel พิมพ์, ซ่อน panel พูด
+        // Mode พิมพ์
         speakPanel.style.display = 'none';
-        typePanel.style.display = 'block';
-        // ปุ่ม active
+        if (inputLabel) inputLabel.textContent = '⌨️ พิมพ์ประโยคที่จำได้:';
         if (typeBtn) {
             typeBtn.style.background = 'linear-gradient(135deg, #82954b, #6a7a3a)';
             typeBtn.style.color = 'white';
@@ -1629,17 +1682,11 @@ function setRepeatMode(mode, focusInput = true) {
             speakBtn.style.border = '2px solid #82954b';
             speakBtn.style.boxShadow = 'none';
         }
-        // แสดงปุ่ม submit (ถ้ามีข้อความ)
-        if (submitBtn) {
-            submitBtn.style.display = (inputEl && inputEl.value.trim()) ? 'block' : 'none';
-        }
-        // หยุด mic ถ้ากำลังทำงาน
         stopRepeatMic();
         if (focusInput && inputEl) setTimeout(() => inputEl.focus(), 100);
     }
+    updateRepeatActionButtons();
 }
-
-let repeatRecognition = null;
 
 function toggleRepeatMic(expectedSentence) {
     const micBtn = document.getElementById('repeat-mic-btn');
@@ -1647,6 +1694,7 @@ function toggleRepeatMic(expectedSentence) {
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         showCustomPopup('เบราว์เซอร์ไม่รองรับเสียงพูด กรุณาพิมพ์แทนครับ', '⚠️');
+        setRepeatMode('type', true);
         return;
     }
     // ถ้ากำลังฟังอยู่ → หยุด
@@ -1660,46 +1708,83 @@ function toggleRepeatMic(expectedSentence) {
     repeatRecognition.interimResults = false;
     repeatRecognition.maxAlternatives = 1;
     repeatRecognition.continuous = false;
+
     repeatRecognition.onresult = (event) => {
         const spoken = event.results[0][0].transcript.trim();
         const inputEl = document.getElementById('repeat-input');
-        if (inputEl) inputEl.value = spoken;
+        if (inputEl) {
+            inputEl.value = spoken;
+            updateRepeatActionButtons();
+        }
         stopRepeatMic();
-        submitRepeat(expectedSentence);
+        
+        // แสดงผลลัพธ์ว่าพูดอะไร และแจ้งให้ผู้ใช้ทราบว่าแก้ได้
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.background = '#e8f5e9';
+            statusEl.style.borderColor = '#c8e6c9';
+            statusEl.style.color = '#2e7d32';
+            statusEl.innerHTML = `🎙️ ได้ยินว่า: "<strong>${spoken}</strong>"<br><span style="font-size:0.82rem;font-weight:normal;color:#555;">(ท่านสามารถแตะกล่องข้อความด้านล่างเพื่อพิมพ์แก้ไข หรือกดปุ่ม 'ตรวจคำตอบ & ไปต่อ' ได้เลยครับ)</span>`;
+        }
     };
-    repeatRecognition.onerror = () => stopRepeatMic();
-    repeatRecognition.onend = () => stopRepeatMic();
+
+    repeatRecognition.onerror = (e) => {
+        stopRepeatMic();
+        if (statusEl && statusEl.style.display !== 'none' && !statusEl.innerHTML.includes('ได้ยินว่า')) {
+            statusEl.style.display = 'block';
+            statusEl.style.background = '#fff3e0';
+            statusEl.style.borderColor = '#ffe0b2';
+            statusEl.style.color = '#e65100';
+            statusEl.innerHTML = '⚠️ ไม่ได้ยินเสียงพูด กรุณาลองกดพูดใหม่อีกครั้ง หรือเลือกพิมพ์ตอบครับ';
+        }
+    };
+
+    repeatRecognition.onend = () => {
+        stopRepeatMic();
+    };
+
     repeatRecognition.start();
-    // เปลี่ยนสีปุ่มเดิมเพื่อแสดงสถานะกำลังฟัง
+
+    // เปลี่ยน visual แสดงสถานะกำลังฟัง
     if (micBtn) {
-        micBtn.innerHTML = '🔴 กำลังฟัง...';
+        micBtn.innerHTML = '🔴 กำลังฟังเสียง... (กดเพื่อหยุด)';
         micBtn.style.background = '#82954b';
         micBtn.style.color = 'white';
         micBtn.style.borderColor = '#4a5d23';
     }
-    if (statusEl) statusEl.style.display = 'block';
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = '#e8ede0';
+        statusEl.style.borderColor = '#82954b';
+        statusEl.style.color = '#4a5d23';
+        statusEl.innerHTML = '🔴 กำลังฟังเสียงพูด... พูดประโยคที่จำได้เลยครับ';
+    }
 }
 
 function stopRepeatMic() {
     const micBtn = document.getElementById('repeat-mic-btn');
-    const statusEl = document.getElementById('repeat-speech-status');
     try { if (repeatRecognition) repeatRecognition.stop(); } catch (e) {}
     repeatRecognition = null;
+    
     // เรียกคืน visual กลับเดิม
     if (micBtn) {
-        micBtn.innerHTML = '🎙️ กดเพื่อเริ่มพูด';
+        micBtn.innerHTML = '🎙️ กดเพื่อเริ่มพูด (หรือพูดใหม่)';
         micBtn.style.background = '#e8ede0';
         micBtn.style.color = '#4a5d23';
         micBtn.style.borderColor = '#82954b';
-        micBtn.classList.remove('listening');
     }
-    if (statusEl) statusEl.style.display = 'none';
 }
 
 function submitRepeat(expectedSentence) {
     const inputEl = document.getElementById('repeat-input');
     const feedbackEl = document.getElementById('repeat-feedback');
     const answer = (inputEl ? inputEl.value.trim() : '').replace(/\s+/g, ' ');
+
+    if (!answer) {
+        showCustomPopup('กรุณาพูดหรือพิมพ์ประโยคคำตอบก่อนตรวจคำตอบครับ', '⚠️');
+        return;
+    }
+
     const expected = expectedSentence.replace(/\s+/g, ' ').trim();
 
     // เปรียบเทียบความคล้ายคลึง (Fuzzy: คิดเป็น % ของคำตรงกัน)

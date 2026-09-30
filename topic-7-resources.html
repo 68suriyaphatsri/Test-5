@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 
 <head>
@@ -28,6 +28,7 @@
             --radius-lg: 28px;
             --radius-full: 9999px;
             --font-scale: 1;
+            font-size: calc(17px * var(--font-scale)); /* rem scale */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Prompt', 'Anuphan', 'Sarabun', sans-serif; }
@@ -108,9 +109,9 @@
         </a>
         <div class="nav-actions">
             <div class="font-controls">
-                <button class="font-btn" onclick="setFontScale(0.9)">ก-</button>
-                <button class="font-btn active" id="font-btn-default" onclick="setFontScale(1)">ก</button>
-                <button class="font-btn" onclick="setFontScale(1.15)">ก+</button>
+                <button class="font-btn" onclick="setFontScale(0.9, this)">ก-</button>
+                <button class="font-btn active" id="font-btn-default" onclick="setFontScale(1, this)">ก</button>
+                <button class="font-btn" onclick="setFontScale(1.15, this)">ก+</button>
             </div>
             <a href="test.html" class="btn-test-nav">
                 <span>🌱</span> <span>เริ่มทำแบบทดสอบ</span>
@@ -224,11 +225,25 @@
             document.getElementById('progress-bar').style.width = scrolled + '%';
         });
 
-        function setFontScale(scale) {
+        function setFontScale(scale, btn) {
             document.documentElement.style.setProperty('--font-scale', scale);
-            document.querySelectorAll('.font-btn').forEach(btn => btn.classList.remove('active'));
-            if (event && event.target) event.target.classList.add('active');
+            try { localStorage.setItem('mg_font_scale', scale); } catch(e) {}
+            document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
         }
+        (function() {
+            try {
+                var saved = parseFloat(localStorage.getItem('mg_font_scale'));
+                if (!isNaN(saved) && saved > 0) {
+                    document.documentElement.style.setProperty('--font-scale', saved);
+                    document.querySelectorAll('.font-btn').forEach(function(btn) {
+                        var m = (btn.getAttribute('onclick') || '').match(/setFontScale\(([^,)]+)/);
+                        if (m && parseFloat(m[1]) === saved) btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    });
+                }
+            } catch(e) {}
+        })();
     </script>
 </body>
 

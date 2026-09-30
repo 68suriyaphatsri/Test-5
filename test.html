@@ -494,32 +494,43 @@
                 </div>
 
                 <!-- Panel: พูดตอบ -->
-                <div id="repeat-speak-panel" style="display: block;">
+                <div id="repeat-speak-panel" style="display: block; margin-bottom: 12px;">
                     <button type="button" id="repeat-mic-btn"
-                        style="width: 100%; padding: 16px; background: #e8ede0; border: 2px solid #82954b; border-radius: 16px; font-size: 1.2rem; cursor: pointer; color: #4a5d23; transition: all 0.2s; font-weight: bold; margin-bottom: 10px;"
+                        style="width: 100%; padding: 16px; background: #e8ede0; border: 2px solid #82954b; border-radius: 16px; font-size: 1.15rem; cursor: pointer; color: #4a5d23; transition: all 0.2s; font-weight: bold; margin-bottom: 10px;"
                         title="กดเพื่อเริ่มพูด">
                         🎙️ กดเพื่อเริ่มพูด
                     </button>
-                    <div id="repeat-speech-status" style="font-size: 0.9rem; color: #4a5d23; font-weight: bold; margin-bottom: 10px; display: none; background: #e8f5e9; padding: 8px 12px; border-radius: 10px;">
+                    <div id="repeat-speech-status" style="font-size: 0.9rem; color: #4a5d23; font-weight: 500; margin-bottom: 10px; display: none; background: #e8f5e9; padding: 10px 14px; border-radius: 12px; border: 1px solid #c8e6c9; text-align: left; line-height: 1.5;">
                         🔴 กำลังฟังเสียงพูด... พูดได้เลยครับ
                     </div>
                 </div>
 
-                <!-- Panel: พิมพ์ตอบ -->
-                <div id="repeat-type-panel" style="display: none; margin-bottom: 10px;">
-                    <input type="text" id="repeat-input"
-                        placeholder="พิมพ์ประโยคที่จำได้ที่นี่..."
-                        style="width: 100%; padding: 13px 14px; border: 2px solid #82954b; border-radius: 14px; font-size: 1rem; outline: none; font-family: 'Anuphan', sans-serif; box-sizing: border-box; background: #fafff5;">
+                <!-- กล่องแสดงและแก้ไขคำตอบ (ใช้ร่วมกันทั้งโหมดพูดและพิมพ์) -->
+                <div id="repeat-answer-container" style="text-align: left; margin-bottom: 14px;">
+                    <label for="repeat-input" id="repeat-input-label" style="display: block; font-size: 0.9rem; font-weight: 600; color: #355115; margin-bottom: 6px;">
+                        ✏️ คำตอบของคุณ (แตะเพื่อแก้ไขข้อความได้):
+                    </label>
+                    <div style="position: relative;">
+                        <input type="text" id="repeat-input"
+                            placeholder="กดไมค์พูด หรือพิมพ์ประโยคที่จำได้ที่นี่..."
+                            style="width: 100%; padding: 13px 42px 13px 14px; border: 2px solid #82954b; border-radius: 14px; font-size: 1.05rem; outline: none; font-family: 'Anuphan', sans-serif; box-sizing: border-box; background: #fafff5; color: #2d3748; transition: border-color 0.2s;">
+                        <button type="button" id="repeat-clear-btn" onclick="clearRepeatInput()" title="ล้างข้อความ"
+                            style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ddd; color: #555; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 0.9rem; font-weight: bold; line-height: 1; align-items: center; justify-content: center;">
+                            ✕
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Feedback -->
                 <div id="repeat-feedback" style="min-height: 24px; font-size: 0.95rem; font-weight: bold; margin-bottom: 14px; display: none;"></div>
 
-                <!-- ปุ่ม Submit — ซ่อนไว้จนกว่าจะเลือก mode พิมพ์ หรือ มีผลจาก mic -->
-                <button id="repeat-submit-btn"
-                    style="width: 100%; padding: 14px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-size: 1.05rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(130,149,75,0.35); display: none;">
-                    ✅ ตรวจคำตอบ &amp; ไปต่อ
-                </button>
+                <!-- ปุ่ม Submit & Actions -->
+                <div id="repeat-actions-row" style="display: flex; flex-direction: column; gap: 8px;">
+                    <button id="repeat-submit-btn"
+                        style="width: 100%; padding: 14px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-size: 1.05rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(130,149,75,0.35); display: none;">
+                        ✅ ตรวจคำตอบ &amp; ไปต่อ
+                    </button>
+                </div>
             </div>
         </div>
     </div>

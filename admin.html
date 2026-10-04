@@ -560,7 +560,70 @@
             font-weight: 600;
             cursor: pointer;
         }
-    </style>
+
+        /* =====================================================
+           AI Analysis Panel Styles
+           ===================================================== */
+        .ai-analysis-section {
+            background: white;
+            border-radius: 24px;
+            padding: 28px 32px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #eef2e6;
+            margin-bottom: 28px;
+        }
+        .ai-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .ai-section-header h3 { font-size: 1.15rem; color: #333; font-weight: 700; }
+        .beta-badge { background: linear-gradient(135deg, #ff6b35, #f7931e); color: white; font-size: 0.62rem; padding: 3px 10px; border-radius: 50px; font-weight: 800; letter-spacing: 1px; }
+        .pdpa-badge { background: linear-gradient(135deg, #1565c0, #0d47a1); color: white; font-size: 0.62rem; padding: 3px 10px; border-radius: 50px; font-weight: 700; }
+        .ai-pdpa-notice { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 12px; padding: 12px 16px; font-size: 0.82rem; color: #2e7d32; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 16px; }
+        .ai-key-setup { background: linear-gradient(135deg, #f0f7ff, #e8f0fe); border: 1.5px solid #90caf9; border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .ai-key-setup label { font-size: 0.85rem; font-weight: 600; color: #333; }
+        .ai-key-row { display: flex; gap: 10px; align-items: center; }
+        .ai-key-row input { flex: 1; padding: 10px 16px; border: 1.5px solid #90caf9; border-radius: 50px; font-size: 0.9rem; font-family: monospace; outline: none; transition: 0.2s; }
+        .ai-key-row input:focus { border-color: #1565c0; }
+        .btn-save-key { padding: 10px 20px; background: linear-gradient(135deg, #1565c0, #0d47a1); color: white; border: none; border-radius: 50px; font-size: 0.88rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; }
+        .btn-save-key:hover { opacity: 0.9; transform: translateY(-1px); }
+        .ai-key-hint { font-size: 0.78rem; color: #666; margin: 0; }
+        .ai-key-hint a { color: #1565c0; }
+        .ai-key-saved { font-size: 0.82rem; font-weight: 600; }
+        .ai-mode-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .ai-tab { padding: 8px 20px; border-radius: 50px; border: 2px solid #82954b; background: white; color: #82954b; cursor: pointer; font-weight: 600; font-size: 0.9rem; font-family: 'Prompt', sans-serif; transition: all 0.2s; }
+        .ai-tab.active { background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border-color: #82954b; }
+        .ai-tab:hover:not(.active) { background: #f8faf4; }
+        .ai-mode-content { display: none; }
+        .ai-mode-content.active { display: block; }
+        .ai-mode-inner { background: #f8faf4; border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .ai-select { flex: 1; min-width: 200px; padding: 10px 16px; border: 1.5px solid #c8d8a0; border-radius: 50px; font-family: 'Prompt', sans-serif; font-size: 0.9rem; background: white; outline: none; }
+        .ai-mode-note { font-size: 0.9rem; color: #555; margin: 0; }
+        .ai-mode-note strong { color: #82954b; }
+        .btn-analyze { padding: 11px 28px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 50px; font-weight: 700; font-size: 0.95rem; font-family: 'Prompt', sans-serif; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(102,126,234,0.35); white-space: nowrap; }
+        .btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.45); }
+        .btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        #ai-loading { display: none; flex-direction: column; align-items: center; padding: 32px; gap: 14px; }
+        .ai-spinner { width: 44px; height: 44px; border: 4px solid #e0e0e0; border-top-color: #667eea; border-radius: 50%; animation: aiSpin 0.8s linear infinite; }
+        .ai-loading-text { font-size: 0.95rem; color: #666; font-weight: 500; }
+        @keyframes aiSpin { to { transform: rotate(360deg); } }
+        #ai-result-container { display: none; margin-top: 20px; border-radius: 16px; overflow: hidden; border: 1.5px solid #e0e0e0; }
+        .ai-result-header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .ai-result-title { font-weight: 700; font-size: 1rem; }
+        .ai-result-actions { display: flex; gap: 8px; }
+        .btn-ai-action { padding: 6px 14px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 50px; font-size: 0.8rem; font-weight: 600; font-family: 'Prompt', sans-serif; cursor: pointer; transition: 0.2s; }
+        .btn-ai-action:hover { background: rgba(255,255,255,0.35); }
+        #ai-result-body { background: #fafafa; padding: 24px; max-height: 520px; overflow-y: auto; line-height: 1.85; font-size: 0.95rem; color: #2c3e50; }
+        #ai-result-body h1, #ai-result-body h2, #ai-result-body h3 { color: #4a5d23; margin: 16px 0 8px; }
+        #ai-result-body h2 { border-bottom: 2px solid #e8f0d8; padding-bottom: 6px; }
+        #ai-result-body ul, #ai-result-body ol { padding-left: 20px; }
+        #ai-result-body li { margin-bottom: 4px; }
+        #ai-result-body strong { color: #4a5d23; }
+        #ai-result-body p { margin-bottom: 10px; }
+        .ai-disclaimer-bar { background: #fff8e1; border-top: 1px solid #ffe082; padding: 12px 20px; font-size: 0.78rem; color: #795548; text-align: center; font-weight: 500; }    </style>
 </head>
 
 <body>
@@ -680,6 +743,65 @@
                 </div>
             </div>
 
+
+            <!-- AI Analysis Section -->
+            <div class="ai-analysis-section">
+                <div class="ai-section-header">
+                    <span style="font-size:1.8rem;">&#x1F916;</span>
+                    <h3>AI Analysis &#x2014; วิเคราะห์ผลด้วย Gemini AI</h3>
+                    <span class="beta-badge">BETA</span>
+                    <span class="pdpa-badge">&#x1F512; PDPA Safe</span>
+                </div>
+                <div class="ai-pdpa-notice">
+                    <span style="font-size:1.1rem;flex-shrink:0;">&#x1F6E1;&#xFE0F;</span>
+                    <span>ข้อมูลที่ส่งให้ AI <strong>ไม่มีชื่อ, LINE ID, GPS หรือข้อมูลส่วนบุคคลใดๆ</strong> ระบบจะตัดข้อมูลออกโดยอัตโนมัติ (De-identification) ก่อนส่งทุกครั้ง ตาม PDPA &#x2014; ข้อมูลไม่ถูกบันทึกหรือเผยแพร่</span>
+                </div>
+                <div class="ai-key-setup">
+                    <label>&#x1F511; Gemini API Key <small style="font-weight:400;color:#888;">(เก็บใน Browser ของคุณเท่านั้น)</small></label>
+                    <div class="ai-key-row">
+                        <input type="password" id="gemini-api-key-input" placeholder="วาง API Key ที่นี่..." autocomplete="off"/>
+                        <button class="btn-save-key" onclick="saveGeminiKey()">&#x1F4BE; บันทึก</button>
+                        <button class="btn-save-key" style="background:linear-gradient(135deg,#e53935,#b71c1c);" onclick="clearGeminiKey()">&#x1F5D1;&#xFE0F; ล้าง</button>
+                    </div>
+                    <div id="ai-key-status" class="ai-key-saved" style="display:none;"></div>
+                    <p class="ai-key-hint">&#x1F512; Key ไม่ถูกส่งไปยัง Server | <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">รับ API Key ฟรีจาก Google AI Studio &#x2192;</a></p>
+                </div>
+                <div class="ai-mode-tabs">
+                    <button class="ai-tab active" onclick="switchAiMode('single', this)">&#x1F464; รายบุคคล</button>
+                    <button class="ai-tab" onclick="switchAiMode('group', this)">&#x1F465; ภาพรวมกลุ่ม</button>
+                </div>
+                <div id="ai-mode-single" class="ai-mode-content active">
+                    <div class="ai-mode-inner">
+                        <select id="ai-single-select" class="ai-select">
+                            <option value="">-- เลือกผู้ทดสอบที่ต้องการวิเคราะห์ --</option>
+                        </select>
+                        <button class="btn-analyze" id="btn-analyze-single" onclick="runSingleAnalysis()">&#x1F50D; วิเคราะห์รายบุคคล</button>
+                    </div>
+                </div>
+                <div id="ai-mode-group" class="ai-mode-content">
+                    <div class="ai-mode-inner">
+                        <p class="ai-mode-note">วิเคราะห์ภาพรวมผู้ทดสอบทั้งหมด <strong id="ai-group-count">0</strong> คน</p>
+                        <button class="btn-analyze" id="btn-analyze-group" onclick="runGroupAnalysis()">&#x1F4CA; วิเคราะห์ภาพรวมกลุ่ม</button>
+                    </div>
+                </div>
+                <div id="ai-loading">
+                    <div class="ai-spinner"></div>
+                    <p class="ai-loading-text">AI กำลังวิเคราะห์ข้อมูล กรุณารอสักครู่...</p>
+                </div>
+                <div id="ai-result-container">
+                    <div class="ai-result-header">
+                        <span class="ai-result-title" id="ai-result-title">ผลการวิเคราะห์โดย AI</span>
+                        <div class="ai-result-actions">
+                            <button class="btn-ai-action" onclick="copyAiResult()">&#x1F4CB; Copy</button>
+                            <button class="btn-ai-action" onclick="printAiResult()">&#x1F5A8;&#xFE0F; Print</button>
+                        </div>
+                    </div>
+                    <div id="ai-result-body"></div>
+                    <div class="ai-disclaimer-bar">
+                        &#x26A0;&#xFE0F; ผลการวิเคราะห์นี้ผลิตโดย AI เพื่อสนับสนุนการตัดสินใจเบื้องต้นเท่านั้น &#x2014; <strong>ไม่ใช่การวินิจฉัยโรคทางการแพทย์</strong>
+                    </div>
+                </div>
+            </div>
             <!-- Data Table Section -->
             <div class="table-section">
                 <div class="table-header">

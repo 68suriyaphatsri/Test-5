@@ -1,3 +1,89 @@
+
+// ==========================================
+// --- Global Test Timer (จับเวลาทั้งหมดตั้งแต่เริ่มทำ) ---
+// ==========================================
+let testStartTime = null;
+let testEndTime = null;
+let testGlobalTimerInterval = null;
+let testTotalDurationSeconds = 0;
+let testTotalDurationFormatted = '';
+
+function startGlobalTestTimer() {
+    testStartTime = Date.now();
+    testEndTime = null;
+    testTotalDurationSeconds = 0;
+    testTotalDurationFormatted = '0 วินาที';
+
+    if (testGlobalTimerInterval) {
+        clearInterval(testGlobalTimerInterval);
+        testGlobalTimerInterval = null;
+    }
+
+    const timerWidget = document.getElementById('test-global-timer-widget');
+    const timerDisplay = document.getElementById('test-global-timer-display');
+
+    if (timerWidget) {
+        timerWidget.style.display = 'flex';
+        timerWidget.style.opacity = '1';
+    }
+    if (timerDisplay) {
+        timerDisplay.textContent = '00:00';
+    }
+
+    testGlobalTimerInterval = setInterval(() => {
+        if (!testStartTime) return;
+        const elapsedSec = Math.floor((Date.now() - testStartTime) / 1000);
+        testTotalDurationSeconds = elapsedSec;
+        const mins = Math.floor(elapsedSec / 60);
+        const secs = elapsedSec % 60;
+        const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+        const displayEl = document.getElementById('test-global-timer-display');
+        if (displayEl) {
+            displayEl.textContent = formatted;
+        }
+    }, 1000);
+}
+
+function stopGlobalTestTimer() {
+    if (testGlobalTimerInterval) {
+        clearInterval(testGlobalTimerInterval);
+        testGlobalTimerInterval = null;
+    }
+
+    if (testStartTime) {
+        testEndTime = Date.now();
+        testTotalDurationSeconds = Math.max(1, Math.round((testEndTime - testStartTime) / 1000));
+    } else {
+        // Fallback default
+        testTotalDurationSeconds = 120;
+    }
+
+    const mins = Math.floor(testTotalDurationSeconds / 60);
+    const secs = testTotalDurationSeconds % 60;
+    if (mins > 0) {
+        testTotalDurationFormatted = `${mins} นาที ${secs > 0 ? secs + ' วินาที' : ''}`.trim();
+    } else {
+        testTotalDurationFormatted = `${secs} วินาที`;
+    }
+
+    const timerWidget = document.getElementById('test-global-timer-widget');
+    if (timerWidget) {
+        timerWidget.style.opacity = '0';
+        setTimeout(() => { timerWidget.style.display = 'none'; }, 300);
+    }
+
+    const resultDurationDisplay = document.getElementById('result-duration-display');
+    if (resultDurationDisplay) {
+        resultDurationDisplay.textContent = testTotalDurationFormatted;
+    }
+
+    return {
+        seconds: testTotalDurationSeconds,
+        formatted: testTotalDurationFormatted
+    };
+}
+
 // --- 0. Speech / Audio Assistant Utility ---
 // --- High-Quality Thai Voice Engine ---
 let cachedThaiVoice = null;
@@ -747,6 +833,7 @@ function replayMemoryWordsVoice() {
 const startJourneyBtn = document.getElementById('start-journey-btn');
 if (startJourneyBtn) {
     startJourneyBtn.addEventListener('click', async function () {
+        startGlobalTestTimer();
         // สุ่มชุดสิ่งของในสวน
         const selectedStory = GARDEN_STORIES[Math.floor(Math.random() * GARDEN_STORIES.length)];
         currentStory = selectedStory; // เก็บไว้ใช้ในขั้นตอน Sentence Repeat
@@ -1306,6 +1393,32 @@ document.getElementById('math-next-btn').onclick = async function () {
 let namingScore = 0;
 let namingSelectedObjects = [];
 
+// --- Image Zoom Modal Helpers for Naming Test ---
+function openImageZoom(imgSrc, titleText) {
+    const modal = document.getElementById('image-zoom-modal');
+    const modalImg = document.getElementById('image-zoom-img');
+    const modalTitle = document.getElementById('image-zoom-title');
+    if (!modal || !modalImg) return;
+
+    modalImg.src = imgSrc;
+    if (modalTitle && titleText) modalTitle.textContent = `🔍 ${titleText}`;
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+    });
+}
+
+function closeImageZoom(event) {
+    const modal = document.getElementById('image-zoom-modal');
+    if (!modal) return;
+    modal.style.opacity = '0';
+    setTimeout(() => {
+        modal.style.display = 'none';
+        const modalImg = document.getElementById('image-zoom-img');
+        if (modalImg) modalImg.src = '';
+    }, 250);
+}
+
 async function startNamingTest() {
     const page = document.getElementById('naming-test-page');
     const container = document.getElementById('naming-cards-container');
@@ -1322,7 +1435,11 @@ async function startNamingTest() {
         card.style.cssText = 'width:100%;max-width:440px;background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.08);display:flex;flex-direction:row;align-items:center;gap:12px;box-sizing:border-box;border:1.5px solid #e8ede0;';
 
         const imgWrapper = document.createElement('div');
-        imgWrapper.style.cssText = 'width:75px;height:75px;flex-shrink:0;background:#f5f8f0;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #e0ebd2;';
+        imgWrapper.style.cssText = 'width:75px;height:75px;flex-shrink:0;background:#f5f8f0;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1.5px solid #d0e2be;position:relative;cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;';
+        imgWrapper.title = 'แตะเพื่อขยายดูภาพใหญ่ 🔍';
+        imgWrapper.onmouseenter = () => { imgWrapper.style.transform = 'scale(1.05)'; imgWrapper.style.boxShadow = '0 4px 12px rgba(130,149,75,0.3)'; };
+        imgWrapper.onmouseleave = () => { imgWrapper.style.transform = 'scale(1)'; imgWrapper.style.boxShadow = 'none'; };
+        imgWrapper.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}: ${obj.name || 'สิ่งของในสวน'}`);
 
         const img = document.createElement('img');
         img.src = obj.image_url;
@@ -1332,14 +1449,20 @@ async function startNamingTest() {
             imgWrapper.innerHTML = '<span style="font-size:40px;">🪴</span>';
         };
 
+        const zoomBadge = document.createElement('span');
+        zoomBadge.innerHTML = '🔍';
+        zoomBadge.style.cssText = 'position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.55);color:white;font-size:0.65rem;padding:1px 4px;border-radius:6px;backdrop-filter:blur(2px);pointer-events:none;';
+
         imgWrapper.appendChild(img);
+        imgWrapper.appendChild(zoomBadge);
 
         const rightDiv = document.createElement('div');
         rightDiv.style.cssText = 'flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;';
 
         const label = document.createElement('label');
         label.textContent = `สิ่งของในภาพที่ ${i + 1} (ข้อที่ ${i + 1}/5)`;
-        label.style.cssText = 'font-size:0.85rem;color:#4a5d23;font-weight:bold;white-space:normal;word-break:break-word;line-height:1.3;';
+        label.style.cssText = 'font-size:0.85rem;color:#4a5d23;font-weight:bold;white-space:normal;word-break:break-word;line-height:1.3;cursor:pointer;';
+        label.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}: ${obj.name || 'สิ่งของในสวน'}`);
 
         // Input Row: ช่องพิมพ์ + ปุ่มไมค์
         const inputRow = document.createElement('div');
@@ -1399,12 +1522,10 @@ let namingRecognition = null;
 let namingActiveMicIndex = null;
 
 function toggleNamingMic(index, inputEl, micBtn) {
-    // หยุดไมค์เดิมก่อน (ถ้ากำลังฟังอยู่)
     if (namingRecognition) {
         try { namingRecognition.stop(); } catch(e) {}
         namingRecognition = null;
     }
-    // reset ปุ่มเดิม
     if (namingActiveMicIndex !== null && namingActiveMicIndex !== index) {
         const prevBtn = document.getElementById(`naming-mic-${namingActiveMicIndex}`);
         if (prevBtn) {
@@ -1413,7 +1534,6 @@ function toggleNamingMic(index, inputEl, micBtn) {
             prevBtn.style.borderColor = '#82954b';
         }
     }
-    // ถ้ากดปุ่มเดิมขณะกำลังฟัง → หยุด
     if (namingActiveMicIndex === index && micBtn.style.background === 'rgb(130, 149, 75)') {
         namingActiveMicIndex = null;
         micBtn.innerHTML = '🎙️';
@@ -1434,7 +1554,6 @@ function toggleNamingMic(index, inputEl, micBtn) {
     namingRecognition.maxAlternatives = 1;
     namingRecognition.continuous = false;
 
-    // แสดงสถานะกำลังฟัง
     namingActiveMicIndex = index;
     micBtn.innerHTML = '🔴';
     micBtn.style.background = '#82954b';
@@ -1463,7 +1582,6 @@ function resetNamingMic(index, micBtn) {
         micBtn.title = 'กดแล้วพูดชื่อสิ่งของ';
     }
 }
-
 
 document.getElementById('naming-submit-btn').onclick = function () {
     const inputs = namingSelectedObjects.map((_, i) =>
@@ -1818,122 +1936,188 @@ function fuzzyMatch(answer, expected) {
 }
 
 
-// --- 8.5 ด่านความคล่องแคล่วทางภาษา (Category Fluency Test - 4 คะแนน พร้อม Thai Animal Dictionary) ---
+// --- 8.5 ด่านความคล่องแคล่วทางภาษา (Category Fluency Test - 4 คะแนน พร้อม Thai Animal Dictionary 400+ คำ) ---
 const THAI_ANIMALS_SET = new Set([
-    // --- สัตว์บก (เดิม + ใหม่) ---
-    "หมา", "สุนัข", "แมว", "ช้าง", "ม้า", "วัว", "ควาย", "หมู", "เป็ด", "ไก่", "ห่าน",
-    "เสือ", "สิงโต", "ช้าง", "ยีราฟ", "ม้าลาย", "หมีพูห์", "หมีกริซลี", "หมีควาย",
-    "หมาป่า", "สุนัขจิ้งจอก", "ไฮยีน่า", "ชีตาห์", "เสือดาว", "เสือเมฆ", "แมวป่า",
-    "กระรอก", "กระแต", "พ่น", "หนูพุก", "แรคคูน", "โอโปสซัม", "สล็อต",
-    "ลิงแสม", "ลิงกัง", "ค่าง", "ชะนี", "กอริลลา", "ชิมแปนซี", "อุรังอุตัง", "โบโนโบ", "เลเมอร์",
-    "ตัวเมียร์แคต", "พังพอน", "วัว", "ควาย", "ม้า", "ลา", "ล่อ", "แพะ", "แกะ",
-    "อูฐ", "อัลปาก้า", "ลามา", "กวาง", "ละมั่ง", "ละมั่งเก้ง", "กระจง",
-    "หมูป่า", "แรด", "สมเสร็จ", "ตัวลิ่น", "ตัวกินมด", "อาร์มาดิลโล",
-    "เม่น", "บีเวอร์", "ตัวนาก", "วอลรัส", "พะยูน", "ตุ่นปากเป็ด", "ตัวอีคิดนา",
-    "จิ้งจอกอาร์กติก", "วัวไบสัน", "วัวมัสก์", "ตัวทัสมาเนียนเดวิล",
-    "วอมแบท", "จิงโจ้", "โคอาลา", "ควอกกา", "วอลลาบี",
-    "กระต่าย", "หนูแฮมสเตอร์", "หนูแกสบี้", "ชินชิลล่า", "เฟอร์เรท",
-    "พญากระรอก", "ตัวนากหญ้า", "คาปิบารา", "ตุ่น",
-    // เดิม
-    "ลิง", "เสือดำ", "เสือชีตาห์", "แมวดาว", "หมี", "หมีแพนด้า", "หมีขอ",
-    "เก้ง", "ละองละมั่ง", "ฮิปโป", "ฮิปโปโปเตมัส", "ลามะ",
-    "กระแต", "หนู", "บ่าง", "ตัวตุ่น", "ลิ่น",
-    "ค้างคาว", "วาฬ", "โลมา", "แมวน้ำ", "สิงโตทะเล",
+    // --- สัตว์ปีก / นก ---
+    "กา", "อีกา", "นกกา", "นก", "นกกระจอก", "นกพิราบ", "นกแก้ว", "นกขุนทอง", "นกนางแอ่น",
+    "นกอินทรี", "นกฮูก", "นกเค้าแมว", "ไก่", "ไก่แจ้", "ไก่ชน", "เป็ด", "ห่าน", "หงส์",
+    "นกยูง", "นกกระทุง", "นกกระยาง", "นกกระสา", "นกกระจอกเทศ", "นกเพนกวิน", "เพนกวิน",
+    "นกฟลามิงโก", "เป็ดเทศ", "ไก่งวง", "นกคีรีบูน", "นกปรอด", "นกกางเขน", "นกเอี้ยง",
+    "นกขมิ้น", "นกหัวขวาน", "นกเหยี่ยว", "เหยี่ยว", "นกนางนวล", "นกเป็ดน้ำ", "นกกระทา",
+    "นกกระแตแต้แว้ด", "นกกินปลี", "นกตีทอง", "นกต้อยตีวิด", "นกกระเต็น", "นกกระตั้ว",
+    "นกหว้า", "นกกระเรียน", "นกเงือก", "นกกาเหว่า", "นกฮัมมิ่งเบิร์ด", "นกทูแคน",
 
-    // --- สัตว์น้ำ + ครึ่งบกครึ่งน้ำ ---
-    "ปลาวาฬสีน้ำเงิน", "ปลาวาฬหลังค่อม", "โลมา", "โลมาหัวกะโหลก",
-    "ฉลามขาว", "ฉลามวาฬ", "ฉลามเสือ", "ฉลามหัวค้อน",
-    "ปลากระเบน", "ปลากระเบนแมนตา", "ปลาการ์ตูน", "ปลาเสือโตนด",
-    "ปลาหมอสี", "ปลาคาร์ป", "ปลาทอง", "ปลากัด", "ปลาช่อน", "ปลาดุก",
-    "ปลาตะเพียน", "ปลาแซลมอน", "ปลาทูน่า", "ปลาซาร์ดีน",
-    "ปลากระพง", "ปลาเก๋า", "ปลาปักเป้า", "ปลาไหลไฟฟ้า", "ปลาปิรันย่า",
-    "ม้าน้ำ", "หมึกยักษ์", "หมึกกล้วย", "หมึกกระดอง", "หมึกสาย",
-    "หอยเชลล์", "หอยแมลงภู่", "หอยนางรม", "หอยงวงช้าง",
-    "กุ้งกุลาดำ", "กุ้งมังกร", "กุ้งเครฟิช",
-    "ปูม้า", "ปูทะเล", "ปูอลัสกา", "ปูเสฉวน",
-    "ดาวทะเล", "เม่นทะเล", "แตงกวาทะเล", "แมงกะพรุน",
-    "กบ", "เขียด", "ปาด", "อึ่งอ่าง", "คางคก", "ซาลาแมนเดอร์",
-    "หมาน้ำ", "ปลาตีน", "ปลาปอด", "ปลากระเบนราหู", "หอยทากทะเล", "ฟองน้ำทะเล",
-    // เดิม
-    "ปลา", "ปลาดุก", "ปลาช่อน", "ปลาทู", "ปลาวาฬ", "ปลาโลมา", "ปลาฉลาม",
-    "กุ้ง", "กุ้งก้ามกราม", "ปู", "ปูดำ", "หอย", "หอยแครง", "หอยทาก",
-    "ปลาหมึก", "ปลาดาว", "ปลิงทะเล",
+    // --- สัตว์น้ำ / สัตว์ทะเล / ครึ่งบกครึ่งน้ำ ---
+    "กุ้ง", "กุ้ง", "กุ้งฝอย", "กุ้งแห้ง", "กุ้งขาว", "กุ้งก้ามกราม", "กุ้งมังกร", "กุ้งเคย", "เคย", "กุ้งเครฟิช", "กุ้งกุลาดำ",
+    "ปู", "ปูดำ", "ปูม้า", "ปูทะเล", "ปูแสม", "ปูเสฉวน", "ปูนา", "ปูไข่", "ปูอลาสก้า", "ปูอลัสกา",
+    "ปลา", "ปลาดุก", "ปลาช่อน", "ปลาทู", "ปลาหมอ", "ปลาหมอสี", "ปลานิล", "ปลาทับทิม", "ปลากะพง", "ปลากระพง", "ปลาเก๋า",
+    "ปลากัด", "ปลาสลิด", "ปลาไหล", "ปลาไหลไฟฟ้า", "ปลาแซลมอน", "ปลาทูน่า", "ปลาซาร์ดีน", "ปลากระเบน", "ปลากระเบนราหู", "ปลากระเบนแมนตา",
+    "ปลาฉลาม", "ฉลาม", "ฉลามขาว", "ฉลามวาฬ", "ฉลามเสือ", "ฉลามหัวค้อน", "ปลาทอง", "ปลาคาร์ป", "ปลาคราฟ",
+    "ปลาวาฬ", "วาฬ", "ปลาวาฬสีน้ำเงิน", "ปลาวาฬหลังค่อม", "ปลาโลมา", "โลมา", "โลมาหัวกะโหลก", "พะยูน", "หมูดิน", "ม้าน้ำ",
+    "ปลาการ์ตูน", "ปลาเสือโตนด", "ปลาปักเป้า", "ปลาปิรันย่า", "ปลาตีน", "ปลาปอด", "ปลาบู่", "ปลาซิว", "ปลาสร้อย",
+    "หอย", "หอยแครง", "หอยแมลงภู่", "หอยนางรม", "หอยลาย", "หอยเชลล์", "หอยขม", "หอยจุ๊บ", "หอยหวาน", "หอยทาก", "หอยทากทะเล", "หอยสังข์", "หอยงวงช้าง", "หอยเป๋าฮื้อ",
+    "ปลาหมึก", "หมึก", "หมึกกล้วย", "หมึกสาย", "หมึกยักษ์", "หมึกกระดอง",
+    "แมงกะพรุน", "แมงดาทะเล", "แมงดา", "ดาวทะเล", "ปลาดาว", "ปลิง", "ปลิงทะเล", "ปะการัง", "ฟองน้ำทะเล", "เม่นทะเล", "แตงกวาทะเล",
+    "กบ", "เขียด", "ปาด", "อึ่งอ่าง", "อึ่ง", "คางคก", "ลูกอ๊อด", "ซาลาแมนเดอร์", "หมาน้ำ",
 
-    // --- สัตว์ปีก ---
-    "นกอินทรี", "นกเหยี่ยว", "นกแร้ง", "นกเค้าแมว", "นกฮูก",
-    "นกพิราบ", "นกกะจอก", "นกกระจอกเทศ", "นกอีมู", "นกเพนกวิน",
-    "นกฟลามิงโก", "นกยูง", "นกแก้ว", "นกเค้าโม่ง", "นกขุนทอง",
-    "นกกะตั้ว", "นกหงส์หยก", "นกคีรีบูน", "นกเอี้ยง", "นกกางเขน",
-    "นกปรอด", "นกเงือก", "นกนางนวล", "นกปากห่าง", "นกกาน้ำ", "นกกระสา",
-    "ไก่", "เป็ด", "ห่าน", "หงส์",
-    // เดิม
-    "นก", "นกกระจอก", "เพนกวิน",
+    // --- สัตว์เลี้ยง / สัตว์ฟาร์ม / สัตว์เลี้ยงลูกด้วยนม ---
+    "หมา", "สุนัข", "หมาบ้าน", "หมาจร", "ลูกหมา", "แมว", "เหมียว", "ลูกแมว", "หมู", "สุกร", "หมูบ้าน",
+    "วัว", "โค", "วัวนม", "วัวแดง", "วัวกระทิง", "กระทิง", "วัวไบสัน", "วัวมัสก์",
+    "ควาย", "กระบือ", "ควายป่า", "ม้า", "ลูกม้า", "ลา", "ล่อ", "แพะ", "แกะ", "ลูกแกะ",
+    "กวาง", "ละมั่ง", "ละองละมั่ง", "เก้ง", "กระจง", "อูฐ", "อัลปาก้า", "ลามา", "ลามะ",
+    "กระต่าย", "ลูกกระต่าย", "หนู", "หนูพุก", "หนูนา", "หนูบ้าน", "หนูแฮมสเตอร์", "แฮมสเตอร์", "หนูแกสบี้", "หนูตะเภา", "ชินชิลล่า", "เฟอร์เรท",
+    "ช้าง", "ช้างป่า", "ช้างเผือก", "พลาย", "พัง", "ลูกช้าง",
+    "เสือ", "เสือโคร่ง", "เสือดาว", "เสือดำ", "เสือชีตาห์", "ชีตาห์", "เสือเมฆ", "เสือจากัวร์", "จากัวร์", "เสือพูม่า", "พูม่า", "แมวป่า", "แมวดาว",
+    "สิงโต", "สิงห์", "สิงโตทะเล", "แมวน้ำ", "วอลรัส",
+    "หมี", "หมีควาย", "หมีหมา", "หมีขอ", "หมีแพนด้า", "แพนด้า", "หมีขาว", "หมีขั้วโลก", "หมีกริซลี", "หมีพูห์", "แพนด้าแดง",
+    "แรด", "แรดขาว", "แรดดำ", "สมเสร็จ", "ยีราฟ", "ม้าลาย", "ฮิปโป", "ฮิปโปโปเตมัส",
+    "จิงโจ้", "โคอาลา", "โคอาล่า", "ควอกกา", "วอลลาบี", "วอมแบท", "ตัวทัสมาเนียนเดวิล",
+    "ลิง", "ลิงลม", "ลิงเสน", "ลิงแสม", "ลิงกัง", "กอริลลา", "ชิมแปนซี", "อุรังอุตัง", "ค่าง", "ชะนี", "โบโนโบ", "เลเมอร์", "ตัวเมียร์แคต", "เมียร์แคต",
+    "บ่าง", "กระรอก", "กระแต", "พญากระรอก", "พังพอน", "ตัวลิ่น", "ลิ่น", "ตัวกินมด", "อาร์มาดิลโล",
+    "เม่น", "บีเวอร์", "ตัวนาก", "นาก", "ตัวนากหญ้า", "คาปิบารา", "ตุ่น", "ตัวตุ่น", "ตุ่นปากเป็ด", "ตัวอีคิดนา", "สล็อต", "ตัวสล็อต", "แรคคูน", "โอโปสซัม",
+    "หมาป่า", "จิ้งจอก", "สุนัขจิ้งจอก", "จิ้งจอกอาร์กติก", "ไฮยีน่า", "ชะมด", "อีเห็น", "หมาจิ้งจอก",
+    "ค้างคาว", "ค้างคาวแม่ไก่", "เลียงผา", "กูปรี", "หมูป่า",
 
     // --- สัตว์เลื้อยคลาน ---
-    "งูเหลือม", "งูจงอาง", "งูเห่า", "งูเขียว", "งูหลาม",
-    "จระเข้", "ตะกวด", "ตัวเงินตัวทอง", "กิ้งก่า", "กิ้งก่าคาเมเลียน",
-    "อีกวาน่า", "ตุ๊กแก", "จิ้งจก", "เต่าบก", "เต่าทะเล",
-    "ตะกวดซูคาต้า", "ตะพาบ",
-    // เดิม
-    "งู", "เต่า", "เต่าตนุ", "เหี้ย", "กิ้งก่าคาเมเลี่ยน",
+    "งู", "งูเห่า", "งูจงอาง", "งูหลาม", "งูเหลือม", "งูเขียว", "งูสิง", "งูกะปะ", "งูทะเล", "งูอนาคอนดา", "อนาคอนดา", "งูหลามทอง", "งูทางมะพร้าว",
+    "จระเข้", "ไอ้เข้", "แอลลิเกเตอร์", "อัลลิเกเตอร์", "ตะโขง",
+    "เต่า", "เต่าตนุ", "เต่าทะเล", "เต่านา", "เต่ากระ", "เต่าบัว", "เต่าหับ", "เต่าเดือย", "เต่ายักษ์", "ตะพาบ", "ตะพาบน้ำ",
+    "กิ้งก่า", "กิ้งก่าบิน", "จิ้งจก", "ตุ๊กแก", "ตัวเงินตัวทอง", "ตะกวด", "เหี้ย", "ตัวเหี้ย", "แย้", "กะปอม", "อิกัวน่า", "กิ้งก่าคาเมเลียน", "มังกรโคโมโด",
 
-    // --- แมลง / สัตว์ขาปล้อง ---
-    "แมงมุม", "แมงป่อง", "ตะขาบ", "กิ้งกือ",
-    "ผึ้ง", "ต่อ", "แตน", "มด", "ผีเสื้อ", "แมลงปอ",
-    "ด้วงกว่าง", "จั๊กจั่น", "ตั๊กแตน",
-    // เดิม
-    "ปลวก", "แมลงวัน", "ยุง", "แมลงสาบ", "จิ้งหรีด", "ด้วง", "จักจั่น",
-    "ไส้เดือน", "หนอน", "ดักแด้", "หิ่งห้อย", "หมัด", "เห็บ", "เหา",
+    // --- แมลง / สัตว์ตัวเล็ก ---
+    "ผึ้ง", "ตัวผึ้ง", "ต่อ", "ตัวต่อ", "แตน", "ตัวแตน", "มด", "มดแดง", "มดดำ", "มดคันไฟ", "ปลวก", "แมงมุม", "แมงป่อง",
+    "ผีเสื้อ", "แมลงปอ", "ตั๊กแตน", "ตั๊กแตนตำข้าว", "จิ้งหรีด", "แมลงสาบ", "ยุง", "ริ้น", "ไร", "แมลงวัน", "แมลงหวี่",
+    "ด้วง", "แมลงเต่าทอง", "กิ้งกือ", "ตะขาบ", "ไส้เดือน", "หนอน", "ดักแด้", "หิ่งห้อย", "จั๊กจั่น", "ตัวไหม", "หมัด", "เห็บ", "เพลี้ย", "มวน", "ชีปะขาว"
 ]);
 
-function isValidAnimalWord(rawWord) {
-    if (!rawWord) return false;
-    const word = rawWord.trim().replace(/\s+/g, '');
-    if (THAI_ANIMALS_SET.has(word)) return true;
+// Helper: Normalize ภาษาไทย จัดการวรรณยุกต์สระสลับตำแหน่ง และ Unicode NFC
+function normalizeThaiWord(rawWord) {
+    if (!rawWord) return '';
+    let word = rawWord.normalize('NFC').trim().toLowerCase();
+    // สลับลำดับสระอุ/สระอู กับ วรรณยุกต์ (เช่น กุ้ง -> กุ้ง)
+    word = word.replace(/([่-๋])([ุ-ู])/g, '$2$1');
+    word = word.replace(/([ุ-ู])([่-๋])/g, '$1$2');
+    // ตัดเครื่องหมายวรรคตอน
+    word = word.replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]/g, '');
+    return word;
+}
 
-    // Check animal prefixes in Thai
-    const prefixes = [
-        "นก", "ปลา", "แมลง", "กุ้ง", "หอย", "ปู", "เป็ด", "ไก่", "หมู", "หมา",
-        "แมว", "งู", "เต่า", "กบ", "หนู", "ลิง", "เสือ", "หมี", "มด", "ผึ้ง",
-        "หนอน", "ฉลาม", "จระเข้", "กวาง", "กระ", "ตัว", "ควาย", "โลมา", "วาฬ"
-    ];
+// ตรวจสอบความถูกต้องของคำว่าสัตว์
+function isValidAnimalWord(word) {
+    if (!word) return false;
+    const clean = normalizeThaiWord(word);
+    if (!clean) return false;
+    if (THAI_ANIMALS_SET.has(clean)) return true;
+
+    // ตัดคำนำหน้า เช่น "ตัว...", "ลูก...", "ปลา...", "นก...", "หอย...", "กุ้ง...", "ปู...", "งู...", "แมว...", "หมา..."
+    const prefixes = ['ตัว', 'ลูก', 'ปลา', 'นก', 'หอย', 'กุ้ง', 'ปู', 'งู', 'หมา', 'แมว', 'หมู', 'เสือ', 'หมี', 'เต่า', 'แมลง', 'แมง'];
     for (const p of prefixes) {
-        if (word.startsWith(p) && word.length > p.length) return true;
+        if (clean.startsWith(p) && clean.length > p.length) {
+            const stem = clean.slice(p.length);
+            if (THAI_ANIMALS_SET.has(stem) || THAI_ANIMALS_SET.has(clean)) return true;
+        }
     }
     return false;
+}
+
+// Substring Scanner: สกัดชื่อสัตว์จากข้อความเสียงพูดต่อเนื่อง แม้พูดติดกันไม่มีวรรค
+function extractAnimalsFromTranscript(transcript) {
+    if (!transcript) return [];
+    const normalized = normalizeThaiWord(transcript);
+    const foundAnimals = [];
+
+    // 1. ลองแยกคำด้วย space / punctuation ก่อน
+    const tokens = transcript.split(/[\s,，、。]+/).map(t => normalizeThaiWord(t)).filter(Boolean);
+    tokens.forEach(t => {
+        if (isValidAnimalWord(t)) {
+            foundAnimals.push(t);
+        }
+    });
+
+    // 2. Greedy Substring Search ในข้อความที่ติดกัน (เรียงคำสัตว์จากยาวไปสั้น เพื่อจับคำยาวก่อน เช่น 'ม้าลาย' ก่อน 'ม้า')
+    const sortedAnimals = [...THAI_ANIMALS_SET].sort((a, b) => b.length - a.length);
+    let remaining = normalized;
+
+    for (const animal of sortedAnimals) {
+        if (animal.length >= 2 && remaining.includes(animal)) {
+            if (!foundAnimals.includes(animal)) {
+                foundAnimals.push(animal);
+            }
+            remaining = remaining.split(animal).join(' ');
+        }
+    }
+
+    // สำหรับสัตว์ 1 พยางค์ (กา, กุ้ง, มด, งู, ปู, นก, เป็ด, ไก่, หมู, หมา, แมว, ม้า, วัว, แรด, หมี, ลิง ฯลฯ)
+    for (const animal of sortedAnimals.filter(a => a.length === 1 || a.length === 2)) {
+        if (remaining.includes(animal) && !foundAnimals.includes(animal)) {
+            foundAnimals.push(animal);
+        }
+    }
+
+    return [...new Set(foundAnimals)];
 }
 
 let fluencyWords = [];
 let fluencyTimerInterval = null;
 let fluencyTimeLeft = 60;
 let fluencyRecognition = null;
-let fluencyMicActive = false; // ควบคุม continuous mic loop
+let fluencyMicActive = false;
+let isStartingFluencyRec = false;
 
+// Step 1: เริ่มต้นด่าน Fluency - แสดงหน้าเตรียมความพร้อมก่อน (ยังไม่นับเวลา)
 function startFluencyTest() {
     fluencyWords = [];
     fluencyScore = 0;
     fluencyTimeLeft = 60;
     fluencyMicActive = false;
-    if (fluencyTimerInterval) clearInterval(fluencyTimerInterval);
+    if (fluencyTimerInterval) {
+        clearInterval(fluencyTimerInterval);
+        fluencyTimerInterval = null;
+    }
+    stopFluencyRecognition();
 
     const page = document.getElementById('fluency-test-page');
-    page.style.display = 'flex';
+    const readyCard = document.getElementById('fluency-ready-card');
+    const activeCard = document.getElementById('fluency-active-card');
+    const startBtn = document.getElementById('fluency-start-btn');
 
-    // Reset UI
+    if (page) page.style.display = 'flex';
+    if (readyCard) readyCard.style.display = 'block';
+    if (activeCard) activeCard.style.display = 'none';
+
+    speakText('ด่านความคล่องแคล่วทางภาษา บอกชื่อสัตว์ให้ได้มากที่สุดในเวลา 60 วินาที เมื่อพร้อมแล้วกดปุ่มเริ่มได้เลยครับ');
+
+    if (startBtn) {
+        startBtn.onclick = () => beginFluencyTimer();
+    }
+}
+
+// Step 2: เริ่มต้นจับเวลา 60 วินาทีหลังผู้ใช้กดยืนยันความพร้อม
+function beginFluencyTimer() {
+    const readyCard = document.getElementById('fluency-ready-card');
+    const activeCard = document.getElementById('fluency-active-card');
     const container = document.getElementById('fluency-words-container');
     const countBadge = document.getElementById('fluency-count-badge');
     const timerDisplay = document.getElementById('fluency-timer-display');
     const input = document.getElementById('fluency-input');
     const submitBtn = document.getElementById('fluency-submit-btn');
+    const statusEl = document.getElementById('fluency-speech-status');
 
-    if (container) container.innerHTML = '<span style="color:#aaa;font-size:0.88rem;">ยังไม่มีคำตอบ — พิมพ์หรือพูดชื่อสัตว์แล้วกดเพิ่ม</span>';
+    if (readyCard) readyCard.style.display = 'none';
+    if (activeCard) activeCard.style.display = 'block';
+
+    if (container) container.innerHTML = '<span style="color:#aaa;font-size:0.88rem;">ยังไม่มีคำตอบ (พิมพ์หรือพูดชื่อสัตว์ได้เลย)</span>';
     if (countBadge) countBadge.textContent = '0 คำ';
     if (timerDisplay) {
         timerDisplay.textContent = '60 วินาที';
         timerDisplay.style.color = '#e74c3c';
         timerDisplay.style.animation = 'none';
     }
-    if (input) { input.value = ''; input.focus(); }
+    if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 150);
+    }
+    if (statusEl) statusEl.style.display = 'none';
 
     if (submitBtn) {
         submitBtn.disabled = true;
@@ -1943,9 +2127,41 @@ function startFluencyTest() {
         submitBtn.textContent = '⏳ กำลังจับเวลา (เหลือ 60 วินาที)';
     }
 
-    speakText('บอกชื่อสัตว์ให้ได้มากที่สุดในเวลา 60 วินาทีครับ พิมพ์หรือกดไมค์พูดได้เลยครับ');
+    speakText('เริ่มบอกชื่อสัตว์ได้เลยครับ');
 
-    // Start countdown
+    // Auto-Add Listener ขณะพิมพ์ (Real-Time Input Scanner)
+    if (input) {
+        input.oninput = () => handleFluencyInput();
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addFluencyWord();
+            }
+        };
+    }
+
+    // Wire Add button
+    const addBtn = document.getElementById('fluency-add-btn');
+    if (addBtn) addBtn.onclick = () => addFluencyWord();
+
+    // Wire mic button
+    const micBtn = document.getElementById('fluency-mic-btn');
+    if (micBtn) micBtn.onclick = () => toggleFluencyMic();
+
+    // Wire submit button
+    if (submitBtn) {
+        submitBtn.onclick = () => {
+            if (fluencyTimeLeft > 0) {
+                showCustomPopup(`กรุณาบอกชื่อสัตว์ให้ได้มากที่สุดจนหมดเวลา 60 วินาทีครับ (เหลือเวลาอีก ${fluencyTimeLeft} วินาที)`, "⏳");
+                return;
+            }
+            if (fluencyTimerInterval) clearInterval(fluencyTimerInterval);
+            stopFluencyRecognition();
+            submitFluency();
+        };
+    }
+
+    // Start 60s countdown
     fluencyTimerInterval = setInterval(() => {
         fluencyTimeLeft--;
         if (timerDisplay) {
@@ -1975,31 +2191,37 @@ function startFluencyTest() {
             submitFluency();
         }
     }, 1000);
+}
 
-    // Wire Add button
-    const addBtn = document.getElementById('fluency-add-btn');
-    if (addBtn) addBtn.onclick = () => addFluencyWord();
+// Auto-Add Handler: ดักจับและเพิ่มคำอัตโนมัติขณะพิมพ์
+function handleFluencyInput() {
+    if (fluencyTimeLeft <= 0) return;
+    const input = document.getElementById('fluency-input');
+    if (!input) return;
+    const val = input.value;
+    if (!val) return;
 
-    // Wire Enter key on input
-    if (input) {
-        input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addFluencyWord(); } };
+    // ถ้ามีการเว้นวรรค ให้ตัดแยกคำและเพิ่มคำสัตว์ทั้งหมด
+    if (val.includes(' ') || val.includes(',')) {
+        const parts = val.split(/[\s,，、]+/).map(p => p.trim()).filter(Boolean);
+        let addedAny = false;
+        parts.forEach(p => {
+            if (isValidAnimalWord(p)) {
+                pushFluencyWord(p);
+                addedAny = true;
+            }
+        });
+        if (addedAny) {
+            input.value = '';
+            return;
+        }
     }
 
-    // Wire mic button
-    const micBtn = document.getElementById('fluency-mic-btn');
-    if (micBtn) micBtn.onclick = () => toggleFluencyMic();
-
-    // Wire submit button
-    if (submitBtn) {
-        submitBtn.onclick = () => {
-            if (fluencyTimeLeft > 0) {
-                showCustomPopup(`กรุณาบอกชื่อสัตว์ให้ได้มากที่สุดจนหมดเวลา 60 วินาทีครับ (เหลือเวลาอีก ${fluencyTimeLeft} วินาที)`, "⏳");
-                return;
-            }
-            clearInterval(fluencyTimerInterval);
-            stopFluencyRecognition();
-            submitFluency();
-        };
+    // ตรวจสอบคำเดี่ยวว่าตรงกับชื่อสัตว์เป๊ะหรือไม่
+    const clean = normalizeThaiWord(val);
+    if (isValidAnimalWord(clean)) {
+        pushFluencyWord(clean);
+        input.value = '';
     }
 }
 
@@ -2010,35 +2232,41 @@ function addFluencyWord() {
     const word = input.value.trim();
     if (!word) return;
 
-    // ตรวจสอบว่าคำนี้เป็นสัตว์หรือไม่ (Animal Validation)
     if (!isValidAnimalWord(word)) {
         const statusEl = document.getElementById('fluency-speech-status');
         if (statusEl) {
             statusEl.style.display = 'block';
             statusEl.style.color = '#e74c3c';
-            statusEl.textContent = `⚠️ คำว่า "${word}" ไม่ใช่ชื่อสัตว์ จึงไม่นับคะแนนครับ`;
+            statusEl.style.background = '#ffebee';
+            statusEl.textContent = `⚠️ คำว่า "${word}" ไม่พบในคลังชื่อสัตว์ครับ`;
             setTimeout(() => {
-                statusEl.style.color = '#4a5d23';
-                statusEl.style.display = 'none';
-            }, 2500);
+                if (statusEl) {
+                    statusEl.style.color = '#4a5d23';
+                    statusEl.style.background = '#f0f7e6';
+                    statusEl.style.display = fluencyMicActive ? 'block' : 'none';
+                }
+            }, 2000);
         }
         input.value = '';
         input.focus();
         return;
     }
 
-    // Dedup (case-insensitive)
-    const already = fluencyWords.some(w => w.toLowerCase() === word.toLowerCase());
-    if (already) {
-        input.value = '';
-        input.focus();
-        return;
-    }
+    pushFluencyWord(word);
+    input.value = '';
+    input.focus();
+}
+
+function pushFluencyWord(word) {
+    const clean = normalizeThaiWord(word);
+    if (!clean) return;
+
+    // Dedup (case-insensitive & normalize)
+    const already = fluencyWords.some(w => normalizeThaiWord(w) === clean);
+    if (already) return;
 
     fluencyWords.push(word);
     renderFluencyWord(word);
-    input.value = '';
-    input.focus();
 
     const countBadge = document.getElementById('fluency-count-badge');
     if (countBadge) countBadge.textContent = `${fluencyWords.length} คำ`;
@@ -2047,23 +2275,22 @@ function addFluencyWord() {
 function renderFluencyWord(word) {
     const container = document.getElementById('fluency-words-container');
     if (!container) return;
-    // Remove placeholder if first word
     if (fluencyWords.length === 1) container.innerHTML = '';
 
     const chip = document.createElement('span');
     chip.className = 'fluency-word-chip';
     chip.innerHTML = `${word} <span class="chip-delete" title="ลบ">✕</span>`;
     chip.querySelector('.chip-delete').onclick = () => {
-        fluencyWords = fluencyWords.filter(w => w !== word);
+        fluencyWords = fluencyWords.filter(w => normalizeThaiWord(w) !== normalizeThaiWord(word));
         chip.remove();
-        if (fluencyWords.length === 0) container.innerHTML = '<span style="color:#aaa;font-size:0.88rem;">ยังไม่มีคำตอบ — พิมพ์หรือพูดชื่อสัตว์แล้วกดเพิ่ม</span>';
+        if (fluencyWords.length === 0) container.innerHTML = '<span style="color:#aaa;font-size:0.88rem;">ยังไม่มีคำตอบ (พิมพ์หรือพูดชื่อสัตว์ได้เลย)</span>';
         const countBadge = document.getElementById('fluency-count-badge');
         if (countBadge) countBadge.textContent = `${fluencyWords.length} คำ`;
     };
     container.appendChild(chip);
 }
 
-// กดไมค์ครั้งเดียว ฟังต่อเนื่องตลอด 60 วินาที
+// Continuous Mic Loop (ป้องกัน Freeze & Instance Collisions)
 function toggleFluencyMic() {
     if (fluencyTimeLeft <= 0) return;
     const micBtn = document.getElementById('fluency-mic-btn');
@@ -2073,95 +2300,145 @@ function toggleFluencyMic() {
         return;
     }
 
-    if (fluencyMicActive) { // กดซ้ำ = หยุด
+    if (fluencyMicActive) {
         stopFluencyRecognition();
         return;
     }
 
     fluencyMicActive = true;
-    if (micBtn) { micBtn.classList.add('listening'); micBtn.title = 'แตะเพื่อหยุดฟัง'; }
+    if (micBtn) {
+        micBtn.classList.add('listening');
+        micBtn.title = 'แตะเพื่อหยุดฟัง';
+    }
     const statusEl = document.getElementById('fluency-speech-status');
     if (statusEl) {
         statusEl.style.display = 'block';
         statusEl.style.color = '#4a5d23';
-        statusEl.textContent = '🎙️ กำลังฟังอยู่... พูดชื่อสัตว์ได้เลยครับ (ไม่ต้องกดซ้ำ)';
+        statusEl.style.background = '#f0f7e6';
+        statusEl.textContent = '🎙️ กำลังฟังอยู่... พูดชื่อสัตว์ได้เลยครับ (ระบบจะบันทึกอัตโนมัติ)';
     }
     startFluencyListenLoop();
 }
 
 function startFluencyListenLoop() {
-    if (!fluencyMicActive || fluencyTimeLeft <= 0) { stopFluencyRecognition(); return; }
+    if (!fluencyMicActive || fluencyTimeLeft <= 0 || isStartingFluencyRec) return;
+    isStartingFluencyRec = true;
+
+    // เคลียร์ instance เก่าอย่างปลอดภัย
+    if (fluencyRecognition) {
+        try {
+            fluencyRecognition.onend = null;
+            fluencyRecognition.onerror = null;
+            fluencyRecognition.abort();
+        } catch (e) {}
+        fluencyRecognition = null;
+    }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SpeechRecognition();
     rec.lang = 'th-TH';
     rec.interimResults = true;
     rec.maxAlternatives = 3;
-    rec.continuous = false; // false + auto-restart = เสถียรกว่าบน Android/iOS
+    rec.continuous = false; // continuous = false + debounced restart = ปลอดภัยและไม่ค้าง
     fluencyRecognition = rec;
 
     const statusEl = document.getElementById('fluency-speech-status');
 
     rec.onresult = (event) => {
         for (let i = event.resultIndex; i < event.results.length; i++) {
-            if (event.results[i].isFinal) {
-                const spoken = event.results[i][0].transcript.trim();
-                if (spoken) {
-                    const words = spoken.split(/[\s,，、。]+/).filter(w => w.length > 0);
-                    words.forEach(w => {
-                        const inp = document.getElementById('fluency-input');
-                        if (inp) inp.value = w;
-                        addFluencyWord();
-                    });
-                    if (statusEl) statusEl.textContent = '🎙️ กำลังฟังอยู่... พูดชื่อสัตว์ได้เลยครับ';
+            const transcript = event.results[i][0].transcript.trim();
+            if (transcript) {
+                // สแกนหาสัตว์จากคำพูด
+                const animalsFound = extractAnimalsFromTranscript(transcript);
+                if (animalsFound.length > 0) {
+                    animalsFound.forEach(a => pushFluencyWord(a));
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = '#2e7d32';
+                        statusEl.style.background = '#e8f5e9';
+                        statusEl.innerHTML = `✅ พบสัตว์: "<strong>${animalsFound.join(', ')}</strong>" (พูดต่อได้เลย)`;
+                    }
+                } else if (event.results[i].isFinal) {
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.style.color = '#4a5d23';
+                        statusEl.style.background = '#f0f7e6';
+                        statusEl.textContent = `🎙️ ได้ยิน: "${transcript}" (กำลังฟังต่อเนื่อง...)`;
+                    }
+                } else {
+                    if (statusEl) {
+                        statusEl.textContent = `🎙️ ได้ยิน: "${transcript}"...`;
+                    }
                 }
-            } else {
-                const interim = event.results[i][0].transcript;
-                if (statusEl && interim) statusEl.textContent = `🎙️ ได้ยิน: "${interim}"...`;
             }
         }
     };
 
     rec.onerror = (e) => {
+        isStartingFluencyRec = false;
         if (!fluencyMicActive) return;
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
             stopFluencyRecognition();
-            showCustomPopup('ไม่สามารถเข้าถึงไมโครโฟนได้ กรุณาอนุญาตและลองใหม่ครับ', '🎙️');
+            showCustomPopup('ไม่สามารถเข้าถึงไมโครโฟนได้ กรุณาอนุญาตการใช้ไมค์และลองใหม่อีกครั้งครับ', '🎙️');
         } else {
-            setTimeout(() => startFluencyListenLoop(), 250);
+            safeRestartFluencyRecognition(200);
         }
     };
 
     rec.onend = () => {
+        isStartingFluencyRec = false;
         if (fluencyMicActive && fluencyTimeLeft > 0) {
-            setTimeout(() => startFluencyListenLoop(), 150);
+            safeRestartFluencyRecognition(100);
         } else {
             stopFluencyRecognition();
         }
     };
 
-    try { rec.start(); } catch (e) {
-        setTimeout(() => { if (fluencyMicActive && fluencyTimeLeft > 0) startFluencyListenLoop(); }, 300);
+    try {
+        rec.start();
+        isStartingFluencyRec = false;
+    } catch (e) {
+        isStartingFluencyRec = false;
+        safeRestartFluencyRecognition(300);
     }
+}
+
+let fluencyRestartTimeout = null;
+function safeRestartFluencyRecognition(delayMs = 150) {
+    if (fluencyRestartTimeout) clearTimeout(fluencyRestartTimeout);
+    if (!fluencyMicActive || fluencyTimeLeft <= 0) return;
+    fluencyRestartTimeout = setTimeout(() => {
+        if (fluencyMicActive && fluencyTimeLeft > 0) {
+            startFluencyListenLoop();
+        }
+    }, delayMs);
 }
 
 function stopFluencyRecognition() {
     fluencyMicActive = false;
+    isStartingFluencyRec = false;
+    if (fluencyRestartTimeout) {
+        clearTimeout(fluencyRestartTimeout);
+        fluencyRestartTimeout = null;
+    }
     const micBtn = document.getElementById('fluency-mic-btn');
     const statusEl = document.getElementById('fluency-speech-status');
     try {
         if (fluencyRecognition) {
-            fluencyRecognition.onend = null; // ป้องกัน ghost restart
+            fluencyRecognition.onend = null;
+            fluencyRecognition.onerror = null;
             fluencyRecognition.stop();
         }
     } catch (e) {}
     fluencyRecognition = null;
-    if (micBtn) { micBtn.classList.remove('listening'); micBtn.title = 'แตะเพื่อพูด'; }
+    if (micBtn) {
+        micBtn.classList.remove('listening');
+        micBtn.title = 'แตะเพื่อพูด';
+    }
     if (statusEl) statusEl.style.display = 'none';
 }
 
 function submitFluency() {
-    // คำนวณคะแนน Fluency ตามเกณฑ์ MoCA Thai (สัตว์)
     const count = fluencyWords.length;
     if (count >= 11) fluencyScore = 4;
     else if (count >= 8) fluencyScore = 3;
@@ -2172,6 +2449,7 @@ function submitFluency() {
     document.getElementById('fluency-test-page').style.display = 'none';
     startRecallTest();
 }
+
 
 // --- Helper: สร้าง Pattern Hint (Stage 1) ---
 // "Sustainable" → "S _ _ _ _ _ _ _ e"
@@ -2609,6 +2887,9 @@ function openSatisfactionForm() {
 }
 
 function calculateAndShowResult() {
+    // หยุดจับเวลาและคำนวณเวลาที่ใช้ทั้งหมด
+    const timerResult = stopGlobalTestTimer();
+    console.log('Test completed in:', timerResult);
     // ถ้ายังไม่มี userId ให้สร้าง anonymous ID
     if (!userId) {
         userId = 'anon_' + Date.now();
@@ -2654,6 +2935,10 @@ function calculateAndShowResult() {
 
     document.getElementById('farewell-page').style.display = 'none';
     document.getElementById('result-page').style.display = 'flex';
+    const durDisplay = document.getElementById('result-duration-display');
+    if (durDisplay) {
+        durDisplay.textContent = testTotalDurationFormatted || 'ไม่ถึง 1 นาที';
+    }
     document.body.style.overflowY = "auto";
 
     const eduBadge = document.getElementById('edu-bonus-badge');

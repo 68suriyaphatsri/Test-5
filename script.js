@@ -2982,9 +2982,13 @@ function calculateAndShowResult() {
             sentenceRepeat: repeatScoreScaled,
             fluency: fluencyScoreScaled,
             language: langScoreScaled,
-            orientation: orientScoreScaled
+            orientation: orientScoreScaled,
+            duration_seconds: testTotalDurationSeconds,
+            duration_formatted: testTotalDurationFormatted
         }
     };
+
+    window.currentUserTestResult = userData;
 
     sendDataToSheet(userData);   // ส่งไป Apps Script เดิม
     sendToGoogleForm(userData); // ส่งไป Google Form (เงียบๆ)
@@ -3252,4 +3256,169 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initHospitalLocator);
 } else {
     initHospitalLocator();
+}
+
+// =========================================================================
+// --- User-Facing AI Result Analysis (Gemini / Cognitive Health Summary) ---
+// =========================================================================
+
+async function generateUserAIAnalysis() {
+    const btn = document.getElementById('btn-user-ai-analyze');
+    const btnText = document.getElementById('user-ai-btn-text');
+    const loading = document.getElementById('user-ai-loading');
+    const content = document.getElementById('user-ai-content');
+
+    const u = window.currentUserTestResult || {
+        totalScore: parseInt(document.getElementById('score-text')?.innerText) || 0,
+        riskLevel: document.getElementById('risk-level-title')?.innerText || 'ปกติ',
+        age: document.getElementById('user-age')?.value || 'ไม่ระบุ',
+        education: document.getElementById('user-education')?.value || 'ไม่ระบุ',
+        details: {
+            memory: parseInt(document.getElementById('score-memory-val')?.innerText) || 0,
+            visuospatial: parseInt(document.getElementById('score-visuo-val')?.innerText) || 0,
+            math: parseInt(document.getElementById('score-math-val')?.innerText) || 0,
+            language: parseInt(document.getElementById('score-lang-val')?.innerText) || 0,
+            orientation: parseInt(document.getElementById('score-ori-val')?.innerText) || 0,
+            duration_formatted: document.getElementById('result-duration-display')?.innerText || ''
+        }
+    };
+
+    if (btn) btn.disabled = true;
+    if (loading) loading.style.display = 'block';
+    if (content) { content.style.display = 'none'; content.innerHTML = ''; }
+
+    const d = u.details || {};
+    const dur = d.duration_formatted || (d.duration_seconds ? Math.floor(d.duration_seconds/60) + ' นาที ' + (d.duration_seconds%60) + ' วินาที' : 'ประมาณ 10-15 นาที');
+
+    const prompt = `คุณเป็นแพทย์ผู้เชี่ยวชาญด้านเวชศาสตร์ผู้สูงอายุและนักประสาทวิทยาชาวไทย
+กรุณาวิเคราะห์ผลการทดสอบสมรรถภาพสมอง "Memory Garden" (เกณฑ์ตาม MoCA 30 คะแนน) ของผู้รับการประเมินท่านนี้ด้วยภาษาไทยที่สุภาพ อบอุ่น ให้กำลังใจ และเข้าใจง่าย
+
+## ข้อมูลผลการประเมิน (De-identified / PDPA Compliant):
+- วัย/อายุ: ${u.age || 'ผู้สูงอายุ'} ปี
+- ระดับการศึกษา: ${u.education || 'ทั่วไป'}
+- คะแนนรวม: ${u.totalScore} / 30 คะแนน (เกณฑ์: >=26 ปกติ, 18-25 เสี่ยงบกพร่องเล็กน้อย MCI, <18 ควรดูแลใกล้ชิด)
+- ผลการประเมินเบื้องต้น: ${u.riskLevel}
+- เวลาที่ใช้ทำแบบทดสอบ: ${dur}
+
+## คะแนนรายด้าน (5 มิติ):
+1. ด้านความจำระยะสั้น (Short-term Memory): ${d.memory != null ? d.memory : '-'} / 5
+2. ด้านมิติสัมพันธ์และการวางแผน (Visuospatial / Clock Drawing): ${d.visuospatial != null ? d.visuospatial : '-'} / 3
+3. ด้านสมาธิ ความจดจ่อ และการคำนวณ (Attention & Math): ${d.math != null ? d.math : '-'} / 5
+4. ด้านภาษาและการสื่อสาร (Language Domain): ${d.language != null ? d.language : '-'} / 11
+5. ด้านการรับรู้วันเวลาและสถานที่ (Orientation): ${d.orientation != null ? d.orientation : '-'} / 6
+
+## โครงสร้างผลการวิเคราะห์ที่ต้องการ (เป็น Markdown ภาษาไทย):
+### 🌿 1. สรุปภาพรวมสุขภาพสมองของท่าน
+(อธิบายความหมายของคะแนนรวมในภาษาที่เข้าใจง่าย ให้ความรู้สึกสบายใจและไม่ตื่นตระหนก)
+
+### ⭐ 2. จุดเด่นที่ทำได้ดีเยี่ยม
+(ระบุด้านที่ได้คะแนนสูง พร้อมชื่นชมความสามารถของสมองในส่วนนั้น)
+
+### 🔍 3. จุดที่ควรสังเกตและหมั่นฝึกฝน
+(ชี้แนะมิติที่มีคะแนนลดหลั่นลงมาอย่างนุ่มนวล พร้อมผลกระทบในชีวิตประจำวัน)
+
+### 🎯 4. กิจกรรมฝึกสมองเฉพาะบุคคลที่แนะนำ
+(แนะนำกิจกรรม 3-4 อย่างที่สอดคล้องกับผลคะแนน เช่น เกมจับคู่, วาดรูป, คิดเงิน, ร้องเพลง, เดินเล่นในสวน)
+
+### 🩺 5. คำแนะนำในการดูแลตนเอง & ปรึกษาแพทย์
+(เน้นย้ำว่าเป็นแบบคัดกรองเบื้องต้น หากมีข้อกังวลควรพบแพทย์เฉพาะทางด้านความจำ พร้อมแนะนำเรื่องการนอนและอาหารการกิน)`;
+
+    let aiResultText = '';
+    try {
+        const apiKey = localStorage.getItem('mg_gemini_api_key') || 'AQ.Ab8RN6Is5QjKRzSbxxhl7VHSzSXJgiqXOQRRd-J-EPie2RzzSg';
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=' + apiKey;
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.35, maxOutputTokens: 2000 }
+            })
+        });
+
+        if (!resp.ok) {
+            throw new Error('API Error ' + resp.status);
+        }
+        const resData = await resp.json();
+        aiResultText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!aiResultText) throw new Error('No candidate returned');
+    } catch (err) {
+        console.warn('Using local clinical fallback analyzer:', err);
+        aiResultText = generateUserLocalAnalysis(u, d);
+    }
+
+    if (loading) loading.style.display = 'none';
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = '🔄 วิเคราะห์ผลอีกครั้ง';
+
+    if (content) {
+        content.style.display = 'block';
+        content.innerHTML = renderUserAIMarkdown(aiResultText);
+    }
+}
+
+function generateUserLocalAnalysis(u, d) {
+    const score = u.totalScore || 0;
+    const mem = d.memory || 0;
+    const vis = d.visuospatial || 0;
+    const math = d.math || 0;
+    const lang = d.language || 0;
+    const ori = d.orientation || 0;
+
+    let overview = '';
+    let strengths = [];
+    let weaknesses = [];
+
+    if (score >= 26) {
+        overview = 'ผลคะแนนรวม **' + score + ' / 30 คะแนน** อยู่ในเกณฑ์ **ปกติ (Normal Cognition)** สมองมีการทำงานในระดับที่ดีเยี่ยม มีความสามารถในการประมวลผล จดจำ และสื่อสารได้อย่างมีประสิทธิภาพตามวัย';
+    } else if (score >= 18) {
+        overview = 'ผลคะแนนรวม **' + score + ' / 30 คะแนน** อยู่ในเกณฑ์ **ควรเฝ้าระวังหรือมีภาวะบกพร่องเล็กน้อย (Mild Cognitive Impairment - MCI)** ซึ่งอาจเกิดจากความเหนื่อยล้า สมาธิชั่วคราว หรือการเปลี่ยนแปลงตามวัย การหมั่นกระตุ้นสมองจะช่วยฟื้นฟูและชะลอความเสื่อมได้เป็นอย่างดี';
+    } else {
+        overview = 'ผลคะแนนรวม **' + score + ' / 30 คะแนน** อยู่ในเกณฑ์ **ควรได้รับการดูแลและตรวจประเมินเพิ่มเติมโดยแพทย์ผู้เชี่ยวชาญ** เพื่อตรวจหาสาเหตุที่แท้จริง เช่น ปัญหาการนอนหลับ อารมณ์ ฮอร์โมน หรือสุขภาพหลอดเลือดสมอง';
+    }
+
+    if (mem >= 4) strengths.push('**ความจำระยะสั้น (Memory Recall)**: สามารถจดจำและระลึกคำศัพท์ได้ดีมาก สะท้อนถึงการทำงานที่ดีของสมองส่วนฮิปโปแคมปัส');
+    else weaknesses.push('**ความจำระยะสั้น**: มีการลืมคำศัพท์บางส่วน แนะนำให้ใช้เทคนิคการผูกเรื่องราว การจดโน้ต หรือการทวนซ้ำ');
+
+    if (vis >= 2) strengths.push('**มิติสัมพันธ์และการวางแผน (Visuospatial)**: วาดและกำหนดตำแหน่งหน้าปัดนาฬิกาได้ถูกต้อง แสดงถึงการวางแผนของสมองกลีบหน้าและกลีบข้างที่ดี');
+    else weaknesses.push('**มิติสัมพันธ์และการจัดวาง**: อาจมีความคลาดเคลื่อนในการวาดหรือจัดวางตำแหน่ง แนะนำกิจกรรมต่อจิ๊กซอว์หรือวาดรูป');
+
+    if (math >= 4) strengths.push('**สมาธิและการคำนวณ (Attention & Math)**: มีสมาธิจดจ่อและคิดคำนวณเงินทอนได้อย่างแม่นยำ');
+    else weaknesses.push('**สมาธิและความจดจ่อ**: อาจมีช่วงสมาธิวอกแวกขณะคำนวณ แนะนำฝึกการนับเลขถอยหลังหรือเล่นบอร์ดเกม');
+
+    if (lang >= 8) strengths.push('**ภาษาและการสื่อสาร (Language)**: สามารถเรียกชื่อสิ่งของและนึกคำศัพท์ได้อย่างคล่องแคล่ว');
+    else weaknesses.push('**ความคล่องแคล่วทางภาษา**: นึกคำศัพท์ได้น้อยลง แนะนำการพูดคุย เล่าเรื่องราวในอดีต หรืออ่านหนังสือออกเสียง');
+
+    if (ori >= 5) strengths.push('**การรับรู้วันเวลาและสถานที่ (Orientation)**: รับรู้กาลเวลา ฤดูกาล และสถานที่รอบตัวได้ชัดเจน');
+    else weaknesses.push('**การรับรู้วันเวลา**: มีความสับสนเกี่ยวกับวันหรือสถานที่ แนะนำให้วางปฏิทินตัวใหญ่และนาฬิกาไว้ในจุดที่มองเห็นง่าย');
+
+    if (strengths.length === 0) strengths.push('มีความพยายามและให้ความร่วมมือในการทำแบบประเมินจนครบถ้วนทุกขั้นตอน');
+    if (weaknesses.length === 0) weaknesses.push('ทุกด้านทำงานประสานกันได้อย่างสมดุล แนะนำให้คงพฤติกรรมสุขภาพที่ดีนี้ต่อไป');
+
+    return '### 🌿 1. สรุปภาพรวมสุขภาพสมองของท่าน\n' + overview + '\n\n' +
+           '### ⭐ 2. จุดเด่นที่ทำได้ดีเยี่ยม\n' + strengths.map(s => '- ' + s).join('\n') + '\n\n' +
+           '### 🔍 3. จุดที่ควรสังเกตและหมั่นฝึกฝน\n' + weaknesses.map(w => '- ' + w).join('\n') + '\n\n' +
+           '### 🎯 4. กิจกรรมฝึกสมองเฉพาะบุคคลที่แนะนำ\n' +
+           '- 🧩 **กิจกรรมลับสมอง**: เล่นเกมจับคู่คำศัพท์ ต่อภาพจิ๊กซอว์ หรือเล่นเกมซูโดกุระดับง่าย\n' +
+           '- 🚶 **ออกกำลังกายแอโรบิกเบาๆ**: เดินเร็ววันละ 20-30 นาที ช่วยเพิ่มการไหลเวียนโลหิตไปเลี้ยงสมอง\n' +
+           '- 🥗 **โภชนาการแบบ MIND Diet**: ทานผักใบเขียว ปลาทะเล ถั่ว และผลไม้ตระกูลเบอร์รี\n' +
+           '- 😴 **นอนหลับพักผ่อน**: นอนให้มีคุณภาพ 7-8 ชั่วโมงต่อคืน เพื่อให้สมองกำจัดของเสีย\n\n' +
+           '### 🩺 5. คำแนะนำในการดูแลตนเอง & ปรึกษาแพทย์\n' +
+           '> ⚠️ **หมายเหตุ**: ผลการประเมินนี้เป็นการคัดกรองเบื้องต้น ไม่สามารถใช้แทนการวินิจฉัยทางการแพทย์ หากท่านหรือคนในครอบครัวสังเกตเห็นอาการหลงลืมที่กระทบกิจวัตรประจำวัน แนะนำให้นำผลนี้ไปปรึกษาแพทย์เฉพาะทางด้านระบบประสาทหรือคลินิกความจำใกล้บ้านครับ';
+}
+
+function renderUserAIMarkdown(md) {
+    if (!md) return '';
+    let html = md
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/^### (.*$)/gim, '<h4 style="color:#2e5a27; margin:16px 0 8px 0; font-size:1.08rem; font-weight:700;">$1</h4>')
+        .replace(/^## (.*$)/gim, '<h3 style="color:#2e5a27; margin:18px 0 10px 0; font-size:1.15rem; font-weight:bold;">$1</h3>')
+        .replace(/^# (.*$)/gim, '<h2 style="color:#2e5a27; margin:20px 0 12px 0; font-size:1.25rem;">$1</h2>')
+        .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+        .replace(/^> (.*$)/gim, '<div style="background:#fff8e1; border-left:4px solid #ffb300; padding:10px 14px; border-radius:8px; margin:12px 0; color:#6d4c41; font-size:0.9rem;">$1</div>')
+        .replace(/^\- (.*$)/gim, '<li style="margin-bottom:6px;">$1</li>');
+
+    html = html.replace(/(<li.*<\/li>)/s, '<ul style="padding-left:22px; margin:8px 0;">$1</ul>');
+    return html.replace(/\n\n/g, '<p style="margin:8px 0;"></p>').replace(/\n/g, '<br>');
 }

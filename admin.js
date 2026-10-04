@@ -1,3 +1,4 @@
+let currentComputedStats = {};
 // =====================================================
 // Admin Dashboard Logic & Percentile Analytics Engine
 // Username: Sunnysun | Password: Sunny13082552
@@ -229,7 +230,30 @@ function computePercentilesAndStats() {
     const paperCount = N_paper;
     const paperPct = N > 0 ? Math.round((paperCount / N) * 100) : 0;
 
-    renderMetrics(N, paperCount, paperPct, spearmanRs, maePct, sensitivity, specificity, auc, optCutoff, diagnosticAccuracy);
+    // คำนวณเวลาทำแบบทดสอบเฉลี่ยทั้งหมด
+    const validDurations = rawTestResults
+        .map(r => (r.details && r.details.duration_seconds != null) ? r.details.duration_seconds : r.duration_seconds)
+        .filter(d => typeof d === 'number' && d > 0);
+    const avgDurationSec = validDurations.length ? Math.round(validDurations.reduce((a, b) => a + b, 0) / validDurations.length) : null;
+    const avgDurationStr = avgDurationSec != null ? (Math.floor(avgDurationSec / 60) + ' นาที ' + (avgDurationSec % 60) + ' วินาที') : '-';
+
+    currentComputedStats = {
+        N,
+        paperCount,
+        paperPct,
+        spearmanRs,
+        maePct,
+        sensitivity,
+        specificity,
+        auc,
+        optCutoff,
+        diagnosticAccuracy,
+        avgDurationSec,
+        avgDurationStr,
+        paperRecordsCount: N_paper
+    };
+
+    renderMetrics(N, paperCount, paperPct, spearmanRs, maePct, sensitivity, specificity, auc, optCutoff, diagnosticAccuracy, avgDurationStr);
     renderCharts(rawTestResults, paperRecords);
     renderTable(rawTestResults);
     populateAiSingleSelect(rawTestResults);
@@ -589,7 +613,7 @@ function renderTable(results) {
     tbody.innerHTML = "";
 
     if (!results || results.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:30px; color:#888;">ไม่พบข้อมูลผลการทดสอบ</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:30px; color:#888;">ไม่พบข้อมูลผลการทดสอบ</td></tr>`;
         return;
     }
 
@@ -605,6 +629,10 @@ function renderTable(results) {
                   minute: "2-digit"
               })
             : "-";
+
+        const durFormatted = (record.details && record.details.duration_formatted) 
+            || (record.details && record.details.duration_seconds != null ? (Math.floor(record.details.duration_seconds / 60) + ' นาที ' + (record.details.duration_seconds % 60) + ' วินาที') : null)
+            || (record.duration_seconds != null ? (Math.floor(record.duration_seconds / 60) + ' นาที ' + (record.duration_seconds % 60) + ' วินาที') : '-');
 
         const appScore = record.total_score !== undefined ? `${record.total_score} / 30` : "-";
         const appP = record.app_percentile !== undefined ? `P<sub>${record.app_percentile}%</sub>` : "-";
@@ -626,12 +654,13 @@ function renderTable(results) {
             <td>${dateStr}</td>
             <td><strong>${record.name || "ไม่ระบุชื่อ"}</strong><br><span style="font-size:0.78rem;color:#888;">ID: ${record.user_id}</span></td>
             <td>${record.age || "-"}</td>
+            <td><span style="font-size:0.85rem;color:#4a5d23;font-weight:600;">${durFormatted}</span></td>
             <td><strong style="color:#4a5d23;">${appScore}</strong></td>
             <td>${appP}</td>
             <td>${paperScore}</td>
             <td>${paperP}</td>
-            <td title="เปรียบเทียบ app (ในกลุ่ม) vs กระดาษ">${compareP} → ${paperP}</td>
-            <td style="color:#2e7d32;"><strong>${normDiff}</strong></td>
+            <td>${compareP} → ${paperP}</td>
+            <td>${normDiff}</td>
             <td>${mapBtn}</td>
             <td>
                 <div class="action-cell">
@@ -997,6 +1026,7 @@ function populateAiSingleSelect(records) {
 }
 
 function deidentifyRecord(r) {
+    const d = r.details || {};
     return {
         age: r.age != null ? r.age : null,
         gender: r.gender || null,
@@ -1004,53 +1034,63 @@ function deidentifyRecord(r) {
         disease: r.disease || null,
         total_score: r.total_score != null ? r.total_score : null,
         risk_level: r.risk_level || null,
-        duration_seconds: r.details && r.details.duration_seconds != null ? r.details.duration_seconds : null,
-        duration_formatted: r.details && r.details.duration_formatted ? r.details.duration_formatted : null,
+        duration_seconds: d.duration_seconds != null ? d.duration_seconds : (r.duration_seconds != null ? r.duration_seconds : null),
+        duration_formatted: d.duration_formatted || r.duration_formatted || null,
         scores: {
-            memory:      r.details ? (r.details.memory_score      != null ? r.details.memory_score      : null) : null,
-            clock:       r.details ? (r.details.clock_score       != null ? r.details.clock_score       : null) : null,
-            naming:      r.details ? (r.details.naming_score      != null ? r.details.naming_score      : null) : null,
-            sentence:    r.details ? (r.details.sentence_score    != null ? r.details.sentence_score    : null) : null,
-            fluency:     r.details ? (r.details.fluency_count     != null ? r.details.fluency_count     : null) : null,
-            math:        r.details ? (r.details.math_score        != null ? r.details.math_score        : null) : null,
-            recall:      r.details ? (r.details.recall_score      != null ? r.details.recall_score      : null) : null,
-            orientation: r.details ? (r.details.orientation_score != null ? r.details.orientation_score : null) : null,
+            memory:      d.memory != null ? d.memory : (d.memory_score != null ? d.memory_score : null),
+            visuospatial: d.visuospatial != null ? d.visuospatial : (d.clock_score != null ? d.clock_score : null),
+            contour:     d.contour != null ? d.contour : null,
+            naming:      d.naming != null ? d.naming : (d.naming_score != null ? d.naming_score : null),
+            sentence:    d.sentenceRepeat != null ? d.sentenceRepeat : (d.sentence_score != null ? d.sentence_score : (d.sentence != null ? d.sentence : null)),
+            fluency:     d.fluency != null ? d.fluency : (d.fluency_count != null ? d.fluency_count : null),
+            math:        d.math != null ? d.math : (d.math_score != null ? d.math_score : null),
+            orientation: d.orientation != null ? d.orientation : (d.orientation_score != null ? d.orientation_score : null),
         },
         test_date: r.created_at ? r.created_at.substring(0, 10) : null,
         paper_score: r.paper_score != null ? r.paper_score : null,
-        paper_risk: r.paper_risk || null,
+        paper_risk: r.paper_risk_level || r.paper_risk || null,
+        app_percentile: r.app_percentile != null ? r.app_percentile : null,
+        paper_percentile: r.paper_percentile != null ? r.paper_percentile : null
     };
 }
 
 function buildSinglePrompt(d) {
     const s = d.scores;
-    const dur = d.duration_seconds != null
+    const dur = d.duration_formatted || (d.duration_seconds != null
         ? (Math.floor(d.duration_seconds / 60) + ' นาที ' + (d.duration_seconds % 60) + ' วินาที')
-        : 'ไม่มีข้อมูล';
+        : 'ไม่มีข้อมูลเวลา');
     const paperInfo = d.paper_score != null
-        ? '\n- คะแนนแบบกระดาษ (MoCA): ' + d.paper_score + '/30 (' + (d.paper_risk || '-') + ')'
+        ? '\n- คะแนนแบบกระดาษมาตรฐาน (MoCA): ' + d.paper_score + '/30 (' + (d.paper_risk || '-') + ')' + (d.paper_percentile != null ? ' | Percentile: P' + d.paper_percentile + '%' : '')
         : '';
-    return 'คุณเป็นนักประสาทจิตวิทยาผู้เชี่ยวชาญด้านการประเมินความจำในผู้สูงอายุชาวไทย\n' +
-'กรุณาวิเคราะห์ผลการทดสอบ Memory Garden ในภาษาไทย\n\n' +
-'## ข้อมูลผู้รับการทดสอบ (ไม่ระบุตัวตน)\n' +
+    const appPercentileInfo = d.app_percentile != null ? (' | Percentile ในกลุ่ม: P' + d.app_percentile + '%') : '';
+
+    return 'คุณเป็นนักประสาทจิตวิทยาและแพทย์ผู้เชี่ยวชาญด้านเวชศาสตร์ผู้สูงอายุ\n' +
+'กรุณาวิเคราะห์ผลการทดสอบสมรรถภาพสมองรายบุคคล (De-identified) จากแอป Memory Garden ร่วมกับคะแนนมาตรฐาน MoCA ในภาษาไทยอย่างละเอียด\n\n' +
+'## 👤 ข้อมูลผู้รับการทดสอบ\n' +
 '- อายุ: ' + (d.age || 'ไม่ระบุ') + ' ปี\n' +
 '- เพศ: ' + (d.gender || 'ไม่ระบุ') + '\n' +
 '- ระดับการศึกษา: ' + (d.education || 'ไม่ระบุ') + '\n' +
 '- โรคประจำตัว: ' + (d.disease || 'ไม่มี') + '\n' +
 '- วันที่ทำแบบทดสอบ: ' + (d.test_date || 'ไม่ระบุ') + '\n' +
-'- เวลาที่ใช้: ' + dur + '\n\n' +
-'## ผลคะแนน Memory Garden\n' +
-'- คะแนนรวม: ' + (d.total_score != null ? d.total_score : 'N/A') + '/30 (' + (d.risk_level || 'N/A') + ')\n' +
-'- ความจำระยะสั้น (Memory): ' + (s.memory != null ? s.memory : 'N/A') + '/5\n' +
-'- วาดนาฬิกา (Clock): ' + (s.clock != null ? s.clock : 'N/A') + '/3\n' +
-'- บอกชื่อ (Naming): ' + (s.naming != null ? s.naming : 'N/A') + '/3\n' +
-'- ซ้ำประโยค (Sentence): ' + (s.sentence != null ? s.sentence : 'N/A') + '/2\n' +
-'- Fluency: ' + (s.fluency != null ? s.fluency : 'N/A') + ' คำ (เกณฑ์ปกติ >= 11 คำ)\n' +
-'- คณิตศาสตร์ (Math): ' + (s.math != null ? s.math : 'N/A') + '/5\n' +
-'- จำคำ (Recall): ' + (s.recall != null ? s.recall : 'N/A') + '/5\n' +
-'- Orientation: ' + (s.orientation != null ? s.orientation : 'N/A') + '/6' + paperInfo + '\n\n' +
-'## เกณฑ์: >=26 ปกติ | 18-25 เสี่ยง MCI | <18 ควรดูแลพิเศษ\n\n' +
-'กรุณาวิเคราะห์เป็น Markdown ภาษาไทย ครอบคลุม: 1.สรุปภาพรวม 2.จุดแข็ง 3.จุดที่น่ากังวล 4.การแปลผลเวลา 5.คำแนะนำสำหรับผู้ดูแล 6.ข้อควรระวัง(ไม่ใช่การวินิจฉัยทางการแพทย์)';
+'- เวลาที่ใช้ในการทำ: ' + dur + '\n\n' +
+'## 📊 ผลคะแนน Memory Garden ดิจิทัล\n' +
+'- คะแนนรวม: ' + (d.total_score != null ? d.total_score : 'N/A') + '/30 (' + (d.risk_level || 'N/A') + ')' + appPercentileInfo + paperInfo + '\n' +
+'- 🧠 ความจำระยะสั้น (Memory): ' + (s.memory != null ? s.memory : 'N/A') + '/5\n' +
+'- 🕰️ มิติสัมพันธ์และการวางแผนนาฬิกา (Visuospatial/Clock): ' + (s.visuospatial != null ? s.visuospatial : 'N/A') + '/3' + (s.contour != null ? ' (Contour: ' + s.contour + ')' : '') + '\n' +
+'- 🗣️ การบอกชื่อสิ่งของ (Naming): ' + (s.naming != null ? s.naming : 'N/A') + '/5\n' +
+'- 💬 การพูดซ้ำประโยค (Sentence): ' + (s.sentence != null ? s.sentence : 'N/A') + '/2\n' +
+'- ⚡ ความคล่องแคล่วทางภาษา (Fluency): ' + (s.fluency != null ? s.fluency : 'N/A') + ' / 4\n' +
+'- 🧮 สมาธิและการคำนวณเงินทอน (Math & Attention): ' + (s.math != null ? s.math : 'N/A') + '/5\n' +
+'- 🗺️ การรับรู้วันเวลาและสถานที่ (Orientation): ' + (s.orientation != null ? s.orientation : 'N/A') + '/6\n\n' +
+'## 🎯 เกณฑ์มาตรฐาน: >=26 ปกติ | 18-25 เสี่ยงบกพร่องเล็กน้อย (MCI) | <18 ควรได้รับการดูแลพิเศษ\n\n' +
+'กรุณาวิเคราะห์เป็น Markdown ภาษาไทย จัดหัวข้อน่าอ่าน: \n' +
+'1. **สรุปสถานะการทำงานของสมองภาพรวม**\n' +
+'2. **วิเคราะห์จุดแข็ง (Cognitive Strengths)**\n' +
+'3. **วิเคราะห์มิติที่ต้องระวัง (Areas of Concern)**\n' +
+'4. **การแปลผลเวลาที่ใช้ (Speed & Efficiency)**\n' +
+'5. **การเปรียบเทียบกับคะแนนมาตรฐานกระดาษ (ถ้ามี)**\n' +
+'6. **แผนการดูแลและกิจกรรมกระตุ้นสมองเฉพาะบุคคล**\n' +
+'7. **ข้อพิจารณาทางการแพทย์ & ข้อจำกัดของการคัดกรองเบื้องต้น**';
 }
 
 function buildGroupPrompt(records) {
@@ -1058,32 +1098,79 @@ function buildGroupPrompt(records) {
     if (n === 0) return null;
     const scores = records.map(function(r) { return r.total_score; }).filter(function(v) { return v != null; });
     const avgScore = scores.length ? (scores.reduce(function(a,b){return a+b;},0)/scores.length).toFixed(1) : 'N/A';
+    
+    // คำนวณ Standard Deviation และ Median
+    let scoreStd = 'N/A';
+    let scoreMedian = 'N/A';
+    if (scores.length > 0) {
+        const sorted = [...scores].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        scoreMedian = sorted.length % 2 !== 0 ? sorted[mid] : ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(1);
+        const mean = parseFloat(avgScore);
+        const variance = scores.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / scores.length;
+        scoreStd = Math.sqrt(variance).toFixed(2);
+    }
+
     const durRecs = records.filter(function(r){ return r.duration_seconds != null; });
     const avgDurSec = durRecs.length ? Math.round(durRecs.reduce(function(s,r){return s+r.duration_seconds;},0)/durRecs.length) : null;
-    const avgDurStr = avgDurSec != null ? (Math.floor(avgDurSec/60)+' นาที '+(avgDurSec%60)+' วินาที') : 'ไม่มีข้อมูล';
+    const avgDurStr = avgDurSec != null ? (Math.floor(avgDurSec/60)+' นาที '+(avgDurSec%60)+' วินาที') : (currentComputedStats.avgDurationStr || 'ไม่มีข้อมูล');
+
     const riskCount = {};
     records.forEach(function(r){ const k = r.risk_level || 'ไม่ระบุ'; riskCount[k] = (riskCount[k]||0)+1; });
     const riskLines = Object.keys(riskCount).map(function(k){ return '- '+k+': '+riskCount[k]+' คน ('+Math.round(riskCount[k]/n*100)+'%)'; }).join('\n');
+    
     const getAvg = function(key) {
         const vals = records.map(function(r){ return r.scores && r.scores[key] != null ? r.scores[key] : null; }).filter(function(v){ return v!=null; });
         return vals.length ? (vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(1) : 'N/A';
     };
-    return 'คุณเป็นนักระบาดวิทยาผู้เชี่ยวชาญด้านสุขภาพผู้สูงอายุชาวไทย\nกรุณาวิเคราะห์ข้อมูล Memory Garden ของกลุ่มผู้สูงอายุ\n\n' +
-'## สถิติภาพรวมกลุ่ม\n' +
-'- จำนวนผู้ทดสอบ: '+n+' คน\n' +
-'- คะแนนเฉลี่ย: '+avgScore+'/30\n' +
-'- เวลาเฉลี่ย: '+avgDurStr+'\n\n' +
-'## การกระจายระดับความเสี่ยง\n'+riskLines+'\n\n' +
-'## คะแนนเฉลี่ยรายด้าน\n' +
-'- Memory: '+getAvg('memory')+'/5\n' +
-'- Clock: '+getAvg('clock')+'/3\n' +
-'- Naming: '+getAvg('naming')+'/3\n' +
-'- Sentence: '+getAvg('sentence')+'/2\n' +
-'- Fluency: '+getAvg('fluency')+' คำ\n' +
-'- Math: '+getAvg('math')+'/5\n' +
-'- Recall: '+getAvg('recall')+'/5\n' +
-'- Orientation: '+getAvg('orientation')+'/6\n\n' +
-'กรุณาวิเคราะห์เป็น Markdown ภาษาไทย: 1.สรุปสถานการณ์กลุ่ม 2.Pattern ที่น่าสนใจ 3.ด้านที่ดีและน่ากังวล 4.ข้อเสนอกิจกรรม 5.ข้อเสนอแนะเชิงนโยบาย 6.ข้อจำกัดและข้อควรระวัง';
+
+    // ดึงค่าสถิติและการคำนวณทางการแพทย์
+    const cs = currentComputedStats || {};
+    const rsStr = cs.spearmanRs != null ? cs.spearmanRs.toFixed(2) : 'N/A';
+    const sensStr = cs.sensitivity != null ? (cs.sensitivity * 100).toFixed(1) + '%' : 'N/A';
+    const specStr = cs.specificity != null ? (cs.specificity * 100).toFixed(1) + '%' : 'N/A';
+    const aucStr = cs.auc != null ? cs.auc.toFixed(3) : 'N/A';
+    const accStr = cs.diagnosticAccuracy != null ? cs.diagnosticAccuracy.toFixed(1) + '%' : 'N/A';
+    const maeStr = cs.maePct != null ? cs.maePct.toFixed(1) + '%' : 'N/A';
+    const optCutoffStr = cs.optCutoff != null ? ('< ' + cs.optCutoff + '/30') : 'N/A';
+    const paperN = cs.paperCount || 0;
+    const paperPctStr = cs.paperPct != null ? (cs.paperPct + '%') : '0%';
+
+    return 'คุณเป็นนักระบาดวิทยา ผู้เชี่ยวชาญด้านประสาทจิตวิทยา และนักสถิติทางการแพทย์ชาวไทย\n' +
+'กรุณาวิเคราะห์ข้อมูลสุขภาพสมองและประสิทธิภาพของเครื่องมือคัดกรอง "Memory Garden" ของกลุ่มผู้สูงอายุ โดยใช้ทั้ง **ข้อมูลสถิติที่คำนวณได้ทั้งหมด** และ **ข้อมูลการกระจายตัวของกราฟต่างๆ**\n\n' +
+'## 📊 1. ข้อมูลสถิติเชิงคำนวณและตัวชี้วัดความแม่นยำ (Calculated Medical & Statistical Metrics)\n' +
+'- จำนวนกลุ่มตัวอย่างทั้งหมด (N): ' + n + ' คน\n' +
+'- จำนวนผู้ได้รับการตรวจคู่ขนานด้วยแบบประเมินกระดาษ MoCA มาตรฐาน: ' + paperN + ' คน (' + paperPctStr + ' ของกลุ่มตัวอย่าง)\n' +
+'- คะแนนเฉลี่ยแอป: ' + avgScore + ' / 30 (ค่ามัธยฐาน Median: ' + scoreMedian + ', ค่าเบี่ยงเบนมาตรฐาน SD: ' + scoreStd + ')\n' +
+'- เวลาเฉลี่ยในการทำแบบประเมิน: ' + avgDurStr + '\n' +
+'- ค่าสัมประสิทธิ์สหสัมพันธ์เชิงลำดับยศ Spearman (r_s): ' + rsStr + ' (วัดความสอดคล้องกับ MoCA กระดาษ)\n' +
+'- ความแม่นยำในการจำแนกโรค Diagnostic Accuracy: ' + accStr + ' ((TP + TN) / N)\n' +
+'- ความไวในการคัดกรอง Sensitivity (True Positive Rate ต่อ MCI): ' + sensStr + '\n' +
+'- ความจำเพาะ Specificity (True Negative Rate ไม่ชี้คนปกติผิด): ' + specStr + '\n' +
+'- พื้นที่ใต้กราฟ ROC (AUC-ROC): ' + aucStr + ' (เกณฑ์: >0.8 ดี, >0.9 ดีเยี่ยม)\n' +
+'- คะแนนตัดจุดที่เหมาะสมที่สุด (Optimal Cutoff via Youden Index): ' + optCutoffStr + '\n' +
+'- ผลต่างเฉลี่ยสัมบูรณ์ Normalized Score MAE: ' + maeStr + ' (|%App - %Paper|)\n\n' +
+'## 📈 2. ข้อมูลการกระจายตัวและกราฟการประเมิน (Graph & Distribution Data)\n' +
+'1. **กราฟการกระจายระดับความเสี่ยง (Risk Distribution)**:\n' + riskLines + '\n' +
+'2. **คะแนนเฉลี่ยแยก 5 มิติ (Cognitive Domains Breakdown)**:\n' +
+'   - 🧠 ความจำระยะสั้น (Memory): ' + getAvg('memory') + ' / 5\n' +
+'   - 🕰️ มิติสัมพันธ์และการวางแผน (Visuospatial/Clock): ' + getAvg('visuospatial') + ' / 3\n' +
+'   - 🗣️ การเรียกชื่อสิ่งของ (Naming): ' + getAvg('naming') + ' / 5\n' +
+'   - 💬 การพูดซ้ำประโยค (Sentence): ' + getAvg('sentence') + ' / 2\n' +
+'   - ⚡ ความคล่องแคล่วทางภาษา (Fluency): ' + getAvg('fluency') + ' / 4\n' +
+'   - 🧮 สมาธิและการคิดคำนวณ (Math & Attention): ' + getAvg('math') + ' / 5\n' +
+'   - 🗺️ การรับรู้วันเวลาและสถานที่ (Orientation): ' + getAvg('orientation') + ' / 6\n' +
+'3. **กราฟ Scatter Plot (ความสัมพันธ์ Percentile Rank App vs Paper)**: แสดงความสอดคล้องเชิงลำดับยศตามค่า r_s = ' + rsStr + '\n' +
+'4. **กราฟ ROC Curve**: วิเคราะห์ความสามารถในการแยกแยะระหว่างผู้สูงอายุภาวะปกติและภาวะ MCI\n\n' +
+'## 📝 โครงสร้างรายงานการวิเคราะห์ที่ต้องการ (เป็น Markdown ภาษาไทยอย่างมืออาชีพ):\n' +
+'### 🏛️ 1. บทสรุปสถานการณ์สุขภาพสมองของกลุ่มตัวอย่าง (Epidemiological Overview)\n' +
+'### 🔬 2. การแปลผลข้อมูลสถิติที่คำนวณได้และความเที่ยงตรงเชิงคลินิก (Clinical Validity & Diagnostic Metrics Interpretation)\n' +
+'(วิเคราะห์เชิงลึกเรื่อง Sensitivity, Specificity, AUC, r_s, Optimal Cutoff และเวลาเฉลี่ย)\n' +
+'### 📊 3. การวิเคราะห์ข้อมูลจากกราฟและรูปแบบคะแนนรายมิติ (Graph Insights & Cognitive Domain Patterns)\n' +
+'(ชี้ให้เห็นมิติที่กลุ่มทำได้ดี และมิติที่มีความเสี่ยงถดถอยมากที่สุด เช่น ความจำ หรือ มิติสัมพันธ์)\n' +
+'### 💡 4. ข้อเสนอแนะเชิงกิจกรรมและการดูแลในระดับชุมชน/องค์กร (Community Intervention & Cognitive Activities)\n' +
+'### 📋 5. ข้อเสนอแนะเชิงนโยบายและการติดตามผล (Policy & Monitoring Recommendations)\n' +
+'### ⚠️ 6. ข้อจำกัดของเครื่องมือและข้อควรระวัง (Limitations & Ethical Considerations)';
 }
 
 async function callGeminiAPI(prompt) {
@@ -1236,4 +1323,163 @@ function printAiResult() {
         '</body></html>');
     win.document.close();
     win.print();
+}
+
+// =========================================================================
+// --- Graph AI Analysis Engine (ดึงข้อมูลจริงจากกราฟและเส้นโค้งมาวิเคราะห์) ---
+// =========================================================================
+
+function triggerSpecificGraphAnalysis(graphType) {
+    const sel = document.getElementById('ai-graph-type-select');
+    if (sel) sel.value = graphType;
+
+    const tabs = document.querySelectorAll('.ai-tab');
+    if (tabs && tabs[2]) {
+        switchAiMode('graph', tabs[2]);
+    }
+
+    const aiSection = document.querySelector('.ai-analysis-section');
+    if (aiSection) {
+        aiSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // เรียกวิเคราะห์ทันที
+    setTimeout(() => {
+        runGraphAnalysis(graphType);
+    }, 400);
+}
+
+function buildGraphAnalysisPrompt(graphType = 'all') {
+    const paperRecords = (rawTestResults || []).filter(r => r.paper_score !== null && r.paper_score !== undefined);
+    const N_total = (rawTestResults || []).length;
+    const N_paper = paperRecords.length;
+    const cs = currentComputedStats || {};
+
+    if (N_paper === 0 && graphType !== 'curve') {
+        return null;
+    }
+
+    // 1. สกัดข้อมูล Scatter Plot
+    const scatterPoints = paperRecords.map(r => {
+        const appP = r.app_percentile_ingroup !== undefined ? r.app_percentile_ingroup : (r.app_percentile || 0);
+        const paperP = r.paper_percentile || 0;
+        return {
+            name: r.name || 'Anonymous',
+            appScore: r.total_score || 0,
+            paperScore: r.paper_score,
+            appP: appP,
+            paperP: paperP,
+            diffP: Math.round(Math.abs(appP - paperP) * 10) / 10
+        };
+    });
+
+    const highConcordanceCount = scatterPoints.filter(p => p.diffP <= 10).length;
+    const appHigherCount = scatterPoints.filter(p => p.appP > p.paperP + 10).length;
+    const paperHigherCount = scatterPoints.filter(p => p.paperP > p.appP + 10).length;
+
+    // 2. สกัดข้อมูล Cumulative Curve
+    const appScoresSorted = [...(rawTestResults || [])].map(r => r.total_score || 0).sort((a, b) => a - b);
+    const paperScoresSorted = paperRecords.map(r => r.paper_score).sort((a, b) => a - b);
+    
+    const appMedian = appScoresSorted.length ? appScoresSorted[Math.floor(appScoresSorted.length / 2)] : 0;
+    const paperMedian = paperScoresSorted.length ? paperScoresSorted[Math.floor(paperScoresSorted.length / 2)] : 0;
+
+    // 3. สกัดข้อมูล ROC Curve
+    let rocPointsData = [];
+    let bestCutoff = cs.optCutoff || 26;
+    let sensitivity = cs.sensitivity != null ? (cs.sensitivity * 100).toFixed(1) + '%' : 'N/A';
+    let specificity = cs.specificity != null ? (cs.specificity * 100).toFixed(1) + '%' : 'N/A';
+    let aucValue = cs.auc != null ? cs.auc.toFixed(3) : 'N/A';
+
+    if (N_paper > 0) {
+        const { rocPoints } = computeAUCROC(paperRecords, 26);
+        rocPointsData = rocPoints.map(p => ({
+            cutoff: p.cutoff,
+            fpr: Math.round(p.fpr * 1000) / 1000,
+            tpr: Math.round(p.tpr * 1000) / 1000,
+            sensitivity: Math.round(p.tpr * 100) + '%',
+            specificity: Math.round((1 - p.fpr) * 100) + '%'
+        }));
+    }
+
+    let prompt = 'คุณเป็นนักสถิติชีวเวชศาสตร์ (Biostatistician) และผู้เชี่ยวชาญด้านประสาทจิตวิทยาคลินิก\n' +
+        'กรุณาวิเคราะห์และแปลผลทางสถิติการแพทย์เชิงลึกจากข้อมูลกราฟของระบบประเมิน Memory Garden (ดิจิทัล) เปรียบเทียบกับแบบทดสอบกระดาษมาตรฐาน MoCA\n\n';
+
+    if (graphType === 'scatter' || graphType === 'all') {
+        prompt += '### 📈 ข้อมูลกราฟที่ 1: Percentile Rank Scatter Plot (Paper vs App)\n' +
+            '- ค่าสัมประสิทธิ์สหสัมพันธ์เชิงลำดับยศ Spearman (r_s): ' + (cs.spearmanRs != null ? cs.spearmanRs.toFixed(2) : 'N/A') + '\n' +
+            '- จำนวนจุดข้อมูลเปรียบเทียบคู่ขนาน: ' + N_paper + ' จุด (จากประชากรทั้งหมด ' + N_total + ' คน)\n' +
+            '- ความสอดคล้องระดับสูง (|Δ Percentile| ≤ 10%): ' + highConcordanceCount + ' คน (' + (N_paper ? Math.round(highConcordanceCount/N_paper*100) : 0) + '%)\n' +
+            '- จุดที่คะแนนแอปสูงกว่ากระดาษเกิน 10%: ' + appHigherCount + ' คน\n' +
+            '- จุดที่คะแนนกระดาษสูงกว่าแอปเกิน 10%: ' + paperHigherCount + ' คน\n' +
+            '- ค่าเฉลี่ยผลต่างสัมบูรณ์ Normalized Score MAE: ' + (cs.maePct != null ? cs.maePct.toFixed(1) + '%' : 'N/A') + '\n\n';
+    }
+
+    if (graphType === 'curve' || graphType === 'all') {
+        prompt += '### 📊 ข้อมูลกราฟที่ 2: Cumulative Distribution Curve (เส้นโค้งเปอร์เซ็นไทล์สะสม)\n' +
+            '- คะแนนมัธยฐานแอป (Median App Score): ' + appMedian + ' / 30 คะแนน\n' +
+            '- คะแนนมัธยฐานกระดาษ MoCA (Median Paper Score): ' + paperMedian + ' / 30 คะแนน\n' +
+            '- สัดส่วนผู้ที่ได้คะแนนในโซนปกติ (≥ 26): ' + (appScoresSorted.length ? Math.round(appScoresSorted.filter(s => s >= 26).length / appScoresSorted.length * 100) : 0) + '% (แอป) vs ' + (paperScoresSorted.length ? Math.round(paperScoresSorted.filter(s => s >= 26).length / paperScoresSorted.length * 100) : 0) + '% (กระดาษ)\n' +
+            '- สัดส่วนผู้ที่ได้คะแนนในโซนเสี่ยง MCI (18-25): ' + (appScoresSorted.length ? Math.round(appScoresSorted.filter(s => s >= 18 && s < 26).length / appScoresSorted.length * 100) : 0) + '%\n' +
+            '- สัดส่วนผู้ที่ได้คะแนนในโซนควรดูแลพิเศษ (< 18): ' + (appScoresSorted.length ? Math.round(appScoresSorted.filter(s => s < 18).length / appScoresSorted.length * 100) : 0) + '%\n\n';
+    }
+
+    if (graphType === 'roc' || graphType === 'all') {
+        prompt += '### 🎯 ข้อมูลกราฟที่ 3: ROC Curve & Diagnostic Power Analysis\n' +
+            '- พื้นที่ใต้เส้นโค้ง ROC (AUC-ROC): ' + aucValue + ' (เกณฑ์: >0.8 = ดี, >0.9 = ยอดเยี่ยม)\n' +
+            '- คะแนนจุดตัดที่เหมาะสมที่สุด (Optimal Cutoff by Youden Index): < ' + bestCutoff + ' / 30 คะแนน\n' +
+            '- ความไว Sensitivity (True Positive Rate ต่อภาวะ MCI): ' + sensitivity + '\n' +
+            '- ความจำเพาะ Specificity (True Negative Rate ต่อภาวะปกติ): ' + specificity + '\n' +
+            '- ความแม่นยำรวม Diagnostic Accuracy: ' + (cs.diagnosticAccuracy != null ? cs.diagnosticAccuracy.toFixed(1) + '%' : 'N/A') + '\n' +
+            '- พิกัดจุดตัดที่สำคัญบน ROC Curve:\n' +
+            rocPointsData.slice(0, 7).map(p => '   * Cutoff < ' + p.cutoff + ': TPR (Sens) = ' + p.tpr + ', FPR (1-Spec) = ' + p.fpr + ' (Spec = ' + p.specificity + ')').join('\n') + '\n\n';
+    }
+
+    prompt += '## 📝 โครงสร้างการวิเคราะห์ผลจากกราฟที่ต้องการ (Markdown ภาษาไทยอย่างเป็นทางการ):\n' +
+        '### 🔍 1. การแปลผลเชิงภาพและพฤติกรรมของกราฟ (Visual & Trend Interpretation)\n' +
+        '(อธิบายลักษณะการเกาะกลุ่มของจุด ความชัน เส้นโค้ง และความเบี่ยงเบนจากเส้นทแยงมุมหรือเส้นอ้างอิง)\n\n' +
+        '### 📐 2. ความเที่ยงตรงและความสอดคล้องในการวัด (Measurement Reliability & Concordance)\n' +
+        '(วิเคราะห์ว่าผลจากแอปดิจิทัลสะท้อนคะแนนกระดาษมาตรฐาน MoCA ได้แม่นยำเพียงใด มี Outlier หรือ Bias หรือไม่)\n\n' +
+        '### 🎯 3. การประเมินประสิทธิภาพการคัดกรองทางคลินิก (Clinical Screening Efficacy)\n' +
+        '(วิเคราะห์ค่า AUC, Sensitivity, Specificity และจุดตัด Cutoff ที่เหมาะสมที่สุดในการนำไปใช้คัดกรองจริงในชุมชน)\n\n' +
+        '### 💡 4. ข้อสรุปและคำแนะนำสำหรับทีมวิจัย / ผู้ดูแลระบบ (Actionable Insights & Recommendations)\n' +
+        '(คำแนะนำในการปรับปรุงเกณฑ์คะแนน หรือการนำกราฟไปนำเสนอในงานวิจัย/นโยบายสาธารณสุข)';
+
+    return prompt;
+}
+
+async function runGraphAnalysis(forcedType) {
+    const sel = document.getElementById('ai-graph-type-select');
+    const graphType = forcedType || (sel ? sel.value : 'all');
+    
+    const paperRecords = (rawTestResults || []).filter(r => r.paper_score !== null && r.paper_score !== undefined);
+    if (paperRecords.length === 0 && graphType !== 'curve') {
+        showToast('กรุณาบันทึกคะแนนกระดาษอย่างน้อย 1 รายการเพื่อวิเคราะห์กราฟ', 'error');
+        return;
+    }
+
+    setAiLoading(true);
+    try {
+        const prompt = buildGraphAnalysisPrompt(graphType);
+        if (!prompt) {
+            showToast('ข้อมูลกราฟไม่เพียงพอสำหรับการวิเคราะห์', 'error');
+            setAiLoading(false);
+            return;
+        }
+
+        const graphNameMap = {
+            'all': 'วิเคราะห์กราฟทั้งหมดรวมกัน (Comprehensive Graph Analysis)',
+            'scatter': 'วิเคราะห์กราฟ Scatter Plot (Rank Correlation)',
+            'curve': 'วิเคราะห์กราฟ Cumulative Distribution Curve',
+            'roc': 'วิเคราะห์กราฟ ROC Curve & Diagnostic Power'
+        };
+
+        const result = await callGeminiAPI(prompt);
+        showAiResult('ผลการวิเคราะห์จากกราฟ: ' + (graphNameMap[graphType] || 'Graph AI Analysis'), result);
+    } catch (e) {
+        console.error('[Graph AI Error]:', e);
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        setAiLoading(false);
+    }
 }

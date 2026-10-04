@@ -719,7 +719,12 @@
             <div class="charts-grid">
                 <!-- Percentile Scatter Plot -->
                 <div class="chart-card">
-                    <h3>📈 กราฟความสัมพันธ์ Percentile Rank (Paper vs App)</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                        <h3 style="margin: 0;">📈 กราฟความสัมพันธ์ Percentile Rank (Paper vs App)</h3>
+                        <button type="button" onclick="triggerSpecificGraphAnalysis('scatter')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: 1px solid rgba(130,149,75,0.4); border-radius: 20px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                            <span>🤖</span> วิเคราะห์กราฟนี้ด้วย AI
+                        </button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="scatterChart"></canvas>
                     </div>
@@ -727,7 +732,12 @@
 
                 <!-- Cumulative Distribution Curve -->
                 <div class="chart-card">
-                    <h3>📊 กราฟเส้นโค้งเปอร์เซ็นไทล์สะสม (Cumulative Curve)</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                        <h3 style="margin: 0;">📊 กราฟเส้นโค้งเปอร์เซ็นไทล์สะสม (Cumulative Curve)</h3>
+                        <button type="button" onclick="triggerSpecificGraphAnalysis('curve')" style="background: rgba(130,149,75,0.15); color: #4a5d23; border: 1px solid rgba(130,149,75,0.4); border-radius: 20px; padding: 6px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                            <span>🤖</span> วิเคราะห์กราฟนี้ด้วย AI
+                        </button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="curveChart"></canvas>
                     </div>
@@ -769,6 +779,7 @@
                 <div class="ai-mode-tabs">
                     <button class="ai-tab active" onclick="switchAiMode('single', this)">&#x1F464; รายบุคคล</button>
                     <button class="ai-tab" onclick="switchAiMode('group', this)">&#x1F465; ภาพรวมกลุ่ม</button>
+                    <button class="ai-tab" onclick="switchAiMode('graph', this)">📊 วิเคราะห์ผลจากกราฟ (Graph AI)</button>
                 </div>
                 <div id="ai-mode-single" class="ai-mode-content active">
                     <div class="ai-mode-inner">
@@ -782,6 +793,25 @@
                     <div class="ai-mode-inner">
                         <p class="ai-mode-note">วิเคราะห์ภาพรวมผู้ทดสอบทั้งหมด <strong id="ai-group-count">0</strong> คน</p>
                         <button class="btn-analyze" id="btn-analyze-group" onclick="runGroupAnalysis()">&#x1F4CA; วิเคราะห์ภาพรวมกลุ่ม</button>
+                    </div>
+                </div>
+                <div id="ai-mode-graph" class="ai-mode-content" style="display: none;">
+                    <div class="ai-mode-inner" style="flex-direction: column; align-items: stretch; gap: 14px;">
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h4 style="margin: 0 0 4px 0; color: #4a5d23; font-size: 1.05rem; font-weight: 700;">📈 วิเคราะห์ผลและแปลความหมายจากกราฟด้วย Gemini AI</h4>
+                                <p class="ai-mode-note" style="margin: 0; font-size: 0.85rem;">ดึงพิกัดจุดข้อมูลจริง ค่าความชัน เส้นโค้งความหนาแน่น และค่า ROC/AUC จากกราฟมาวิเคราะห์ทางสถิติและประสาทวิทยา</p>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                                <select id="ai-graph-type-select" class="ai-select" style="min-width: 250px; font-weight: 600;">
+                                    <option value="all">📊 วิเคราะห์กราฟทั้งหมดรวมกัน (All 3 Graphs)</option>
+                                    <option value="scatter">📈 1. กราฟ Scatter Plot (สหสัมพันธ์ Rank Correlation)</option>
+                                    <option value="curve">📉 2. กราฟ Cumulative Curve (การกระจายตัวสะสม)</option>
+                                    <option value="roc">🎯 3. กราฟ ROC Curve & AUC (ความแม่นยำคัดกรอง MCI)</option>
+                                </select>
+                                <button class="btn-analyze" id="btn-analyze-graph" onclick="runGraphAnalysis()">✨ เริ่มวิเคราะห์กราฟ</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div id="ai-loading">
@@ -815,6 +845,7 @@
                                 <th>วันที่ทำ</th>
                                 <th>ชื่อผู้ทดสอบ / ID</th>
                                 <th>อายุ</th>
+                                <th>⏱️ เวลาที่ใช้</th>
                                 <th>คะแนนแอป (30)</th>
                                 <th>Percentile แอป</th>
                                 <th>คะแนนกระดาษ (30)</th>

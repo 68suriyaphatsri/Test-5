@@ -17,6 +17,7 @@ let pendingDeleteId = null;
 // --- Initialize Page & Event Listeners ---
 document.addEventListener("DOMContentLoaded", () => {
     checkAdminSession();
+    initGeminiKey();
     bindAdminEvents();
 });
 
@@ -231,6 +232,7 @@ function computePercentilesAndStats() {
     renderMetrics(N, paperCount, paperPct, spearmanRs, maePct, sensitivity, specificity, auc, optCutoff, diagnosticAccuracy);
     renderCharts(rawTestResults, paperRecords);
     renderTable(rawTestResults);
+    populateAiSingleSelect(rawTestResults);
 }
 
 // Spearman's Rank Correlation (r_s) with tied ranks handling
@@ -648,6 +650,7 @@ function renderTable(results) {
 function filterTableData(query) {
     if (!query) {
         renderTable(rawTestResults);
+    populateAiSingleSelect(rawTestResults);
         return;
     }
     const filtered = rawTestResults.filter(
@@ -922,4 +925,315 @@ function openMap(lat, lon, name = '') {
     const label = encodeURIComponent(name || 'ตำแหน่งผู้ทดสอบ');
     const url = `https://www.google.com/maps?q=${lat},${lon}&z=15&t=m`;
     window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+
+// =====================================================
+// AI Analysis System -- PDPA Compliant Gemini Integration
+// =====================================================
+
+function initGeminiKey() {
+    const DEFAULT_KEY = 'AQ.Ab8RN6Is5QjKRzSbxxhl7VHSzSXJgiqXOQRRd-J-EPie2RzzSg';
+    if (!localStorage.getItem('mg_gemini_api_key') && DEFAULT_KEY) {
+        localStorage.setItem('mg_gemini_api_key', DEFAULT_KEY);
+    }
+    const saved = localStorage.getItem('mg_gemini_api_key');
+    if (saved) {
+        const inp = document.getElementById('gemini-api-key-input');
+        if (inp) inp.value = saved;
+        showKeyStatus('API Key Ready', '#2e7d32');
+    }
+}
+
+function saveGeminiKey() {
+    const val = (document.getElementById('gemini-api-key-input')?.value || '').trim();
+    if (!val) { showToast('กรุณากรอก API Key ก่อน', 'error'); return; }
+    localStorage.setItem('mg_gemini_api_key', val);
+    showKeyStatus('บันทึก API Key เรียบร้อยแล้ว', '#2e7d32');
+    showToast('บันทึก Gemini API Key สำเร็จ', 'success');
+}
+
+function clearGeminiKey() {
+    localStorage.removeItem('mg_gemini_api_key');
+    const inp = document.getElementById('gemini-api-key-input');
+    if (inp) inp.value = '';
+    showKeyStatus('ล้าง API Key แล้ว', '#e53935');
+}
+
+function showKeyStatus(msg, color) {
+    const el = document.getElementById('ai-key-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = color;
+    el.style.display = 'block';
+}
+
+function switchAiMode(mode, btn) {
+    document.querySelectorAll('.ai-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.ai-mode-content').forEach(c => {
+        c.classList.remove('active');
+        c.style.display = 'none';
+    });
+    const panel = document.getElementById('ai-mode-' + mode);
+    if (panel) { panel.style.display = 'block'; panel.classList.add('active'); }
+    document.getElementById('ai-result-container').style.display = 'none';
+    document.getElementById('ai-loading').style.display = 'none';
+}
+
+function populateAiSingleSelect(records) {
+    const sel = document.getElementById('ai-single-select');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- เลือกผู้ทดสอบที่ต้องการวิเคราะห์ --</option>';
+    records.forEach((r, i) => {
+        const label = (r.name || 'ไม่ระบุชื่อ') + ' | อายุ ' + (r.age || '?') + ' | คะแนน ' + (r.total_score != null ? r.total_score : '?') + '/30 | ' + (r.created_at ? r.created_at.substring(0, 10) : '');
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = label;
+        sel.appendChild(opt);
+    });
+    const gc = document.getElementById('ai-group-count');
+    if (gc) gc.textContent = records.length;
+}
+
+function deidentifyRecord(r) {
+    return {
+        age: r.age != null ? r.age : null,
+        gender: r.gender || null,
+        education: r.education || null,
+        disease: r.disease || null,
+        total_score: r.total_score != null ? r.total_score : null,
+        risk_level: r.risk_level || null,
+        duration_seconds: r.details && r.details.duration_seconds != null ? r.details.duration_seconds : null,
+        duration_formatted: r.details && r.details.duration_formatted ? r.details.duration_formatted : null,
+        scores: {
+            memory:      r.details ? (r.details.memory_score      != null ? r.details.memory_score      : null) : null,
+            clock:       r.details ? (r.details.clock_score       != null ? r.details.clock_score       : null) : null,
+            naming:      r.details ? (r.details.naming_score      != null ? r.details.naming_score      : null) : null,
+            sentence:    r.details ? (r.details.sentence_score    != null ? r.details.sentence_score    : null) : null,
+            fluency:     r.details ? (r.details.fluency_count     != null ? r.details.fluency_count     : null) : null,
+            math:        r.details ? (r.details.math_score        != null ? r.details.math_score        : null) : null,
+            recall:      r.details ? (r.details.recall_score      != null ? r.details.recall_score      : null) : null,
+            orientation: r.details ? (r.details.orientation_score != null ? r.details.orientation_score : null) : null,
+        },
+        test_date: r.created_at ? r.created_at.substring(0, 10) : null,
+        paper_score: r.paper_score != null ? r.paper_score : null,
+        paper_risk: r.paper_risk || null,
+    };
+}
+
+function buildSinglePrompt(d) {
+    const s = d.scores;
+    const dur = d.duration_seconds != null
+        ? (Math.floor(d.duration_seconds / 60) + ' นาที ' + (d.duration_seconds % 60) + ' วินาที')
+        : 'ไม่มีข้อมูล';
+    const paperInfo = d.paper_score != null
+        ? '\n- คะแนนแบบกระดาษ (MoCA): ' + d.paper_score + '/30 (' + (d.paper_risk || '-') + ')'
+        : '';
+    return 'คุณเป็นนักประสาทจิตวิทยาผู้เชี่ยวชาญด้านการประเมินความจำในผู้สูงอายุชาวไทย\n' +
+'กรุณาวิเคราะห์ผลการทดสอบ Memory Garden ในภาษาไทย\n\n' +
+'## ข้อมูลผู้รับการทดสอบ (ไม่ระบุตัวตน)\n' +
+'- อายุ: ' + (d.age || 'ไม่ระบุ') + ' ปี\n' +
+'- เพศ: ' + (d.gender || 'ไม่ระบุ') + '\n' +
+'- ระดับการศึกษา: ' + (d.education || 'ไม่ระบุ') + '\n' +
+'- โรคประจำตัว: ' + (d.disease || 'ไม่มี') + '\n' +
+'- วันที่ทำแบบทดสอบ: ' + (d.test_date || 'ไม่ระบุ') + '\n' +
+'- เวลาที่ใช้: ' + dur + '\n\n' +
+'## ผลคะแนน Memory Garden\n' +
+'- คะแนนรวม: ' + (d.total_score != null ? d.total_score : 'N/A') + '/30 (' + (d.risk_level || 'N/A') + ')\n' +
+'- ความจำระยะสั้น (Memory): ' + (s.memory != null ? s.memory : 'N/A') + '/5\n' +
+'- วาดนาฬิกา (Clock): ' + (s.clock != null ? s.clock : 'N/A') + '/3\n' +
+'- บอกชื่อ (Naming): ' + (s.naming != null ? s.naming : 'N/A') + '/3\n' +
+'- ซ้ำประโยค (Sentence): ' + (s.sentence != null ? s.sentence : 'N/A') + '/2\n' +
+'- Fluency: ' + (s.fluency != null ? s.fluency : 'N/A') + ' คำ (เกณฑ์ปกติ >= 11 คำ)\n' +
+'- คณิตศาสตร์ (Math): ' + (s.math != null ? s.math : 'N/A') + '/5\n' +
+'- จำคำ (Recall): ' + (s.recall != null ? s.recall : 'N/A') + '/5\n' +
+'- Orientation: ' + (s.orientation != null ? s.orientation : 'N/A') + '/6' + paperInfo + '\n\n' +
+'## เกณฑ์: >=26 ปกติ | 18-25 เสี่ยง MCI | <18 ควรดูแลพิเศษ\n\n' +
+'กรุณาวิเคราะห์เป็น Markdown ภาษาไทย ครอบคลุม: 1.สรุปภาพรวม 2.จุดแข็ง 3.จุดที่น่ากังวล 4.การแปลผลเวลา 5.คำแนะนำสำหรับผู้ดูแล 6.ข้อควรระวัง(ไม่ใช่การวินิจฉัยทางการแพทย์)';
+}
+
+function buildGroupPrompt(records) {
+    const n = records.length;
+    if (n === 0) return null;
+    const scores = records.map(function(r) { return r.total_score; }).filter(function(v) { return v != null; });
+    const avgScore = scores.length ? (scores.reduce(function(a,b){return a+b;},0)/scores.length).toFixed(1) : 'N/A';
+    const durRecs = records.filter(function(r){ return r.duration_seconds != null; });
+    const avgDurSec = durRecs.length ? Math.round(durRecs.reduce(function(s,r){return s+r.duration_seconds;},0)/durRecs.length) : null;
+    const avgDurStr = avgDurSec != null ? (Math.floor(avgDurSec/60)+' นาที '+(avgDurSec%60)+' วินาที') : 'ไม่มีข้อมูล';
+    const riskCount = {};
+    records.forEach(function(r){ const k = r.risk_level || 'ไม่ระบุ'; riskCount[k] = (riskCount[k]||0)+1; });
+    const riskLines = Object.keys(riskCount).map(function(k){ return '- '+k+': '+riskCount[k]+' คน ('+Math.round(riskCount[k]/n*100)+'%)'; }).join('\n');
+    const getAvg = function(key) {
+        const vals = records.map(function(r){ return r.scores && r.scores[key] != null ? r.scores[key] : null; }).filter(function(v){ return v!=null; });
+        return vals.length ? (vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(1) : 'N/A';
+    };
+    return 'คุณเป็นนักระบาดวิทยาผู้เชี่ยวชาญด้านสุขภาพผู้สูงอายุชาวไทย\nกรุณาวิเคราะห์ข้อมูล Memory Garden ของกลุ่มผู้สูงอายุ\n\n' +
+'## สถิติภาพรวมกลุ่ม\n' +
+'- จำนวนผู้ทดสอบ: '+n+' คน\n' +
+'- คะแนนเฉลี่ย: '+avgScore+'/30\n' +
+'- เวลาเฉลี่ย: '+avgDurStr+'\n\n' +
+'## การกระจายระดับความเสี่ยง\n'+riskLines+'\n\n' +
+'## คะแนนเฉลี่ยรายด้าน\n' +
+'- Memory: '+getAvg('memory')+'/5\n' +
+'- Clock: '+getAvg('clock')+'/3\n' +
+'- Naming: '+getAvg('naming')+'/3\n' +
+'- Sentence: '+getAvg('sentence')+'/2\n' +
+'- Fluency: '+getAvg('fluency')+' คำ\n' +
+'- Math: '+getAvg('math')+'/5\n' +
+'- Recall: '+getAvg('recall')+'/5\n' +
+'- Orientation: '+getAvg('orientation')+'/6\n\n' +
+'กรุณาวิเคราะห์เป็น Markdown ภาษาไทย: 1.สรุปสถานการณ์กลุ่ม 2.Pattern ที่น่าสนใจ 3.ด้านที่ดีและน่ากังวล 4.ข้อเสนอกิจกรรม 5.ข้อเสนอแนะเชิงนโยบาย 6.ข้อจำกัดและข้อควรระวัง';
+}
+
+async function callGeminiAPI(prompt) {
+    const apiKey = localStorage.getItem('mg_gemini_api_key');
+    if (!apiKey) throw new Error('ยังไม่ได้ตั้งค่า API Key');
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=' + apiKey;
+    const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 2500 }
+    };
+    const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!resp.ok) {
+        const err = await resp.json().catch(function(){ return {}; });
+        throw new Error((err.error && err.error.message) ? err.error.message : 'HTTP ' + resp.status);
+    }
+    const data = await resp.json();
+    return (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) ? data.candidates[0].content.parts[0].text : 'ไม่ได้รับผลลัพธ์';
+}
+
+function renderMarkdown(md) {
+    if (!md) return '<p>(ไม่มีข้อมูล)</p>';
+    // Normalize line endings
+    md = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Split into lines and process each
+    var lines = md.split('\n');
+    var html = [];
+    var inList = false;
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        // Bold text
+        line = line.replace(/\*\*(.+?)\*\*/g, '<strong>\</strong>');
+        // Italic
+        line = line.replace(/\*(.+?)\*/g, '<em>\</em>');
+        if (/^### (.+)/.test(line)) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<h3>' + line.replace(/^### /, '') + '</h3>');
+        } else if (/^## (.+)/.test(line)) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<h2>' + line.replace(/^## /, '') + '</h2>');
+        } else if (/^# (.+)/.test(line)) {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<h1>' + line.replace(/^# /, '') + '</h1>');
+        } else if (/^[-*] (.+)/.test(line)) {
+            if (!inList) { html.push('<ul>'); inList = true; }
+            html.push('<li>' + line.replace(/^[-*] /, '') + '</li>');
+        } else if (/^\d+\. (.+)/.test(line)) {
+            if (!inList) { html.push('<ul>'); inList = true; }
+            html.push('<li>' + line.replace(/^\d+\. /, '') + '</li>');
+        } else if (line.trim() === '') {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('');
+        } else {
+            if (inList) { html.push('</ul>'); inList = false; }
+            html.push('<p>' + line + '</p>');
+        }
+    }
+    if (inList) html.push('</ul>');
+    return html.join('\n');
+}
+
+async function runSingleAnalysis() {
+    const selEl = document.getElementById('ai-single-select');
+    const idx = selEl ? selEl.value : '';
+    console.log('[AI] runSingleAnalysis called, idx=', idx, 'rawTestResults count=', rawTestResults ? rawTestResults.length : 'null');
+    if (idx === '' || idx == null) { showToast('กรุณาเลือกผู้ทดสอบก่อน', 'error'); return; }
+    const record = rawTestResults[parseInt(idx)];
+    if (!record) { showToast('ไม่พบข้อมูล', 'error'); return; }
+    const loadingEl = document.getElementById('ai-loading');
+    if (loadingEl) loadingEl.style.display = 'flex';
+    document.querySelectorAll('.btn-analyze').forEach(function(b){ b.disabled = true; });
+    try {
+        const deidentified = deidentifyRecord(record);
+        console.log('[AI] Deidentified:', JSON.stringify(deidentified).substring(0, 100));
+        const prompt = buildSinglePrompt(deidentified);
+        console.log('[AI] Calling Gemini API...');
+        const result = await callGeminiAPI(prompt);
+        console.log('[AI] Got result length:', result ? result.length : 0);
+        showAiResult('ผลวิเคราะห์รายบุคคล (ข้อมูล De-identified)', result);
+    } catch (e) {
+        console.error('[AI] Error:', e);
+        alert('AI Error: ' + e.message);
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        if (loadingEl) loadingEl.style.display = 'none';
+        document.querySelectorAll('.btn-analyze').forEach(function(b){ b.disabled = false; });
+    }
+}
+
+async function runGroupAnalysis() {
+    if (!rawTestResults || rawTestResults.length === 0) { showToast('ยังไม่มีข้อมูล', 'error'); return; }
+    setAiLoading(true);
+    try {
+        const deidentifiedAll = rawTestResults.map(function(r){ return deidentifyRecord(r); });
+        const prompt = buildGroupPrompt(deidentifiedAll);
+        if (!prompt) { showToast('ข้อมูลไม่เพียงพอ', 'error'); setAiLoading(false); return; }
+        const result = await callGeminiAPI(prompt);
+        showAiResult('ผลวิเคราะห์ภาพรวมกลุ่ม ' + rawTestResults.length + ' คน', result);
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        setAiLoading(false);
+    }
+}
+
+function setAiLoading(on) {
+    const loading = document.getElementById('ai-loading');
+    const result = document.getElementById('ai-result-container');
+    if (loading) loading.style.display = on ? 'flex' : 'none';
+    if (result) result.style.display = on ? 'none' : 'block';
+    document.querySelectorAll('.btn-analyze').forEach(function(b){ b.disabled = on; });
+}
+
+function showAiResult(title, markdown) {
+    const titleEl = document.getElementById('ai-result-title');
+    const bodyEl = document.getElementById('ai-result-body');
+    const container = document.getElementById('ai-result-container');
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl) bodyEl.innerHTML = renderMarkdown(markdown);
+    if (container) { container.style.display = 'block'; container.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+
+function copyAiResult() {
+    const body = document.getElementById('ai-result-body');
+    const text = body ? body.innerText : '';
+    navigator.clipboard.writeText(text).then(function(){ showToast('คัดลอกผลการวิเคราะห์แล้ว', 'success'); });
+}
+
+function printAiResult() {
+    const titleEl = document.getElementById('ai-result-title');
+    const bodyEl = document.getElementById('ai-result-body');
+    const title = titleEl ? titleEl.textContent : 'AI Analysis';
+    const body = bodyEl ? bodyEl.innerHTML : '';
+    const win = window.open('', '_blank');
+    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title>' +
+        '<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">' +
+        '<style>body{font-family:Prompt,sans-serif;padding:40px;max-width:800px;margin:auto;line-height:1.8;}' +
+        'h2{color:#4a5d23;border-bottom:2px solid #e8f0d8;padding-bottom:6px;margin-top:24px;}' +
+        'strong{color:#4a5d23;}ul{padding-left:20px;}' +
+        '.disclaimer{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;font-size:0.82rem;color:#795548;margin-top:24px;}' +
+        '</style></head><body>' +
+        '<h1 style="color:#4a5d23;">Memory Garden AI Analysis</h1>' +
+        '<h2>' + title + '</h2>' +
+        '<p style="color:#888;font-size:0.85rem;">ข้อมูล De-identified (PDPA Compliant)</p><hr>' +
+        body +
+        '<div class="disclaimer">ผลการวิเคราะห์นี้ผลิตโดย AI เพื่อสนับสนุนการตัดสินใจเบื้องต้นเท่านั้น ไม่ใช่การวินิจฉัยโรคทางการแพทย์</div>' +
+        '</body></html>');
+    win.document.close();
+    win.print();
 }

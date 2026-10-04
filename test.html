@@ -845,6 +845,34 @@
 
 
             </div>
+            
+            <!-- AI Health & Cognitive Analysis Section for Individual User -->
+            <div class="user-ai-card" id="user-ai-section" style="background: linear-gradient(135deg, #f0f7e6 0%, #e8f5e9 100%); border-radius: 24px; padding: 22px 20px; margin: 18px 0; border: 2px solid #a4ba74; box-shadow: 0 8px 24px rgba(130,149,75,0.12); text-align: left;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.8rem;">✨</span>
+                        <div>
+                            <h3 style="margin: 0; color: #2e5a27; font-size: 1.15rem; font-weight: bold;">AI วิเคราะห์ผลสุขภาพสมองเฉพาะบุคคล</h3>
+                            <p style="margin: 2px 0 0 0; color: #666; font-size: 0.85rem;">ประมวลผลด้วย Gemini AI จากคะแนน 5 มิติของท่าน</p>
+                        </div>
+                    </div>
+                    <button id="btn-user-ai-analyze" onclick="generateUserAIAnalysis()" style="background: linear-gradient(135deg, #82954b, #556b2f); color: white; border: none; border-radius: 50px; padding: 10px 20px; font-weight: bold; cursor: pointer; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(85,107,47,0.3); display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                        <span>🧠</span> <span id="user-ai-btn-text">คลิกเพื่อให้ AI วิเคราะห์เจาะลึก</span>
+                    </button>
+                </div>
+
+                <div id="user-ai-loading" style="display: none; text-align: center; padding: 18px 0;">
+                    <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid #cfe2ce; border-top-color: #556b2f; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="color: #4a5d23; font-size: 0.92rem; margin-top: 8px; font-weight: 500;">AI กำลังประมวลผลสุขภาพสมองและเตรียมคำแนะนำเฉพาะคุณ...</p>
+                </div>
+
+                <div id="user-ai-content" style="display: none; background: white; border-radius: 16px; padding: 16px 18px; line-height: 1.7; color: #333; font-size: 0.93rem; border: 1px solid #dce7d1; box-shadow: inset 0 2px 6px rgba(0,0,0,0.03);"></div>
+                
+                <div style="margin-top: 10px; font-size: 0.78rem; color: #777; display: flex; align-items: center; gap: 6px;">
+                    <span>🔒 ประมวลผลแบบนิรนาม ไม่เปิดเผยข้อมูลส่วนบุคคล (PDPA Compliant)</span>
+                </div>
+            </div>
+
             <div class="advice-card">
 
                 <div class="advice-content">

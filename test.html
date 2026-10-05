@@ -252,6 +252,43 @@
                     พร้อมคำแนะนำเฉพาะบุคคลและกราฟแสดงผลแต่ละด้าน</p>
             </div>
 
+            <!-- การ์ดวิดีโอสาธิตการใช้งาน & ปุ่มแชร์วิดีโอ (Video Tutorial & Share) -->
+            <div
+                style="background: linear-gradient(135deg, #f3f8ec 0%, #eaf4e0 100%); border: 2px solid #82954b; border-radius: 20px; padding: 18px 16px; margin-bottom: 16px; text-align: center; box-shadow: 0 4px 18px rgba(130,149,75,0.15); position: relative; overflow: hidden;">
+                
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px;">
+                    <span style="font-size: 1.4rem;">🎬</span>
+                    <h3 style="margin: 0; color: #355115; font-size: 1.1rem; font-weight: 700;">วิดีโอสาธิตการทำแบบทดสอบ</h3>
+                    <span style="background: #e74c3c; color: white; font-size: 0.72rem; font-weight: bold; padding: 2px 8px; border-radius: 10px; text-transform: uppercase;">แนะนำ</span>
+                </div>
+                
+                <p style="margin: 0 0 14px 0; color: #556b35; font-size: 0.88rem; line-height: 1.6;">
+                    ชมคลิปวิดีโออธิบายขั้นตอน 8 ด่านทดสอบทีละขั้นตอนอย่างละเอียด เพื่อความมั่นใจก่อนเริ่มทำ
+                </p>
+
+                <!-- ปุ่มดูวิดีโอสาธิตหลัก -->
+                <button type="button" id="intro-video-play-btn" onclick="openVideoTutorialModal()"
+                    style="width: 100%; padding: 14px 18px; background: linear-gradient(135deg, #82954b, #556b2f); color: white; border: none; border-radius: 50px; font-size: 1.05rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 16px rgba(130,149,75,0.4); transition: transform 0.2s, box-shadow 0.2s; margin-bottom: 10px;"
+                    onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    <span style="font-size: 1.25rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">▶️</span>
+                    <span>กดดูคลิปวิดีโอสอนทำแบบทดสอบ</span>
+                </button>
+
+                <!-- ปุ่มแชร์วิดีโอ / ส่งต่อให้ครอบครัว -->
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button type="button" onclick="shareTutorialVideo()"
+                        style="flex: 1; padding: 10px 14px; background: #ffffff; color: #4a5d23; border: 1.5px solid #82954b; border-radius: 50px; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.2s;"
+                        onmouseover="this.style.background='#f0f7e6'" onmouseout="this.style.background='#ffffff'">
+                        <span>📤</span> <span>แชร์วิดีโอให้ครอบครัว</span>
+                    </button>
+                    <button type="button" onclick="copyVideoTutorialLink()"
+                        style="padding: 10px 14px; background: #ffffff; color: #4a5d23; border: 1.5px solid #82954b; border-radius: 50px; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.2s;"
+                        title="คัดลอกลิงก์วิดีโอ" onmouseover="this.style.background='#f0f7e6'" onmouseout="this.style.background='#ffffff'">
+                        <span>📋</span> <span>คัดลอกลิงก์</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- คำเตือน -->
             <div
                 style="display: flex; align-items: flex-start; gap: 12px; background: #fff8e1; border-radius: 14px; padding: 14px; border: 1px solid #ffe082; margin-bottom: 24px; text-align: left;">
@@ -1049,6 +1086,179 @@
             </div>
         </div>
     </div>
+
+    <!-- Video Tutorial Modal (Modal วิดีโอสอนการทำแบบทดสอบและแชร์) -->
+    <div id="video-tutorial-modal"
+        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 999995; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.25s ease;"
+        onclick="closeVideoTutorialModal(event)">
+        <div style="background: white; max-width: 580px; width: 92%; max-height: 92vh; padding: 22px; border-radius: 28px; text-align: left; box-shadow: 0 25px 60px rgba(0,0,0,0.35); position: relative; display: flex; flex-direction: column; overflow-y: auto; border: 2px solid #82954b;"
+            onclick="event.stopPropagation()">
+            
+            <!-- Header Modal -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.5rem;">🎬</span>
+                    <div>
+                        <h3 style="margin: 0; color: #355115; font-size: 1.15rem; font-weight: 700;">วิดีโอสาธิตการทำแบบทดสอบ</h3>
+                        <p style="margin: 0; font-size: 0.82rem; color: #777;">คู่มือสอนขั้นตอนการประเมิน Memory Garden</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeVideoTutorialModal()"
+                    style="width: 36px; height: 36px; border-radius: 50%; background: #f0f0f0; border: none; font-size: 1.1rem; font-weight: bold; color: #555; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                    title="ปิดหน้าต่าง">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Video Player Container -->
+            <div style="position: relative; width: 100%; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 6px 20px rgba(0,0,0,0.15); margin-bottom: 14px;">
+                <video id="tutorial-video-player" controls playsinline preload="auto"
+                    poster="https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif"
+                    style="width: 100%; height: auto; max-height: 320px; display: block; object-fit: contain; background: #000;">
+                    <source src="video-share.mp4" type="video/mp4">
+                    เบราว์เซอร์ของคุณไม่รองรับการเล่นวิดีโอนี้
+                </video>
+            </div>
+
+            <!-- หมวดหมู่และขั้นตอน (Chapters) -->
+            <div style="background: #f7f9f4; border: 1px solid #e0ebd2; border-radius: 16px; padding: 12px 14px; margin-bottom: 14px;">
+                <p style="margin: 0 0 8px 0; font-size: 0.88rem; font-weight: 700; color: #4a5d23;">
+                    📌 สรุป 8 ด่านทดสอบในคลิปนี้:
+                </p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.82rem; color: #444;">
+                    <div>🌱 1. จดจำสิ่งของ 5 อย่าง</div>
+                    <div>🕰️ 2. วาดนาฬิกาและตั้งเข็ม</div>
+                    <div>🌿 3. บอกชื่อสิ่งของ 5 ภาพ</div>
+                    <div>🗣️ 4. พูดซ้ำประโยคตามที่จำ</div>
+                    <div>🦁 5. บอกชื่อสัตว์ 60 วิ</div>
+                    <div>🧮 6. คิดเลข 100 ลบ 7 ต่อเนื่อง</div>
+                    <div>💭 7. ระลึกความจำ 5 สิ่งของ</div>
+                    <div>🗺️ 8. รับรู้วันเวลาและสถานที่</div>
+                </div>
+            </div>
+
+            <!-- แถบปุ่มแชร์วิดีโอ (Share Actions) -->
+            <div style="border-top: 1px solid #eee; padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #333; text-align: center;">
+                    📤 แชร์คลิปวิดีโอนี้เพื่อเป็นประโยชน์แก่ผู้อื่น:
+                </p>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    <button type="button" onclick="shareToLine()"
+                        style="flex: 1; min-width: 130px; padding: 10px 14px; background: #06C755; color: white; border: none; border-radius: 50px; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 3px 10px rgba(6,199,85,0.3);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                            <path d="M12 2C6.477 2 2 5.82 2 10.53C2 12.87 3.12 14.97 4.96 16.4C4.58 17.75 3.91 19.89 3.73 20.46C3.51 21.14 4.04 21.05 4.3 20.89C6.41 19.5 8.91 17.89 9.61 17.47C10.37 17.73 11.17 17.87 12 17.87C17.52 17.87 22 14.05 22 9.34C22 4.63 17.52 2 12 2ZM8.82 12.18H7.3V8.89H8.82V12.18ZM11.66 10.45H10.14V8.89H11.66V10.45ZM14.5 12.18H12.98V8.89H14.5V12.18ZM17.34 10.45H15.82V8.89H17.34V10.45Z" />
+                        </svg>
+                        แชร์เข้า LINE
+                    </button>
+                    <button type="button" onclick="shareTutorialVideo()"
+                        style="flex: 1; min-width: 130px; padding: 10px 14px; background: linear-gradient(135deg, #82954b, #6a7a3a); color: white; border: none; border-radius: 50px; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 3px 10px rgba(130,149,75,0.3);">
+                        <span>📱</span> แชร์ทั่วไป
+                    </button>
+                    <button type="button" onclick="copyVideoTutorialLink()"
+                        style="padding: 10px 16px; background: #f0f0f0; color: #444; border: 1px solid #ccc; border-radius: 50px; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        <span>📋</span> คัดลอกลิงก์
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Video Tutorial JavaScript Functions -->
+    <script>
+        function openVideoTutorialModal() {
+            const modal = document.getElementById('video-tutorial-modal');
+            const video = document.getElementById('tutorial-video-player');
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => {
+                    modal.style.opacity = '1';
+                }, 10);
+            }
+            if (video && typeof video.play === 'function') {
+                video.play().catch(e => console.log('Autoplay blocked:', e));
+            }
+        }
+
+        function closeVideoTutorialModal(e) {
+            const modal = document.getElementById('video-tutorial-modal');
+            const video = document.getElementById('tutorial-video-player');
+            if (video && typeof video.pause === 'function') {
+                video.pause();
+            }
+            if (modal) {
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 250);
+            }
+        }
+
+        function shareTutorialVideo() {
+            const shareData = {
+                title: 'Memory Garden — วิดีโอสอนทำแบบประเมินสุขภาพสมอง',
+                text: 'ชมคลิปวิดีโอสาธิตการทำแบบทดสอบสุขภาพสมองและความจำ Memory Garden สำหรับผู้สูงอายุ',
+                url: window.location.href.split('#')[0]
+            };
+
+            if (navigator.share) {
+                navigator.share(shareData).catch(err => {
+                    console.log('Share error:', err);
+                });
+            } else {
+                copyVideoTutorialLink();
+            }
+        }
+
+        function shareToLine() {
+            const currentUrl = encodeURIComponent(window.location.href.split('#')[0]);
+            const text = encodeURIComponent('ชมคลิปวิดีโอสาธิตการทำแบบทดสอบสุขภาพสมอง Memory Garden: ');
+            const lineShareUrl = `https://social-plugins.line.me/lineit/share?url=${currentUrl}&text=${text}`;
+            window.open(lineShareUrl, '_blank');
+        }
+
+        function copyVideoTutorialLink() {
+            const shareUrl = window.location.href.split('#')[0];
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    if (typeof showCustomPopup === 'function') {
+                        showCustomPopup('คัดลอกลิงก์วิดีโอสำเร็จแล้ว! คุณสามารถส่งต่อให้ครอบครัวหรือเพื่อนได้ทันทีครับ 📋', '✅');
+                    } else {
+                        alert('คัดลอกลิงก์สำเร็จแล้ว!');
+                    }
+                }).catch(() => {
+                    fallbackCopy(shareUrl);
+                });
+            } else {
+                fallbackCopy(shareUrl);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            if (typeof showCustomPopup === 'function') {
+                showCustomPopup('คัดลอกลิงก์สำเร็จแล้ว! 📋', '✅');
+            } else {
+                alert('คัดลอกลิงก์สำเร็จแล้ว!');
+            }
+        }
+
+        // ตรวจสอบว่าเปิดมาจากหน้าแรก (Index) หรือมีพารามิเตอร์ ?video=1 เพื่อเปิดวิดีโอทันที
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (sessionStorage.getItem('open_tutorial_video') === '1' || urlParams.get('video') === '1') {
+                sessionStorage.removeItem('open_tutorial_video');
+                setTimeout(() => {
+                    openVideoTutorialModal();
+                }, 400);
+            }
+        });
+    </script>
 
     <script src="mcp.js"></script>
     <script>

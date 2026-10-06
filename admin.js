@@ -217,13 +217,13 @@ function computePercentilesAndStats() {
 
         // Clinical validity metrics & Optimal Cutoff using Youden's Index
         // ใช้ paperCutoff = 26 ตามมาตรฐาน MoCA (ปกติ >= 26, MCI < 26)
-        const best = findOptimalCutoff(paperRecords, 26);
+        const best = findOptimalCutoff(paperRecords, 25);
         optCutoff = best.cutoff;
         sensitivity = best.sens;
         specificity = best.spec;
         diagnosticAccuracy = best.accuracy;
 
-        const aucResult = computeAUCROC(paperRecords, 26);
+        const aucResult = computeAUCROC(paperRecords, 25);
         auc = aucResult.auc;
     }
 
@@ -337,12 +337,12 @@ function renderMetrics(totalUsers, paperCount, paperPct, spearmanRs, maePct, sen
 // --- Clinical Validity Functions ---
 
 // คำนวณ Sensitivity, Specificity และ Diagnostic Accuracy ((TP + TN) / N)
-// paperCutoff = 26: มาตรฐาน MoCA (ปกติ >= 26, MCI < 26)
-function computeSensSpec(records, appCutoff, paperCutoff = 26) {
+// paperCutoff = 25: มาตรฐาน MoCA (ปกติ >= 25, MCI < 25)
+function computeSensSpec(records, appCutoff, paperCutoff = 25) {
     let TP = 0, FP = 0, TN = 0, FN = 0;
     records.forEach(r => {
         const appPos = (r.total_score || 0) < appCutoff;  // แอปบอกว่าเป็น MCI
-        const paperPos = r.paper_score < paperCutoff;     // กระดาษบอกว่าเป็น MCI (< 26 = MoCA มาตรฐาน)
+        const paperPos = r.paper_score < paperCutoff;     // กระดาษบอกว่าเป็น MCI (< 25 = MoCA มาตรฐาน)
         if (appPos && paperPos)   TP++;
         else if (appPos && !paperPos) FP++;
         else if (!appPos && !paperPos) TN++;
@@ -356,8 +356,8 @@ function computeSensSpec(records, appCutoff, paperCutoff = 26) {
 }
 
 // หา cutoff ที่ดีที่สุดด้วย Youden's Index (Sens + Spec - 1)
-function findOptimalCutoff(records, paperCutoff = 26) {
-    let best = { cutoff: 26, youden: -Infinity, sens: 0, spec: 0, accuracy: 0 };
+function findOptimalCutoff(records, paperCutoff = 25) {
+    let best = { cutoff: 25, youden: -Infinity, sens: 0, spec: 0, accuracy: 0 };
     for (let c = 1; c <= 30; c++) {
         const { sensitivity, specificity, accuracy } = computeSensSpec(records, c, paperCutoff);
         const youden = sensitivity + specificity - 1;
@@ -369,7 +369,7 @@ function findOptimalCutoff(records, paperCutoff = 26) {
 }
 
 // คำนวณ AUC-ROC ด้วย Trapezoidal Rule
-function computeAUCROC(records, paperCutoff = 26) {
+function computeAUCROC(records, paperCutoff = 25) {
     const points = [];
     for (let c = 0; c <= 31; c++) {
         const { sensitivity, specificity } = computeSensSpec(records, c, paperCutoff);
@@ -556,7 +556,7 @@ function renderCharts(allRecords, paperRecords) {
                 }
             });
         } else {
-            const { rocPoints } = computeAUCROC(paperRecords, 26);
+            const { rocPoints } = computeAUCROC(paperRecords, 25);
             const rocData = rocPoints.map(p => ({
                 x: parseFloat(p.fpr.toFixed(4)),
                 y: parseFloat(p.tpr.toFixed(4))
@@ -567,7 +567,7 @@ function renderCharts(allRecords, paperRecords) {
                 data: {
                     datasets: [
                         {
-                            label: "ROC Curve (App vs MoCA < 26)",
+                            label: "ROC Curve (App vs MoCA < 25)",
                             data: rocData,
                             borderColor: "#7b5ea7",
                             backgroundColor: "rgba(123, 94, 167, 0.12)",
@@ -811,7 +811,7 @@ function closeEditModal() {
 
 // คำนวณ risk_level จากคะแนน (ใช้มาตรฐาน MoCA: ปกติ >= 26)
 function calcRiskLevel(score) {
-    if (score >= 26) return 'ปกติ (Normal)';
+    if (score >= 25) return 'ปกติ (Normal)';
     if (score >= 18) return 'เสี่ยงบกพร่องเล็กน้อย (MCI)';
     return 'ควรได้รับการดูแลพิเศษ';
 }
@@ -1082,7 +1082,7 @@ function buildSinglePrompt(d) {
 '- ⚡ ความคล่องแคล่วทางภาษา (Fluency): ' + (s.fluency != null ? s.fluency : 'N/A') + ' / 4\n' +
 '- 🧮 สมาธิและการคำนวณเงินทอน (Math & Attention): ' + (s.math != null ? s.math : 'N/A') + '/5\n' +
 '- 🗺️ การรับรู้วันเวลาและสถานที่ (Orientation): ' + (s.orientation != null ? s.orientation : 'N/A') + '/6\n\n' +
-'## 🎯 เกณฑ์มาตรฐาน: >=26 ปกติ | 18-25 เสี่ยงบกพร่องเล็กน้อย (MCI) | <18 ควรได้รับการดูแลพิเศษ\n\n' +
+'## 🎯 เกณฑ์มาตรฐาน: >=25 ปกติ | 18-24 เสี่ยงบกพร่องเล็กน้อย (MCI) | <18 ควรได้รับการดูแลพิเศษ\n\n' +
 'กรุณาวิเคราะห์เป็น Markdown ภาษาไทย จัดหัวข้อน่าอ่าน: \n' +
 '1. **สรุปสถานะการทำงานของสมองภาพรวม**\n' +
 '2. **วิเคราะห์จุดแข็ง (Cognitive Strengths)**\n' +
@@ -1303,31 +1303,64 @@ function copyAiResult() {
 }
 
 function printAiResult() {
-    const titleEl = document.getElementById('ai-result-title');
-    const bodyEl = document.getElementById('ai-result-body');
-    const title = titleEl ? titleEl.textContent : 'AI Analysis';
-    const body = bodyEl ? bodyEl.innerHTML : '';
-    const win = window.open('', '_blank');
-    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title>' +
-        '<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">' +
-        '<style>body{font-family:Prompt,sans-serif;padding:40px;max-width:800px;margin:auto;line-height:1.8;}' +
-        'h2{color:#4a5d23;border-bottom:2px solid #e8f0d8;padding-bottom:6px;margin-top:24px;}' +
-        'strong{color:#4a5d23;}ul{padding-left:20px;}' +
-        '.disclaimer{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px;font-size:0.82rem;color:#795548;margin-top:24px;}' +
-        '</style></head><body>' +
-        '<h1 style="color:#4a5d23;">Memory Garden AI Analysis</h1>' +
-        '<h2>' + title + '</h2>' +
-        '<p style="color:#888;font-size:0.85rem;">ข้อมูล De-identified (PDPA Compliant)</p><hr>' +
-        body +
-        '<div class="disclaimer">ผลการวิเคราะห์นี้ผลิตโดย AI เพื่อสนับสนุนการตัดสินใจเบื้องต้นเท่านั้น ไม่ใช่การวินิจฉัยโรคทางการแพทย์</div>' +
-        '</body></html>');
-    win.document.close();
-    win.print();
-}
+    var titleEl = document.getElementById('ai-result-title');
+    var bodyEl  = document.getElementById('ai-result-body');
+    var title   = titleEl ? titleEl.textContent : 'AI Analysis';
+    var body    = bodyEl  ? bodyEl.innerHTML    : '';
+    var now     = new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric' });
 
-// =========================================================================
-// --- Graph AI Analysis Engine (ดึงข้อมูลจริงจากกราฟและเส้นโค้งมาวิเคราะห์) ---
-// =========================================================================
+    var win = window.open('', '_blank');
+    if (!win) { showToast('กรุณาอนุญาต Pop-up ในเบราว์เซอร์', 'error'); return; }
+
+    var css = [
+        '<meta charset="UTF-8">',
+        '<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">',
+        '<style>',
+        '* { box-sizing: border-box; }',
+        'body { font-family: Prompt, Sarabun, sans-serif; background: #fff; color: #2c3e50; line-height: 1.8; }',
+        '.pdf-page { max-width: 760px; margin: 0 auto; padding: 40px 32px; }',
+        '.pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #4a5d23; padding-bottom: 14px; margin-bottom: 24px; }',
+        '.pdf-logo { font-size: 1.3rem; font-weight: 800; color: #4a5d23; }',
+        '.pdf-meta { text-align: right; font-size: 0.78rem; color: #888; }',
+        '.pdf-title { font-size: 1.4rem; font-weight: 700; color: #4a5d23; margin-bottom: 4px; }',
+        '.pdf-subtitle { font-size: 0.88rem; color: #777; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed #ddd; }',
+        '.pdf-badge { display: inline-block; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; border-radius: 20px; padding: 4px 14px; font-size: 0.78rem; font-weight: 600; margin-bottom: 18px; }',
+        'h1, h2 { color: #4a5d23; border-bottom: 1px solid #c8d8a0; padding-bottom: 5px; margin: 20px 0 8px; }',
+        'h3 { color: #5a7030; margin: 16px 0 6px; }',
+        'p { margin-bottom: 10px; font-size: 0.93rem; }',
+        'ul, ol { padding-left: 20px; margin-bottom: 10px; }',
+        'li { margin-bottom: 4px; font-size: 0.93rem; }',
+        'strong { color: #4a5d23; }',
+        '.pdf-disclaimer { background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: 14px 18px; margin-top: 28px; font-size: 0.8rem; color: #795548; }',
+        '.pdf-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #eee; font-size: 0.75rem; color: #aaa; text-align: center; }',
+        '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }',
+        '</style>'
+    ].join('\n');
+
+    var htmlContent = [
+        '<!DOCTYPE html><html lang="th"><head>', css, '</head><body>',
+        '<div class="pdf-page">',
+        '<div class="pdf-header">',
+        '<div class="pdf-logo">&#x1F333; Memory Garden</div>',
+        '<div class="pdf-meta">ผลการวิเคราะห์ AI<br>' + now + '</div>',
+        '</div>',
+        '<div class="pdf-title">' + title + '</div>',
+        '<div class="pdf-subtitle">ผลการประเมินโดย Gemini AI | Memory Garden</div>',
+        '<div class="pdf-badge">&#x1F512; PDPA — ข้อมูล De-identified</div>',
+        '<div>' + body + '</div>',
+        '<div class="pdf-disclaimer">',
+        '<strong>&#x26A0; ข้อควรระวัง:</strong> ผลนี้ผลิตโดย AI เพื่อสนับสนุนเบื้องต้นเท่านั้น ',
+        '<strong>ไม่ใช่การวินิจฉัยโรค</strong> กรุณาปรึกษาแพทย์เสมอ',
+        '</div>',
+        '<div class="pdf-footer">Memory Garden &copy; 2025-2026</div>',
+        '</div>',
+        '<script>setTimeout(function(){ window.print(); }, 600);<\/script>',
+        '</body></html>'
+    ].join('');
+
+    win.document.write(htmlContent);
+    win.document.close();
+}
 
 function triggerSpecificGraphAnalysis(graphType) {
     const sel = document.getElementById('ai-graph-type-select');
@@ -1386,13 +1419,13 @@ function buildGraphAnalysisPrompt(graphType = 'all') {
 
     // 3. สกัดข้อมูล ROC Curve
     let rocPointsData = [];
-    let bestCutoff = cs.optCutoff || 26;
+    let bestCutoff = cs.optCutoff || 25;
     let sensitivity = cs.sensitivity != null ? (cs.sensitivity * 100).toFixed(1) + '%' : 'N/A';
     let specificity = cs.specificity != null ? (cs.specificity * 100).toFixed(1) + '%' : 'N/A';
     let aucValue = cs.auc != null ? cs.auc.toFixed(3) : 'N/A';
 
     if (N_paper > 0) {
-        const { rocPoints } = computeAUCROC(paperRecords, 26);
+        const { rocPoints } = computeAUCROC(paperRecords, 25);
         rocPointsData = rocPoints.map(p => ({
             cutoff: p.cutoff,
             fpr: Math.round(p.fpr * 1000) / 1000,
@@ -1419,8 +1452,8 @@ function buildGraphAnalysisPrompt(graphType = 'all') {
         prompt += '### 📊 ข้อมูลกราฟที่ 2: Cumulative Distribution Curve (เส้นโค้งเปอร์เซ็นไทล์สะสม)\n' +
             '- คะแนนมัธยฐานแอป (Median App Score): ' + appMedian + ' / 30 คะแนน\n' +
             '- คะแนนมัธยฐานกระดาษ MoCA (Median Paper Score): ' + paperMedian + ' / 30 คะแนน\n' +
-            '- สัดส่วนผู้ที่ได้คะแนนในโซนปกติ (≥ 26): ' + (appScoresSorted.length ? Math.round(appScoresSorted.filter(s => s >= 26).length / appScoresSorted.length * 100) : 0) + '% (แอป) vs ' + (paperScoresSorted.length ? Math.round(paperScoresSorted.filter(s => s >= 26).length / paperScoresSorted.length * 100) : 0) + '% (กระดาษ)\n' +
-            '- สัดส่วนผู้ที่ได้คะแนนในโซนเสี่ยง MCI (18-25): ' + (appScoresSorted.length ? Math.round(appScoresSorted.filter(s => s >= 18 && s < 26).length / appScoresSorted.length * 100) : 0) + '%\n' +
+            '- สัดส่วนผู้ที่ได้คะแนนในโซนปกติ (≥ 25): ' + (appScoresSorted.length ? Math.round(appScoresSorted.filter(s => s >= 25).length / appScoresSorted.length * 100) : 0) + '% (แอป) vs ' + (paperScoresSorted.length ? Math.round(paperScoresSorted.filter(s => s >= 25).length / paperScoresSorted.length * 100) : 0) + '% (กระดาษ)\n' +
+            '- สัดส่วนผู้ที่ได้คะแนนในโซนเสี่ยง MCI (18-24): ' + (appScoresSorted.length ? Math.round(appScoresSorted.filter(s => s >= 18 && s < 25).length / appScoresSorted.length * 100) : 0) + '%\n' +
             '- สัดส่วนผู้ที่ได้คะแนนในโซนควรดูแลพิเศษ (< 18): ' + (appScoresSorted.length ? Math.round(appScoresSorted.filter(s => s < 18).length / appScoresSorted.length * 100) : 0) + '%\n\n';
     }
 

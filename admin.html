@@ -691,12 +691,12 @@
                 <div class="metric-card" style="border-left: 4px solid #2e7d32;">
                     <span class="title">🔍 Sensitivity (ไวต่อ MCI)</span>
                     <span class="value" id="metric-sensitivity" style="color: #2e7d32;">-</span>
-                    <span class="sub">Optimal Cutoff (MoCA &lt; 26 = MCI)</span>
+                    <span class="sub">Optimal Cutoff (MoCA &lt; 25 = MCI)</span>
                 </div>
                 <div class="metric-card" style="border-left: 4px solid #1565c0;">
                     <span class="title">🛡️ Specificity (ไม่หลงว่าปกติเป็น MCI)</span>
                     <span class="value" id="metric-specificity" style="color: #1565c0;">-</span>
-                    <span class="sub">Optimal Cutoff (MoCA &lt; 26 = MCI)</span>
+                    <span class="sub">Optimal Cutoff (MoCA &lt; 25 = MCI)</span>
                 </div>
                 <div class="metric-card" style="border-left: 4px solid #6a1b9a;">
                     <span class="title">📈 AUC-ROC</span>
@@ -746,7 +746,7 @@
 
             <!-- ROC Curve Chart -->
             <div style="background:white; border-radius:24px; padding:24px; box-shadow:0 4px 20px rgba(0,0,0,0.04); border:1px solid #eef2e6; margin-bottom:24px;">
-                <h3 style="font-size:1.1rem; color:#333; margin-bottom:8px;">&#128200; ROC Curve — ความแม่นยำในการวินิจฉัย MCI (App vs MoCA &lt; 26 = MCI, ปกติ &ge; 26/30)</h3>
+                <h3 style="font-size:1.1rem; color:#333; margin-bottom:8px;">&#128200; ROC Curve — ความแม่นยำในการวินิจฉัย MCI (App vs MoCA &lt; 25 = MCI, ปกติ &ge; 25/30)</h3>
                 <p style="font-size:0.82rem; color:#888; margin-bottom:16px;">แกน X = False Positive Rate (1-Specificity) | แกน Y = True Positive Rate (Sensitivity) | AUC ยิ่งใกล้ 1 ยิ่งดี (&gt;0.8 = ดี, &gt;0.9 = ดีมาก)</p>
                 <div style="position:relative; height:300px;">
                     <canvas id="rocChart"></canvas>
@@ -877,7 +877,7 @@
                 <input type="hidden" id="modal-result-id">
                 <div class="form-group">
                     <label>คะแนนสอบบนกระดาษ (เต็ม 30 คะแนน)</label>
-                    <input type="number" id="input-paper-score" min="0" max="30" placeholder="เช่น 26" required>
+                    <input type="number" id="input-paper-score" min="0" max="30" placeholder="เช่น 25" required>
                 </div>
                 <div class="form-group">
                     <label>ผลการประเมินจากกระดาษ</label>
@@ -941,8 +941,8 @@
                     <div class="form-group">
                         <label>ระดับความเสี่ยง (แอป)</label>
                         <select id="edit-risk-level" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #ddd; font-size:1rem;">
-                            <option value="ปกติ (Normal)">ปกติ (Normal) — &ge; 26</option>
-                            <option value="เสี่ยงบกพร่องเล็กน้อย (MCI)">เสี่ยงบกพร่องเล็กน้อย (MCI) — 18-25</option>
+                            <option value="ปกติ (Normal)">ปกติ (Normal) — &ge; 25</option>
+                            <option value="เสี่ยงบกพร่องเล็กน้อย (MCI)">เสี่ยงบกพร่องเล็กน้อย (MCI) — 18-24</option>
                             <option value="ควรได้รับการดูแลพิเศษ">ควรได้รับการดูแลพิเศษ — &lt; 18</option>
                         </select>
                     </div>

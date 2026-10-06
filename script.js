@@ -154,28 +154,31 @@ function speakText(text) {
     }
 
     try {
-        // หยุดและล้างคิวเก่า จากนั้นรอ 60ms ให้ Chrome reset ก่อน speak ใหม่
         _stopTTSKeepAlive();
+        // ปลดล็อคสถานะ paused ของ Chrome หากค้างอยู่
+        if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+        }
         window.speechSynthesis.cancel();
 
         setTimeout(() => {
             try {
+                if (window.speechSynthesis.paused) {
+                    window.speechSynthesis.resume();
+                }
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'th-TH';
 
-                // ลอง get voice — ถ้ายังไม่พร้อม ใช้ lang fallback
                 const voice = getBestThaiVoice();
                 if (voice) utterance.voice = voice;
 
-                // ปรับแต่งความเร็วและระดับเสียงให้ออกเสียง ร/ล และวรรณยุกต์ชัดเจนที่สุด
-                utterance.rate = 0.93;   // ความเร็วกำลังดี ชัดถ้อยชัดคำ
-                utterance.pitch = 1.02;  // โทนเสียงสดใสฟังง่าย
+                utterance.rate = 0.95;
+                utterance.pitch = 1.0;
                 utterance.volume = 1.0;
 
                 utterance.onstart = () => { _startTTSKeepAlive(); };
                 utterance.onend   = () => { currentUtterance = null; _stopTTSKeepAlive(); };
                 utterance.onerror = (e) => {
-                    // interrupted เกิดจาก cancel() ปกติ — ไม่ต้อง log
                     if (e.error !== 'interrupted') {
                         console.warn('[TTS Error]:', e.error);
                     }
@@ -188,12 +191,11 @@ function speakText(text) {
             } catch (innerErr) {
                 console.warn('[TTS speak error]:', innerErr);
             }
-        }, 60);
+        }, 50);
     } catch (e) {
         console.warn('[TTS Error]:', e);
     }
 }
-
 function setMobileVH() {
     const vh = window.innerHeight * 0.01;
     document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -1520,69 +1522,103 @@ async function startNamingTest() {
 // --- ฟังก์ชันไมค์สำหรับแต่ละ Naming Card ---
 let namingRecognition = null;
 let namingActiveMicIndex = null;
+let namingWatchdogTimer = null;
 
-function toggleNamingMic(index, inputEl, micBtn) {
+function resetNamingMic(index, micBtn) {
+    if (namingWatchdogTimer) {
+        clearTimeout(namingWatchdogTimer);
+        namingWatchdogTimer = null;
+    }
     if (namingRecognition) {
-        try { namingRecognition.stop(); } catch(e) {}
+        try {
+            namingRecognition.onresult = null;
+            namingRecognition.onerror = null;
+            namingRecognition.onend = null;
+            namingRecognition.abort();
+        } catch (e) {}
         namingRecognition = null;
     }
-    if (namingActiveMicIndex !== null && namingActiveMicIndex !== index) {
-        const prevBtn = document.getElementById(`naming-mic-${namingActiveMicIndex}`);
-        if (prevBtn) {
-            prevBtn.innerHTML = '🎙️';
-            prevBtn.style.background = '#e8ede0';
-            prevBtn.style.borderColor = '#82954b';
-        }
-    }
-    if (namingActiveMicIndex === index && micBtn.style.background === 'rgb(130, 149, 75)') {
-        namingActiveMicIndex = null;
-        micBtn.innerHTML = '🎙️';
+    namingActiveMicIndex = null;
+    if (micBtn) {
+        micBtn.innerHTML = '🎤';
         micBtn.style.background = '#e8ede0';
         micBtn.style.borderColor = '#82954b';
+        micBtn.style.boxShadow = 'none';
+        micBtn.title = 'กดเพื่อพูดสิ่งของ';
+        micBtn.classList.remove('listening');
+    }
+}
+
+function toggleNamingMic(index, inputEl, micBtn) {
+    if (namingActiveMicIndex === index && namingRecognition) {
+        resetNamingMic(index, micBtn);
         return;
+    }
+
+    if (namingRecognition || namingActiveMicIndex !== null) {
+        const prevIndex = namingActiveMicIndex;
+        resetNamingMic(prevIndex, document.getElementById(`naming-mic-${prevIndex}`));
     }
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        showCustomPopup('เบราว์เซอร์ไม่รองรับการพูด กรุณาพิมพ์คำตอบแทนครับ', '⚠️');
+        showCustomPopup('อุปกรณ์นี้ไม่รองรับการพูด กรุณาพิมพ์คำตอบแทนครับ', '🎤');
         return;
     }
 
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    namingRecognition = new SR();
-    namingRecognition.lang = 'th-TH';
-    namingRecognition.interimResults = false;
-    namingRecognition.maxAlternatives = 1;
-    namingRecognition.continuous = false;
+    if ('speechSynthesis' in window) {
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
+    }
 
-    namingActiveMicIndex = index;
-    micBtn.innerHTML = '🔴';
-    micBtn.style.background = '#82954b';
-    micBtn.style.borderColor = '#4a5d23';
-    micBtn.title = 'กำลังฟัง... กดเพื่อหยุด';
+    try {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SR();
+        rec.lang = 'th-TH';
+        rec.interimResults = true;
+        rec.maxAlternatives = 1;
+        rec.continuous = false;
+        namingRecognition = rec;
+        namingActiveMicIndex = index;
 
-    namingRecognition.onresult = (event) => {
-        const spoken = event.results[0][0].transcript.trim();
-        inputEl.value = spoken;
-        inputEl.style.borderColor = '#82954b';
-        inputEl.style.background = '#f0f7e6';
+        namingWatchdogTimer = setTimeout(() => {
+            if (namingRecognition && namingActiveMicIndex === index) {
+                resetNamingMic(index, micBtn);
+            }
+        }, 7000);
+
+        micBtn.innerHTML = '🔴';
+        micBtn.style.background = '#e74c3c';
+        micBtn.style.borderColor = '#c0392b';
+        micBtn.style.boxShadow = '0 0 10px rgba(231,76,60,0.5)';
+        micBtn.title = 'กำลังฟังเสียง... กดเพื่อหยุด';
+
+        rec.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const tr = event.results[i][0].transcript;
+                if (event.results[i].isFinal) finalTranscript += tr;
+                else interimTranscript += tr;
+            }
+            const spoken = (finalTranscript || interimTranscript).trim();
+            if (inputEl && spoken) {
+                inputEl.value = spoken;
+                inputEl.style.borderColor = '#82954b';
+                inputEl.style.background = '#f0f7e6';
+            }
+            if (finalTranscript) {
+                resetNamingMic(index, micBtn);
+            }
+        };
+
+        rec.onerror = () => resetNamingMic(index, micBtn);
+        rec.onend = () => resetNamingMic(index, micBtn);
+        rec.start();
+    } catch (err) {
+        console.warn('Naming mic start error:', err);
         resetNamingMic(index, micBtn);
-    };
-    namingRecognition.onerror = () => resetNamingMic(index, micBtn);
-    namingRecognition.onend = () => resetNamingMic(index, micBtn);
-    namingRecognition.start();
-}
-
-function resetNamingMic(index, micBtn) {
-    namingRecognition = null;
-    namingActiveMicIndex = null;
-    if (micBtn) {
-        micBtn.innerHTML = '🎙️';
-        micBtn.style.background = '#e8ede0';
-        micBtn.style.borderColor = '#82954b';
-        micBtn.title = 'กดแล้วพูดชื่อสิ่งของ';
     }
 }
-
 document.getElementById('naming-submit-btn').onclick = function () {
     const inputs = namingSelectedObjects.map((_, i) =>
         document.getElementById(`naming-answer-${i}`)
@@ -1806,93 +1842,180 @@ function setRepeatMode(mode, focusInput = true) {
     updateRepeatActionButtons();
 }
 
+repeatRecognition = null;
+let repeatWatchdogTimer = null;
+let isRepeatMicActive = false;
+
+function stopRepeatMic() {
+    if (repeatWatchdogTimer) {
+        clearTimeout(repeatWatchdogTimer);
+        repeatWatchdogTimer = null;
+    }
+    if (repeatRecognition) {
+        try {
+            repeatRecognition.onresult = null;
+            repeatRecognition.onerror = null;
+            repeatRecognition.onend = null;
+            repeatRecognition.abort();
+        } catch (e) {}
+        repeatRecognition = null;
+    }
+    isRepeatMicActive = false;
+
+    const micBtn = document.getElementById('repeat-mic-btn');
+    if (micBtn) {
+        micBtn.innerHTML = '🎤 พูด (กดเพื่อพูด)';
+        micBtn.style.background = '#e8ede0';
+        micBtn.style.color = '#4a5d23';
+        micBtn.style.borderColor = '#82954b';
+        micBtn.style.boxShadow = 'none';
+        micBtn.classList.remove('listening');
+    }
+}
+
 function toggleRepeatMic(expectedSentence) {
     const micBtn = document.getElementById('repeat-mic-btn');
     const statusEl = document.getElementById('repeat-speech-status');
+    const inputEl = document.getElementById('repeat-input');
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        showCustomPopup('เบราว์เซอร์ไม่รองรับเสียงพูด กรุณาพิมพ์แทนครับ', '⚠️');
+        showCustomPopup('อุปกรณ์นี้ไม่รองรับเสียงพูด กรุณาพิมพ์แทนครับ', '🎤');
         setRepeatMode('type', true);
         return;
     }
-    // ถ้ากำลังฟังอยู่ → หยุด
-    if (repeatRecognition) {
-        stopRepeatMic();
-        return;
-    }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    repeatRecognition = new SR();
-    repeatRecognition.lang = 'th-TH';
-    repeatRecognition.interimResults = false;
-    repeatRecognition.maxAlternatives = 1;
-    repeatRecognition.continuous = false;
 
-    repeatRecognition.onresult = (event) => {
-        const spoken = event.results[0][0].transcript.trim();
-        const inputEl = document.getElementById('repeat-input');
-        if (inputEl) {
-            inputEl.value = spoken;
-            updateRepeatActionButtons();
-        }
+    if (repeatRecognition || isRepeatMicActive) {
         stopRepeatMic();
-        
-        // แสดงผลลัพธ์ว่าพูดอะไร และแจ้งให้ผู้ใช้ทราบว่าแก้ได้
         if (statusEl) {
             statusEl.style.display = 'block';
-            statusEl.style.background = '#e8f5e9';
-            statusEl.style.borderColor = '#c8e6c9';
-            statusEl.style.color = '#2e7d32';
-            statusEl.innerHTML = `🎙️ ได้ยินว่า: "<strong>${spoken}</strong>"<br><span style="font-size:0.82rem;font-weight:normal;color:#555;">(ท่านสามารถแตะกล่องข้อความด้านล่างเพื่อพิมพ์แก้ไข หรือกดปุ่ม 'ตรวจคำตอบ & ไปต่อ' ได้เลยครับ)</span>`;
+            statusEl.style.background = '#f5f7f2';
+            statusEl.style.borderColor = '#dce7d1';
+            statusEl.style.color = '#555';
+            statusEl.innerHTML = '⏹️ หยุดฟังเสียงแล้ว (ท่านสามารถกดพูดใหม่หรือพิมพ์เพิ่มเติมได้ครับ)';
         }
-    };
+        return;
+    }
 
-    repeatRecognition.onerror = (e) => {
+    if ('speechSynthesis' in window) {
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
+    }
+
+    try {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SR();
+        rec.lang = 'th-TH';
+        rec.interimResults = true;
+        rec.maxAlternatives = 1;
+        rec.continuous = false;
+        repeatRecognition = rec;
+        isRepeatMicActive = true;
+
+        repeatWatchdogTimer = setTimeout(() => {
+            if (repeatRecognition) {
+                stopRepeatMic();
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.background = '#fff8e1';
+                    statusEl.style.borderColor = '#ffe0b2';
+                    statusEl.style.color = '#e65100';
+                    statusEl.innerHTML = '⏱️ ไม่ได้ยินเสียงพูดนานเกินไป ระบบหยุดฟังอัตโนมัติ (สามารถกดพูดใหม่หรือพิมพ์ตอบแทนได้ครับ)';
+                }
+            }
+        }, 8500);
+
+        rec.onresult = (event) => {
+            if (repeatWatchdogTimer) {
+                clearTimeout(repeatWatchdogTimer);
+                repeatWatchdogTimer = setTimeout(() => {
+                    if (repeatRecognition) stopRepeatMic();
+                }, 4000);
+            }
+
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const tr = event.results[i][0].transcript;
+                if (event.results[i].isFinal) finalTranscript += tr;
+                else interimTranscript += tr;
+            }
+
+            const currentSpoken = (finalTranscript || interimTranscript).trim();
+            if (inputEl && currentSpoken) {
+                inputEl.value = currentSpoken;
+                updateRepeatActionButtons();
+            }
+
+            if (finalTranscript) {
+                stopRepeatMic();
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.background = '#e8f5e9';
+                    statusEl.style.borderColor = '#c8e6c9';
+                    statusEl.style.color = '#2e7d32';
+                    statusEl.innerHTML = `👂 ได้ยินว่า: "<strong>${finalTranscript.trim()}</strong>"<br><span style="font-size:0.82rem;font-weight:normal;color:#555;">(ท่านสามารถแก้ไขข้อความได้เมื่อพร้อม แล้วกด 'ตรวจคำตอบ & ไปต่อ' ได้เลยครับ)</span>`;
+                }
+            } else if (interimTranscript) {
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.style.background = '#e8ede0';
+                    statusEl.style.borderColor = '#82954b';
+                    statusEl.style.color = '#4a5d23';
+                    statusEl.innerHTML = `🎙️ กำลังฟัง: "<em>${interimTranscript.trim()}...</em>"`;
+                }
+            }
+        };
+
+        rec.onerror = (e) => {
+            stopRepeatMic();
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.background = '#fff3e0';
+                statusEl.style.borderColor = '#ffe0b2';
+                statusEl.style.color = '#e65100';
+                if (e.error === 'not-allowed') {
+                    statusEl.innerHTML = '⚠️ ไมโครโฟนไม่ได้รับอนุญาต กรุณาอนุญาตสิทธิ์ที่เบราว์เซอร์ หรือเลือกพิมพ์ตอบแทนได้ครับ';
+                } else if (e.error === 'no-speech') {
+                    statusEl.innerHTML = '⚠️ ไม่ได้ยินเสียงพูด กรุณากดปุ่มแล้วพูดอีกครั้ง หรือเลือกพิมพ์ตอบแทนได้ครับ';
+                } else {
+                    statusEl.innerHTML = '⚠️ ระบบรับเสียงหยุดชั่วคราว (' + (e.error || '') + ') กรุณาลองใหม่หรือเลือกพิมพ์ตอบครับ';
+                }
+            }
+        };
+
+        rec.onend = () => {
+            stopRepeatMic();
+        };
+
+        rec.start();
+
+        if (micBtn) {
+            micBtn.innerHTML = '🔴 กำลังฟังเสียง... (กดหยุด)';
+            micBtn.style.background = '#e74c3c';
+            micBtn.style.color = 'white';
+            micBtn.style.borderColor = '#c0392b';
+            micBtn.style.boxShadow = '0 0 14px rgba(231,76,60,0.5)';
+        }
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.background = '#e8ede0';
+            statusEl.style.borderColor = '#82954b';
+            statusEl.style.color = '#4a5d23';
+            statusEl.innerHTML = '🎙️ กำลังฟังเสียงพูด... พูดได้เลยครับ (ระบบจะพิมพ์ตามเสียงทันที)';
+        }
+    } catch (err) {
+        console.warn('SpeechRecognition error:', err);
         stopRepeatMic();
-        if (statusEl && statusEl.style.display !== 'none' && !statusEl.innerHTML.includes('ได้ยินว่า')) {
+        if (statusEl) {
             statusEl.style.display = 'block';
             statusEl.style.background = '#fff3e0';
             statusEl.style.borderColor = '#ffe0b2';
             statusEl.style.color = '#e65100';
-            statusEl.innerHTML = '⚠️ ไม่ได้ยินเสียงพูด กรุณาลองกดพูดใหม่อีกครั้ง หรือเลือกพิมพ์ตอบครับ';
+            statusEl.innerHTML = '⚠️ ไม่สามารถเปิดไมค์ได้ กรุณาพิมพ์ตอบแทนครับ';
         }
-    };
-
-    repeatRecognition.onend = () => {
-        stopRepeatMic();
-    };
-
-    repeatRecognition.start();
-
-    // เปลี่ยน visual แสดงสถานะกำลังฟัง
-    if (micBtn) {
-        micBtn.innerHTML = '🔴 กำลังฟังเสียง... (กดเพื่อหยุด)';
-        micBtn.style.background = '#82954b';
-        micBtn.style.color = 'white';
-        micBtn.style.borderColor = '#4a5d23';
-    }
-    if (statusEl) {
-        statusEl.style.display = 'block';
-        statusEl.style.background = '#e8ede0';
-        statusEl.style.borderColor = '#82954b';
-        statusEl.style.color = '#4a5d23';
-        statusEl.innerHTML = '🔴 กำลังฟังเสียงพูด... พูดประโยคที่จำได้เลยครับ';
     }
 }
-
-function stopRepeatMic() {
-    const micBtn = document.getElementById('repeat-mic-btn');
-    try { if (repeatRecognition) repeatRecognition.stop(); } catch (e) {}
-    repeatRecognition = null;
-    
-    // เรียกคืน visual กลับเดิม
-    if (micBtn) {
-        micBtn.innerHTML = '🎙️ กดเพื่อเริ่มพูด (หรือพูดใหม่)';
-        micBtn.style.background = '#e8ede0';
-        micBtn.style.color = '#4a5d23';
-        micBtn.style.borderColor = '#82954b';
-    }
-}
-
 function submitRepeat(expectedSentence) {
     const inputEl = document.getElementById('repeat-input');
     const feedbackEl = document.getElementById('repeat-feedback');
@@ -2296,7 +2419,7 @@ function toggleFluencyMic() {
     const micBtn = document.getElementById('fluency-mic-btn');
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        showCustomPopup('ขออภัย เบราว์เซอร์นี้ไม่รองรับการรับเสียงพูด กรุณาพิมพ์คำตอบแทนครับ', '⚠️');
+        showCustomPopup('เบราว์เซอร์นี้ไม่รองรับการรับเสียงพูด กรุณาพิมพ์คำตอบแทนครับ', '🎤');
         return;
     }
 
@@ -2308,14 +2431,14 @@ function toggleFluencyMic() {
     fluencyMicActive = true;
     if (micBtn) {
         micBtn.classList.add('listening');
-        micBtn.title = 'แตะเพื่อหยุดฟัง';
+        micBtn.title = 'กดหยุดฟัง';
     }
     const statusEl = document.getElementById('fluency-speech-status');
     if (statusEl) {
         statusEl.style.display = 'block';
         statusEl.style.color = '#4a5d23';
         statusEl.style.background = '#f0f7e6';
-        statusEl.textContent = '🎙️ กำลังฟังอยู่... พูดชื่อสัตว์ได้เลยครับ (ระบบจะบันทึกอัตโนมัติ)';
+        statusEl.textContent = '🎙️ กำลังฟังเสียง... พูดชื่อสัตว์ได้เลยครับ (ระบบตรวจจับและบันทึกอัตโนมัติ)';
     }
     startFluencyListenLoop();
 }
@@ -2324,7 +2447,6 @@ function startFluencyListenLoop() {
     if (!fluencyMicActive || fluencyTimeLeft <= 0 || isStartingFluencyRec) return;
     isStartingFluencyRec = true;
 
-    // เคลียร์ instance เก่าอย่างปลอดภัย
     if (fluencyRecognition) {
         try {
             fluencyRecognition.onend = null;
@@ -2334,12 +2456,17 @@ function startFluencyListenLoop() {
         fluencyRecognition = null;
     }
 
+    if ('speechSynthesis' in window) {
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SpeechRecognition();
     rec.lang = 'th-TH';
     rec.interimResults = true;
-    rec.maxAlternatives = 3;
-    rec.continuous = false; // continuous = false + debounced restart = ปลอดภัยและไม่ค้าง
+    rec.maxAlternatives = 2;
+    rec.continuous = true;
     fluencyRecognition = rec;
 
     const statusEl = document.getElementById('fluency-speech-status');
@@ -2348,7 +2475,6 @@ function startFluencyListenLoop() {
         for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript.trim();
             if (transcript) {
-                // สแกนหาสัตว์จากคำพูด
                 const animalsFound = extractAnimalsFromTranscript(transcript);
                 if (animalsFound.length > 0) {
                     animalsFound.forEach(a => pushFluencyWord(a));
@@ -2356,14 +2482,14 @@ function startFluencyListenLoop() {
                         statusEl.style.display = 'block';
                         statusEl.style.color = '#2e7d32';
                         statusEl.style.background = '#e8f5e9';
-                        statusEl.innerHTML = `✅ พบสัตว์: "<strong>${animalsFound.join(', ')}</strong>" (พูดต่อได้เลย)`;
+                        statusEl.innerHTML = `✅ สัตว์: "<strong>${animalsFound.join(', ')}</strong>" (พูดต่อได้เลย)`;
                     }
                 } else if (event.results[i].isFinal) {
                     if (statusEl) {
                         statusEl.style.display = 'block';
                         statusEl.style.color = '#4a5d23';
                         statusEl.style.background = '#f0f7e6';
-                        statusEl.textContent = `🎙️ ได้ยิน: "${transcript}" (กำลังฟังต่อเนื่อง...)`;
+                        statusEl.textContent = `🎙️ ได้ยิน: "${transcript}" (กำลังฟังต่อ...)`;
                     }
                 } else {
                     if (statusEl) {
@@ -2379,16 +2505,16 @@ function startFluencyListenLoop() {
         if (!fluencyMicActive) return;
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
             stopFluencyRecognition();
-            showCustomPopup('ไม่สามารถเข้าถึงไมโครโฟนได้ กรุณาอนุญาตการใช้ไมค์และลองใหม่อีกครั้งครับ', '🎙️');
-        } else {
-            safeRestartFluencyRecognition(200);
+            showCustomPopup('ไม่สามารถเข้าถึงไมโครโฟนได้ กรุณาพิมพ์คำตอบแทนครับ', '🚫');
+        } else if (e.error !== 'no-speech') {
+            safeRestartFluencyRecognition(400);
         }
     };
 
     rec.onend = () => {
         isStartingFluencyRec = false;
         if (fluencyMicActive && fluencyTimeLeft > 0) {
-            safeRestartFluencyRecognition(100);
+            safeRestartFluencyRecognition(200);
         } else {
             stopFluencyRecognition();
         }
@@ -2399,12 +2525,12 @@ function startFluencyListenLoop() {
         isStartingFluencyRec = false;
     } catch (e) {
         isStartingFluencyRec = false;
-        safeRestartFluencyRecognition(300);
+        safeRestartFluencyRecognition(500);
     }
 }
 
 let fluencyRestartTimeout = null;
-function safeRestartFluencyRecognition(delayMs = 150) {
+function safeRestartFluencyRecognition(delayMs = 250) {
     if (fluencyRestartTimeout) clearTimeout(fluencyRestartTimeout);
     if (!fluencyMicActive || fluencyTimeLeft <= 0) return;
     fluencyRestartTimeout = setTimeout(() => {
@@ -2427,17 +2553,16 @@ function stopFluencyRecognition() {
         if (fluencyRecognition) {
             fluencyRecognition.onend = null;
             fluencyRecognition.onerror = null;
-            fluencyRecognition.stop();
+            fluencyRecognition.abort();
         }
     } catch (e) {}
     fluencyRecognition = null;
     if (micBtn) {
         micBtn.classList.remove('listening');
-        micBtn.title = 'แตะเพื่อพูด';
+        micBtn.title = 'กดเพื่อพูด';
     }
     if (statusEl) statusEl.style.display = 'none';
 }
-
 function submitFluency() {
     const count = fluencyWords.length;
     if (count >= 11) fluencyScore = 4;
@@ -2970,7 +3095,7 @@ function calculateAndShowResult() {
         disease: document.getElementById('user-disease').value || "ไม่มี",
         totalScore: totalScore,
         maxScore: 30,
-        riskLevel: totalScore >= 26 ? 'ปกติ (Normal)' : totalScore >= 18 ? 'เสี่ยงบกพร่องเล็กน้อย (MCI)' : 'ควรได้รับการดูแลพิเศษ',
+        riskLevel: totalScore >= 25 ? 'ปกติ (Normal)' : totalScore >= 18 ? 'เสี่ยงบกพร่องเล็กน้อย (MCI)' : 'ควรได้รับการดูแลพิเศษ',
         latitude: userLatitude,
         longitude: userLongitude,
         details: {
@@ -3296,7 +3421,7 @@ async function generateUserAIAnalysis() {
 ## ข้อมูลผลการประเมิน (De-identified / PDPA Compliant):
 - วัย/อายุ: ${u.age || 'ผู้สูงอายุ'} ปี
 - ระดับการศึกษา: ${u.education || 'ทั่วไป'}
-- คะแนนรวม: ${u.totalScore} / 30 คะแนน (เกณฑ์: >=26 ปกติ, 18-25 เสี่ยงบกพร่องเล็กน้อย MCI, <18 ควรดูแลใกล้ชิด)
+- คะแนนรวม: ${u.totalScore} / 30 คะแนน (เกณฑ์: >=25 ปกติ, 18-24 เสี่ยงบกพร่องเล็กน้อย MCI, <18 ควรดูแลใกล้ชิด)
 - ผลการประเมินเบื้องต้น: ${u.riskLevel}
 - เวลาที่ใช้ทำแบบทดสอบ: ${dur}
 
@@ -3355,6 +3480,9 @@ async function generateUserAIAnalysis() {
         content.style.display = 'block';
         content.innerHTML = renderUserAIMarkdown(aiResultText);
     }
+    window.currentUserAiResultText = aiResultText;
+    const actionsEl = document.getElementById('user-ai-actions');
+    if (actionsEl) actionsEl.style.display = 'flex';
 }
 
 function generateUserLocalAnalysis(u, d) {
@@ -3369,7 +3497,7 @@ function generateUserLocalAnalysis(u, d) {
     let strengths = [];
     let weaknesses = [];
 
-    if (score >= 26) {
+    if (score >= 25) {
         overview = 'ผลคะแนนรวม **' + score + ' / 30 คะแนน** อยู่ในเกณฑ์ **ปกติ (Normal Cognition)** สมองมีการทำงานในระดับที่ดีเยี่ยม มีความสามารถในการประมวลผล จดจำ และสื่อสารได้อย่างมีประสิทธิภาพตามวัย';
     } else if (score >= 18) {
         overview = 'ผลคะแนนรวม **' + score + ' / 30 คะแนน** อยู่ในเกณฑ์ **ควรเฝ้าระวังหรือมีภาวะบกพร่องเล็กน้อย (Mild Cognitive Impairment - MCI)** ซึ่งอาจเกิดจากความเหนื่อยล้า สมาธิชั่วคราว หรือการเปลี่ยนแปลงตามวัย การหมั่นกระตุ้นสมองจะช่วยฟื้นฟูและชะลอความเสื่อมได้เป็นอย่างดี';
@@ -3421,4 +3549,176 @@ function renderUserAIMarkdown(md) {
 
     html = html.replace(/(<li.*<\/li>)/s, '<ul style="padding-left:22px; margin:8px 0;">$1</ul>');
     return html.replace(/\n\n/g, '<p style="margin:8px 0;"></p>').replace(/\n/g, '<br>');
+}
+
+
+// =========================================================================
+// --- Print / Export PDF & Share for Test Taker AI Analysis ---
+// =========================================================================
+
+function printUserAiPdf() {
+    const u = window.currentUserTestResult || {
+        totalScore: parseInt(document.getElementById('score-text')?.innerText) || 0,
+        riskLevel: document.getElementById('risk-level-title')?.innerText || 'ปกติ',
+        age: document.getElementById('user-age')?.value || 'ผู้สูงอายุ',
+        education: document.getElementById('user-education')?.value || 'ไม่ระบุ',
+        details: {
+            memory: parseInt(document.getElementById('score-memory-val')?.innerText) || 0,
+            visuospatial: parseInt(document.getElementById('score-visuo-val')?.innerText) || 0,
+            math: parseInt(document.getElementById('score-math-val')?.innerText) || 0,
+            language: parseInt(document.getElementById('score-lang-val')?.innerText) || 0,
+            orientation: parseInt(document.getElementById('score-ori-val')?.innerText) || 0,
+            duration_formatted: document.getElementById('result-duration-display')?.innerText || ''
+        }
+    };
+    const d = u.details || {};
+    const contentEl = document.getElementById('user-ai-content');
+    const aiHtml = contentEl ? contentEl.innerHTML : '';
+    const now = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    const win = window.open('', '_blank');
+    if (!win) {
+        if (typeof showCustomPopup === 'function') {
+            showCustomPopup('กรุณาอนุญาต Pop-up ในเบราว์เซอร์เพื่อพิมพ์ PDF', '⚠️');
+        } else {
+            alert('กรุณาอนุญาต Pop-up ในเบราว์เซอร์');
+        }
+        return;
+    }
+
+    const css = [
+        '<meta charset="UTF-8">',
+        '<title>รายงานผลประเมินสุขภาพสมอง — Memory Garden</title>',
+        '<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">',
+        '<style>',
+        '* { box-sizing: border-box; }',
+        'body { font-family: Prompt, Sarabun, sans-serif; background: #fff; color: #2c3e50; line-height: 1.7; margin: 0; padding: 0; }',
+        '.pdf-container { max-width: 800px; margin: 0 auto; padding: 36px 32px; }',
+        '.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #82954b; padding-bottom: 14px; margin-bottom: 20px; }',
+        '.brand { font-size: 1.4rem; font-weight: 800; color: #4a5d23; display: flex; align-items: center; gap: 8px; }',
+        '.doc-info { text-align: right; font-size: 0.8rem; color: #666; }',
+        '.patient-box { background: #f8faf5; border: 1px solid #dce7d1; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 0.88rem; }',
+        '.score-summary { display: flex; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }',
+        '.score-card { flex: 1; min-width: 200px; background: #e8f5e9; border: 2px solid #a5d6a7; border-radius: 14px; padding: 16px; text-align: center; }',
+        '.score-num { font-size: 2.2rem; font-weight: 800; color: #2e7d32; line-height: 1.1; }',
+        '.score-label { font-size: 0.85rem; color: #555; margin-top: 4px; }',
+        '.risk-badge { display: inline-block; background: #82954b; color: white; border-radius: 20px; padding: 6px 16px; font-size: 0.95rem; font-weight: 700; margin-top: 8px; }',
+        '.domain-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 0.88rem; }',
+        '.domain-table th, .domain-table td { border: 1px solid #e0e0e0; padding: 8px 12px; text-align: left; }',
+        '.domain-table th { background: #f0f7e6; color: #335522; font-weight: 600; }',
+        '.ai-box { background: #ffffff; border: 1.5px solid #a4ba74; border-radius: 14px; padding: 22px 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }',
+        '.ai-box h2, .ai-box h3, .ai-box h4 { color: #2e5a27; margin-top: 16px; margin-bottom: 6px; border-bottom: 1px solid #e8ede0; padding-bottom: 4px; }',
+        '.ai-box strong { color: #2e5a27; }',
+        '.ai-box ul { padding-left: 20px; margin: 8px 0; }',
+        '.ai-box li { margin-bottom: 4px; }',
+        '.disclaimer { background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px; padding: 12px 16px; font-size: 0.8rem; color: #795548; margin-top: 20px; }',
+        '.footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #eee; text-align: center; font-size: 0.75rem; color: #999; }',
+        '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none; } }',
+        '</style>'
+    ].join('\n');
+
+    const domainRows = [
+        `<tr><td>1. การระลึกความจำ (Memory Recall)</td><td style="text-align:center;font-weight:bold;">${d.memory != null ? d.memory : '-'} / 5</td><td>ทดสอบการจำสิ่งของ 5 สิ่ง</td></tr>`,
+        `<tr><td>2. มิติสัมพันธ์และการวางแผน (Visuospatial / Clock)</td><td style="text-align:center;font-weight:bold;">${d.visuospatial != null ? d.visuospatial : '-'} / 3</td><td>วาดวงหน้าปัดนาฬิกาและตำแหน่งเข็ม</td></tr>`,
+        `<tr><td>3. สมาธิและการคำนวณ (Attention & Math)</td><td style="text-align:center;font-weight:bold;">${d.math != null ? d.math : '-'} / 5</td><td>ลบเลข 100 ลบ 7 ต่อเนื่อง</td></tr>`,
+        `<tr><td>4. ด้านภาษาและการสื่อสาร (Language Domain)</td><td style="text-align:center;font-weight:bold;">${d.language != null ? d.language : '-'} / 11</td><td>บอกชื่อสัตว์, พูดตาม, ความคล่องทางภาษา</td></tr>`,
+        `<tr><td>5. การรับรู้วันเวลาและสถานที่ (Orientation)</td><td style="text-align:center;font-weight:bold;">${d.orientation != null ? d.orientation : '-'} / 6</td><td>วัน วันที่ เดือน ปี ฤดูกาล สถานที่</td></tr>`
+    ].join('');
+
+    const html = [
+        '<!DOCTYPE html><html lang="th"><head>', css, '</head><body>',
+        '<div class="pdf-container">',
+        '  <div class="header">',
+        '    <div class="brand">🌱 Memory Garden</div>',
+        '    <div class="doc-info">รายงานผลการประเมินสุขภาพสมอง (MoCA)<br>' + now + '</div>',
+        '  </div>',
+        '  <div class="patient-box">',
+        '    <div><strong>ผู้รับการประเมิน:</strong> ข้อมูลนิรนาม (PDPA Compliant)</div>',
+        '    <div><strong>อายุ:</strong> ' + (u.age ? u.age + ' ปี' : 'ไม่ระบุ') + '</div>',
+        '    <div><strong>การศึกษา:</strong> ' + (u.education || 'ไม่ระบุ') + '</div>',
+        '    <div><strong>เวลาที่ใช้:</strong> ' + (d.duration_formatted || 'ประมาณ 10-15 นาที') + '</div>',
+        '  </div>',
+        '  <div class="score-summary">',
+        '    <div class="score-card">',
+        '      <div class="score-label">คะแนนรวมทั้งหมด</div>',
+        '      <div class="score-num">' + u.totalScore + '<span style="font-size:1.1rem;font-weight:normal;color:#666;"> / 30</span></div>',
+        '      <div class="risk-badge">' + u.riskLevel + '</div>',
+        '    </div>',
+        '  </div>',
+        '  <h4 style="color:#2e5a27;margin-bottom:8px;">📊 คะแนนรายด้าน 5 มิติ</h4>',
+        '  <table class="domain-table">',
+        '    <thead><tr><th>มิติการประเมิน</th><th style="text-align:center;">คะแนน</th><th>รายละเอียด</th></tr></thead>',
+        '    <tbody>' + domainRows + '</tbody>',
+        '  </table>',
+        '  <div class="ai-box">',
+        '    <div style="font-size:1.15rem;font-weight:700;color:#2e5a27;margin-bottom:12px;border-bottom:2px solid #82954b;padding-bottom:6px;">🤖 ผลการวิเคราะห์และคำแนะนำเชิงลึกโดย Gemini AI</div>',
+        '    ' + aiHtml,
+        '  </div>',
+        '  <div class="disclaimer">',
+        '    <strong>⚠️ ข้อควรระวัง:</strong> ผลการประเมินนี้ผลิตโดย AI เพื่อสนับสนุนเบื้องต้นและการดูแลสุขภาพเชิงป้องกันเท่านั้น ',
+        '    <strong>ไม่ใช่การวินิจฉัยโรคทางการแพทย์</strong> หากมีข้อกังวล ควรปรึกษาแพทย์เฉพาะทางด้านระบบประสาทหรือคลินิกความจำเสมอ',
+        '  </div>',
+        '  <div class="footer">Memory Garden — โครงการประเมินและดูแลสุขภาพสมองผู้สูงอายุ &copy; 2025-2026</div>',
+        '</div>',
+        '<script>setTimeout(function(){ window.print(); }, 600);<\/script>',
+        '</body></html>'
+    ].join('\n');
+
+    win.document.write(html);
+    win.document.close();
+}
+
+function shareUserAiResult() {
+    const u = window.currentUserTestResult || {};
+    const total = u.totalScore != null ? u.totalScore : (document.getElementById('score-text')?.innerText || '0');
+    const risk = u.riskLevel || (document.getElementById('risk-level-title')?.innerText || '');
+    const currentUrl = window.location.href.split('#')[0];
+
+    const shareTitle = 'ผลการประเมินสุขภาพสมอง Memory Garden';
+    const shareText = `🌱 ผลการประเมินสุขภาพสมอง Memory Garden (MoCA Standard)\nคะแนนรวม: ${total} / 30 คะแนน (${risk})\nพร้อมรับบทวิเคราะห์สุขภาพสมองและคำแนะนำเฉพาะบุคคลโดย AI`;
+
+    if (navigator.share) {
+        navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: currentUrl
+        }).catch(err => {
+            if (err.name !== 'AbortError') {
+                fallbackShareAi(shareText, currentUrl);
+            }
+        });
+    } else {
+        fallbackShareAi(shareText, currentUrl);
+    }
+}
+
+function fallbackShareAi(shareText, shareUrl) {
+    const fullText = shareText + '\nเข้าทำแบบประเมินได้ที่: ' + shareUrl;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullText).then(() => {
+            if (typeof showCustomPopup === 'function') {
+                showCustomPopup('คัดลอกผลประเมินแล้ว! คุณสามารถส่งต่อใน LINE หรือส่งให้ครอบครัวได้ทันทีครับ 📋', '✅');
+            } else {
+                alert('คัดลอกผลประเมินแล้ว!');
+            }
+        }).catch(() => {
+            copyViaInput(fullText);
+        });
+    } else {
+        copyViaInput(fullText);
+    }
+}
+
+function copyViaInput(text) {
+    const tempInput = document.createElement('textarea');
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+    if (typeof showCustomPopup === 'function') {
+        showCustomPopup('คัดลอกผลประเมินแล้ว! 📋', '✅');
+    } else {
+        alert('คัดลอกผลประเมินแล้ว!');
+    }
 }

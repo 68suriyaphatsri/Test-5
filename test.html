@@ -904,6 +904,15 @@
                 </div>
 
                 <div id="user-ai-content" style="display: none; background: white; border-radius: 16px; padding: 16px 18px; line-height: 1.7; color: #333; font-size: 0.93rem; border: 1px solid #dce7d1; box-shadow: inset 0 2px 6px rgba(0,0,0,0.03);"></div>
+                <!-- Action Buttons: Print PDF & Share AI Assessment -->
+                <div id="user-ai-actions" style="display: none; margin-top: 14px; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" id="btn-print-user-ai" onclick="printUserAiPdf()" style="flex: 1; min-width: 170px; padding: 11px 18px; background: linear-gradient(135deg, #2e7d32, #1b5e20); color: white; border: none; border-radius: 50px; font-weight: 700; font-size: 0.93rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(46,125,50,0.25);">
+                        <span>🖨️</span> บันทึกหรือพิมพ์เป็น PDF
+                    </button>
+                    <button type="button" id="btn-share-user-ai" onclick="shareUserAiResult()" style="flex: 1; min-width: 150px; padding: 11px 18px; background: linear-gradient(135deg, #0275d8, #025aa5); color: white; border: none; border-radius: 50px; font-weight: 700; font-size: 0.93rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(2,117,216,0.25);">
+                        <span>📤</span> ส่ง / แชร์ผลประเมิน
+                    </button>
+                </div>
                 
                 <div style="margin-top: 10px; font-size: 0.78rem; color: #777; display: flex; align-items: center; gap: 6px;">
                     <span>🔒 ประมวลผลแบบนิรนาม ไม่เปิดเผยข้อมูลส่วนบุคคล (PDPA Compliant)</span>

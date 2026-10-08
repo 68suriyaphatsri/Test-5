@@ -636,23 +636,10 @@ function renderHistoryCard(record, index) {
 
 // --- 3. ฟังก์ชันพื้นฐาน (Typewriter & Navigation) ---
 const scriptURL = 'https://script.google.com/macros/s/AKfycby_G-6fHIB8FgYwSpa__TbTO7EV8HP9F8aSF3589ZDpuj7lx9nQi_jmPic50eTYkm0Z/exec';
-const MAX_USERS = 100;
+// ไม่จำกัดจำนวนผู้ใช้แล้ว (กี่คนก็ได้ Unlimited Participants)
 
 async function goToLogin() {
     const linePage = document.getElementById('line-login-page');
-    try {
-        // ยังคงเช็คจำนวนผู้ใช้สูงสุดจาก Supabase
-        const count = await MemoryGardenTools.getUserCount();
-
-        if (count >= MAX_USERS) {
-            if (loaderWrapper) loaderWrapper.style.display = 'none';
-            showFullPage();
-            return;
-        }
-    } catch (e) {
-        console.warn('เช็คจำนวนสูงสุดไม่ได้:', e);
-    }
-
     // ข้ามหน้า LINE Login และเปิดหน้าแนะนำแอป (Intro Page) เป็นหน้าแรก
     if (linePage) {
         linePage.style.display = 'none';

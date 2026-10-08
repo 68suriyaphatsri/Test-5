@@ -931,7 +931,116 @@
             .hotline-info { flex-direction: column; }
             .btn-call { width: 100%; justify-content: center; }
         }
-    </style>
+
+        /* =====================================================
+           Video Modal Styles
+           ===================================================== */
+        .video-cta-section {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border-radius: var(--radius-lg);
+            padding: 32px 28px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .video-cta-icon {
+            width: 72px; height: 72px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .video-cta-text h3 { color: white; font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+        .video-cta-text p { color: rgba(255,255,255,0.75); font-size: 0.9rem; margin: 0; }
+        .btn-watch-video {
+            margin-left: auto;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #e94560, #c23152);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Prompt', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(233,69,96,0.4);
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-watch-video:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(233,69,96,0.55);
+        }
+        .btn-watch-video .play-icon {
+            width: 32px; height: 32px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem;
+        }
+        /* Video Modal */
+        .video-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            backdrop-filter: blur(4px);
+        }
+        .video-modal-overlay.active { display: flex; }
+        .video-modal-box {
+            width: 100%;
+            max-width: 900px;
+            background: #0a0a14;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.8);
+            animation: modalSlideIn 0.3s ease;
+        }
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .video-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .video-modal-title { color: white; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .btn-close-modal {
+            background: rgba(255,255,255,0.12);
+            border: none;
+            color: white;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .btn-close-modal:hover { background: rgba(255,255,255,0.25); }
+        .video-modal-body { position: relative; padding-top: 56.25%; background: black; }
+        .video-modal-body video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }    </style>
 </head>
 
 <body>
@@ -980,6 +1089,19 @@
                 "การตรวจพบตั้งแต่ระยะแรกเริ่ม (Early Detection) คือหัวใจสำคัญในการชะลอการถดถอยของสมอง"
             </div>
         </section>
+        <!-- Video CTA Section -->
+        <div class="video-cta-section">
+            <div class="video-cta-icon">&#x1F3AC;</div>
+            <div class="video-cta-text">
+                <h3>ดูวิธีทำแบบทดสอบ MoCA</h3>
+                <p>วิดีโออธิบายขั้นตอนการทดสอบความจำอย่างละเอียด เหมาะสำหรับผู้ดูแลและผู้สูงอายุ</p>
+            </div>
+            <button class="btn-watch-video" onclick="openVideoModal()">
+                <span class="play-icon">&#x25B6;</span>
+                ดูวิดีโอ
+            </button>
+        </div>
+
 
         <!-- Quick Jump Bar -->
         <nav class="quick-nav" aria-label="สารบัญด่วน">
@@ -1398,9 +1520,7 @@
 
     <!-- Floating Quick Actions (Back to Top + Read Aloud) -->
     <div class="floating-actions">
-        <button class="fab-btn" id="tts-btn" onclick="toggleReadAloud()" title="ฟังเสียงอ่าน">
-            🔊
-        </button>
+        <button class="fab-btn" id="tts-btn" onclick="toggleReadAloud()" title="ฟังเสียงอ่าน">&#x1F50A;</button>
         <button class="fab-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="กลับขึ้นด้านบน">
             ↑
         </button>
@@ -1439,46 +1559,164 @@
             } catch(e) {}
         })();
 
-        // Text-to-Speech (TTS) for Seniors
+        // =====================================================
+        // Text-to-Speech (TTS) -- Chunked Engine to Prevent Freezing
+        // =====================================================
         let isSpeaking = false;
+        let ttsQueue = [];
+        let ttsIndex = 0;
+        let _ttsKATimer = null;
+
+        function _startTTSKA() {
+            _stopTTSKA();
+            _ttsKATimer = setInterval(() => {
+                if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                    window.speechSynthesis.pause();
+                    window.speechSynthesis.resume();
+                }
+            }, 8000);
+        }
+        function _stopTTSKA() {
+            if (_ttsKATimer) { clearInterval(_ttsKATimer); _ttsKATimer = null; }
+        }
+
+        function stopReadAloud() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            _stopTTSKA();
+            ttsQueue = [];
+            ttsIndex = 0;
+            isSpeaking = false;
+            const ttsBtn = document.getElementById('tts-btn');
+            if (ttsBtn) {
+                ttsBtn.innerHTML = '&#x1F50A;';
+                ttsBtn.title = 'ฟังเสียงอ่าน';
+            }
+        }
+
+        function speakNextChunk() {
+            if (!isSpeaking || ttsIndex >= ttsQueue.length) {
+                stopReadAloud();
+                return;
+            }
+            const chunk = ttsQueue[ttsIndex];
+            ttsIndex++;
+            if (!chunk || !chunk.trim()) {
+                speakNextChunk();
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(chunk.trim());
+            utterance.lang = 'th-TH';
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            utterance.onstart = () => { _startTTSKA(); };
+            utterance.onend = () => {
+                if (isSpeaking) {
+                    setTimeout(speakNextChunk, 120);
+                }
+            };
+            utterance.onerror = (e) => {
+                if (e.error !== 'interrupted') {
+                    console.warn('[TTS chunk error]', e.error);
+                    if (isSpeaking) setTimeout(speakNextChunk, 100);
+                } else {
+                    stopReadAloud();
+                }
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
         function toggleReadAloud() {
             const ttsBtn = document.getElementById('tts-btn');
             if (!('speechSynthesis' in window)) {
-                alert('อุปกรณ์ของคุณไม่รองรับการอ่านออกเสียงอัตโนมัติ');
+                alert('อุปกรณ์ของคุณไม่รองรับการอ่านออกเสียง');
                 return;
             }
 
             if (isSpeaking) {
-                window.speechSynthesis.cancel();
-                isSpeaking = false;
-                if (ttsBtn) ttsBtn.innerText = '🔊';
+                stopReadAloud();
                 return;
             }
 
-            const title = document.querySelector('.hero-title')?.innerText || '';
-            const subtitle = document.querySelector('.hero-subtitle')?.innerText || '';
-            const intro = document.querySelector('.hero-quote')?.innerText || '';
-            const textToSpeak = `${title} ${subtitle} ${intro} อัลไซเมอร์เริ่มต้นอย่างเงียบ ๆ ยิ่งรู้เร็ว ยิ่งดูแลได้ทัน สามารถเริ่มทำแบบทดสอบความจำได้ที่ปุ่มเริ่มทำแบบทดสอบครับ`;
+            const elements = Array.from(document.querySelectorAll('.hero-title, .hero-subtitle, .hero-quote, .content-card h2, .content-card p, .content-card li'));
+            ttsQueue = [];
+            
+            elements.forEach(el => {
+                const text = el.innerText.trim();
+                if (!text) return;
+                if (text.length <= 120) {
+                    ttsQueue.push(text);
+                } else {
+                    const sentences = text.split(/(?<=[.!?\n\r])|\s{2,}/);
+                    sentences.forEach(s => {
+                        const trimmed = s.trim();
+                        if (!trimmed) return;
+                        if (trimmed.length <= 120) {
+                            ttsQueue.push(trimmed);
+                        } else {
+                            const words = trimmed.match(/.{1,100}(\s|$)/g) || [trimmed];
+                            words.forEach(w => { if (w.trim()) ttsQueue.push(w.trim()); });
+                        }
+                    });
+                }
+            });
 
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.lang = 'th-TH';
-            utterance.rate = 0.9; // Slightly slower for senior comprehension
+            if (ttsQueue.length === 0) return;
 
-            utterance.onend = () => {
-                isSpeaking = false;
-                if (ttsBtn) ttsBtn.innerText = '🔊';
-            };
-
-            utterance.onerror = () => {
-                isSpeaking = false;
-                if (ttsBtn) ttsBtn.innerText = '🔊';
-            };
-
-            window.speechSynthesis.speak(utterance);
+            window.speechSynthesis.cancel();
             isSpeaking = true;
-            if (ttsBtn) ttsBtn.innerText = '⏹';
+            ttsIndex = 0;
+            if (ttsBtn) {
+                ttsBtn.innerHTML = '&#x23F9;&#xFE0F;';
+                ttsBtn.title = 'หยุดอ่าน';
+            }
+            setTimeout(speakNextChunk, 60);
         }
+
+        // Video Modal Functions
+        function openVideoModal() {
+            const modal = document.getElementById('videoModal');
+            const video = document.getElementById('modalVideo');
+            if (modal) { modal.classList.add('active'); document.body.style.overflow = 'hidden'; }
+            if (video) video.play().catch(() => {});
+        }
+        function closeVideoModalBtn() {
+            const modal = document.getElementById('videoModal');
+            const video = document.getElementById('modalVideo');
+            if (video) { video.pause(); video.currentTime = 0; }
+            if (modal) { modal.classList.remove('active'); document.body.style.overflow = ''; }
+        }
+        function closeVideoModal(e) {
+            if (e.target === document.getElementById('videoModal')) closeVideoModalBtn();
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeVideoModalBtn();
+        });
     </script>
+
+    <!-- Video Modal -->
+    <div class="video-modal-overlay" id="videoModal" onclick="closeVideoModal(event)">
+        <div class="video-modal-box">
+            <div class="video-modal-header">
+                <div class="video-modal-title">
+                    <span>🎬</span>
+                    <span>วิธีทำแบบทดสอบ MoCA — Memory Garden</span>
+                </div>
+                <button class="btn-close-modal" onclick="closeVideoModalBtn()" title="ปิด">&times;</button>
+            </div>
+            <div class="video-modal-body">
+                <video id="modalVideo" controls preload="metadata" playsinline style="width: 100%; border-radius: 12px; max-height: 70vh;">
+                    <source src="video.mp4" type="video/mp4">
+                    <p style="color:white;text-align:center;padding:20px;">ไม่สามารถเล่นวิดีโอได้ในเบราว์เซอร์นี้</p>
+                </video>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

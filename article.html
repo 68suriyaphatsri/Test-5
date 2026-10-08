@@ -1157,11 +1157,27 @@
                 </div>
             </div>
 
-            <!-- PDPA Privacy Policy Banner -->
+            <!-- Privacy & Personalization Banner -->
             <div style="background: #ffffff; border-left: 4px solid #82954b; border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; font-size: 0.85rem; color: #4a5d23; display: flex; align-items: flex-start; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
                 <span style="font-size: 1.2rem; flex-shrink: 0;">🛡️</span>
                 <div style="line-height: 1.6;">
-                    <strong>ข้อกำหนดความเป็นส่วนตัว (PDPA):</strong> ระบบ<strong>ไม่อนุญาตให้พิมพ์ชื่อ-นามสกุลจริงของผู้อื่น</strong> เพื่อความปลอดภัย กรุณาเล่าเฉพาะอาการหรือพฤติกรรม โดยใช้สรรพนามทั่วไป เช่น <em>"ผู้สูงอายุ", "คนในครอบครัว", "คุณพ่อ", "คุณแม่" หรือ "ตนเอง"</em>
+                    <strong>ความปลอดภัย & ความเป็นส่วนตัว:</strong> สามารถระบุชื่อหรือสรรพนาม (เช่น คุณพ่อสมชาย, คุณยาย, ตัวฉันเอง) เพื่อช่วยให้ AI วิเคราะห์และเจาะจงคำแนะนำได้อย่างแม่นยำ โดยข้อมูลจะถูกประมวลผลในเซสชันนี้เท่านั้น ไม่มีการบันทึกหรือเผยแพร่ข้อมูลสู่สาธารณะ
+                </div>
+            </div>
+
+            <!-- Person Name Input (Optional for Personalized AI Analysis) -->
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
+                <div style="flex: 1; min-width: 240px;">
+                    <label for="ai-person-name" style="display: block; font-weight: 700; font-size: 0.92rem; color: #273d16; margin-bottom: 6px;">
+                        👤 ชื่อหรือสรรพนามของผู้ที่ต้องการปรึกษา (ช่วยให้ AI วิเคราะห์เฉพาะบุคคล):
+                    </label>
+                    <input type="text" id="ai-person-name" placeholder="เช่น คุณพ่อสมชาย, คุณยายวรรณา, ตัวฉันเอง (พิมพ์ได้อิสระ)" style="width: 100%; box-sizing: border-box; border: 2px solid #cfe0c2; border-radius: 14px; padding: 11px 16px; font-size: 0.95rem; font-family: 'Anuphan', sans-serif; color: #27341d; background: #ffffff; outline: none; transition: border-color 0.2s, box-shadow 0.2s;" />
+                </div>
+                <div style="width: 140px;">
+                    <label for="ai-person-age" style="display: block; font-weight: 700; font-size: 0.92rem; color: #273d16; margin-bottom: 6px;">
+                        🎂 อายุ (ถ้ามี):
+                    </label>
+                    <input type="number" id="ai-person-age" min="40" max="120" placeholder="เช่น 72" style="width: 100%; box-sizing: border-box; border: 2px solid #cfe0c2; border-radius: 14px; padding: 11px 16px; font-size: 0.95rem; font-family: 'Anuphan', sans-serif; color: #27341d; background: #ffffff; outline: none; transition: border-color 0.2s;" />
                 </div>
             </div>
 
@@ -1170,18 +1186,7 @@
                 <label for="ai-symptom-input" style="display: block; font-weight: 700; font-size: 0.92rem; color: #273d16; margin-bottom: 8px;">
                     📝 อธิบายอาการหรือพฤติกรรมที่สังเกตพบ:
                 </label>
-                <textarea id="ai-symptom-input" rows="4" placeholder="ตัวอย่าง: ช่วงนี้เริ่มลืมบทสนทนาที่เพิ่งคุยไป ถามเรื่องเดิมซ้ำๆ และหาของใช้ส่วนตัวไม่ค่อยเจอ อาการแบบนี้เข้าข่ายภาวะสมองเสื่อมไหม? (กรุณาไม่พิมพ์ชื่อคนอื่น)" style="width: 100%; box-sizing: border-box; border: 2px solid #cfe0c2; border-radius: 16px; padding: 14px 16px; font-size: 0.95rem; font-family: 'Anuphan', sans-serif; line-height: 1.6; color: #27341d; background: #ffffff; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; outline: none;"></textarea>
-
-                <!-- Live Name Warning & Auto-Fix Tool -->
-                <div id="ai-name-warning" style="display: none; background: #fff3e0; border: 1.5px solid #ffb74d; border-radius: 12px; padding: 10px 14px; margin-top: 8px; font-size: 0.86rem; color: #e65100; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span>⚠️</span>
-                        <span id="ai-name-warning-text">ตรวจพบนาม/ชื่อบุคคลอื่น กรุณาหลีกเลี่ยงการระบุชื่อจริงตามนโยบาย PDPA</span>
-                    </div>
-                    <button type="button" onclick="autoSanitizeNames()" style="background: #e65100; color: white; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-                        <span>🧹</span> แทนที่ด้วย "คนในครอบครัว" อัตโนมัติ
-                    </button>
-                </div>
+                <textarea id="ai-symptom-input" rows="4" placeholder="ตัวอย่าง: ช่วงนี้เริ่มลืมบทสนทนาที่เพิ่งคุยไป ถามเรื่องเดิมซ้ำๆ และหาของใช้ส่วนตัวไม่ค่อยเจอ อาการแบบนี้เข้าข่ายภาวะสมองเสื่อมไหม และควรดูแลอย่างไร?" style="width: 100%; box-sizing: border-box; border: 2px solid #cfe0c2; border-radius: 16px; padding: 14px 16px; font-size: 0.95rem; font-family: 'Anuphan', sans-serif; line-height: 1.6; color: #27341d; background: #ffffff; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; outline: none;"></textarea>
             </div>
 
             <!-- Quick Symptom Prompts -->
@@ -1885,53 +1890,21 @@
             return { hasName: detected.length > 0, names: detected };
         }
 
-        // Live input monitoring for name detection
         const symptomInput = document.getElementById('ai-symptom-input');
-        const nameWarningBox = document.getElementById('ai-name-warning');
-        const nameWarningText = document.getElementById('ai-name-warning-text');
-
-        if (symptomInput) {
-            symptomInput.addEventListener('input', () => {
-                const text = symptomInput.value;
-                const check = checkTextForNames(text);
-                if (check.hasName) {
-                    nameWarningBox.style.display = 'flex';
-                    const sample = check.names.map(n => '"' + n.full + '"').slice(0, 2).join(', ');
-                    nameWarningText.innerHTML = '🔒 ตรวจพบนาม/ชื่อบุคคล (' + sample + ') — เพื่อความปลอดภัยตาม <strong>PDPA</strong> ระบบไม่อนุญาตให้พิมพ์ชื่อคนอื่น กรุณาใช้คำว่า "คนในครอบครัว" หรือ "ผู้สูงอายุ"';
-                    symptomInput.style.borderColor = '#ff9800';
-                } else {
-                    nameWarningBox.style.display = 'none';
-                    symptomInput.style.borderColor = '#cfe0c2';
-                }
-            });
-        }
-
-        function autoSanitizeNames() {
-            if (!symptomInput) return;
-            let text = symptomInput.value;
-            const check = checkTextForNames(text);
-            if (check.hasName) {
-                for (const item of check.names) {
-                    text = text.split(item.full).join('คนในครอบครัว');
-                }
-                symptomInput.value = text;
-                nameWarningBox.style.display = 'none';
-                symptomInput.style.borderColor = '#cfe0c2';
-            }
-        }
+        const personNameInput = document.getElementById('ai-person-name');
+        const personAgeInput = document.getElementById('ai-person-age');
 
         function applySamplePrompt(promptText) {
             if (symptomInput) {
                 symptomInput.value = promptText;
                 symptomInput.focus();
-                nameWarningBox.style.display = 'none';
-                symptomInput.style.borderColor = '#cfe0c2';
             }
         }
 
         function clearAiConsultForm() {
             if (symptomInput) symptomInput.value = '';
-            if (nameWarningBox) nameWarningBox.style.display = 'none';
+            if (personNameInput) personNameInput.value = '';
+            if (personAgeInput) personAgeInput.value = '';
             const resBox = document.getElementById('ai-consult-result-box');
             if (resBox) resBox.style.display = 'none';
         }
@@ -1945,13 +1918,12 @@
                 return;
             }
 
-            // PDPA Check: Block if other person's name is typed
-            const check = checkTextForNames(query);
-            if (check.hasName) {
-                nameWarningBox.style.display = 'flex';
-                alert('🔒 ไม่สามารถส่งได้: ตรวจพบชื่อบุคคลอื่นตามกฎหมาย PDPA กรุณาแก้ไขโดยกดปุ่ม "แทนที่ด้วย คนในครอบครัว อัตโนมัติ" หรือลบชื่อจริงออกก่อนครับ');
-                symptomInput.focus();
-                return;
+            const rawName = personNameInput?.value.trim() || '';
+            const rawAge = personAgeInput?.value.trim() || '';
+            
+            let targetLabel = rawName ? rawName : 'ผู้รับการประเมิน';
+            if (rawAge) {
+                targetLabel += ' (อายุ ' + rawAge + ' ปี)';
             }
 
             const btn = document.getElementById('btn-run-ai-consult');
@@ -1971,16 +1943,17 @@
             const systemPrompt = `คุณคือ "อาจารย์แพทย์ AI ผู้เชี่ยวชาญด้านเวชศาสตร์ผู้สูงอายุและประสาทวิทยาแห่งสวนความทรงจำ Memory Garden"
 ให้คำปรึกษาและวิเคราะห์ข้อสงสัย/อาการของผู้ใช้ด้วยภาษาไทยที่สุภาพ อบอุ่น ชัดเจน ให้กำลังใจ และมีหลักการแพทย์รองรับ
 
-ข้อกำหนดสำคัญตาม PDPA:
-- ห้ามระบุชื่อบุคคลใดๆ หากผู้ใช้เผลอกล่าวถึง ให้ตอบโดยใช้สรรพนามว่า "ท่าน", "ผู้สูงอายุ", "บุคคลในครอบครัว"
-- ให้ความรู้เชื่อมโยงกับมาตรฐาน MoCA (Montreal Cognitive Assessment 30 คะแนน) และ 10 สัญญาณเตือนของอัลไซเมอร์
+บุคคลที่ต้องการให้วิเคราะห์: "${targetLabel}"
+แนวทางการตอบและวิเคราะห์:
+- ใช้ชื่อหรือสรรพนาม "${rawName ? rawName : 'ท่าน'}" ในการทักทายและให้คำแนะนำอย่างอบอุ่นและสุภาพ
+- นำข้อมูลอาการที่ได้รับมาประเมินอย่างละเอียด เชื่อมโยงกับมาตรฐาน MoCA (Montreal Cognitive Assessment 30 คะแนน) และ 10 สัญญาณเตือนของอัลไซเมอร์
 - มีโครงสร้างการตอบที่อ่านง่าย 4 ส่วนชัดเจน:
-  1. 🔍 **การประเมินอาการเบื้องต้น**: อธิบายว่าอาการดังกล่าวมีความน่ากังวลระดับใด สอดคล้องกับหลงลืมตามวัย (Normal Aging) หรือเข้าข่ายภาวะบกพร่องเล็กน้อย (MCI) / สมองเสื่อมระยะแรก
-  2. 🌿 **การแยกแยะและจุดสังเกต**: ให้ข้อสังเกตสำคัญตามหลักการแพทย์ เช่น หมวดความจำ, ภาษา, มิติสัมพันธ์ หรือการตัดสินใจ
-  3. 💡 **คำแนะนำการดูแลและการปฏิบัติตัว**: ข้อปฏิบัติทั้งด้านสิ่งแวดล้อม กิจกรรมกระตุ้นสมอง และโภชนาการ
+  1. 🔍 **การประเมินอาการเบื้องต้นสำหรับ ${rawName ? rawName : 'ผู้รับการประเมิน'}**: อธิบายว่าอาการดังกล่าวมีความน่ากังวลระดับใด สอดคล้องกับหลงลืมตามวัย (Normal Aging) หรือเข้าข่ายภาวะบกพร่องเล็กน้อย (MCI) / สมองเสื่อมระยะแรก
+  2. 🌿 **การแยกแยะและจุดสังเกตสำคัญ**: ให้ข้อสังเกตทางการแพทย์ เช่น หมวดความจำ, ภาษา, มิติสัมพันธ์ หรือการตัดสินใจ
+  3. 💡 **คำแนะนำการดูแลและการปฏิบัติตัวสำหรับ ${rawName ? rawName : 'ท่าน'} และครอบครัว**: ข้อปฏิบัติทั้งด้านสิ่งแวดล้อม กิจกรรมกระตุ้นสมอง และโภชนาการ
   4. 🩺 **แนวทางตรวจประเมินเพิ่มเติม**: แนะนำให้ลองทำแบบทดสอบคัดกรอง Memory Garden (มาตรฐาน MoCA) และข้อแนะนำในการพาไปพบแพทย์เฉพาะทางด้านระบบประสาท
 
-อาการหรือข้อสงสัยของผู้ใช้:
+อาการหรือข้อสงสัยที่ผู้ใช้พิมพ์:
 "${query}"`;
 
             try {

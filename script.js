@@ -1382,6 +1382,98 @@ document.getElementById('math-next-btn').onclick = async function () {
 let namingScore = 0;
 let namingSelectedObjects = [];
 
+// พจนานุกรมคำศัพท์ภาษาถิ่นและคำพ้องความหมาย (เหนือ อีสาน ใต้ กลาง) สำหรับการบอกชื่อสิ่งของ
+const NAMING_DIALECT_DICTIONARY = {
+    'จอบ': [
+        'จอบ', 'จ๊อบ', 'จอบขุด', 'จอบถาก', 'จอบดายหญ้า', 'จอบขุดดิน'
+    ],
+    'บัวรดน้ำ': [
+        'บัวรดน้ำ', 'บัวฮดน้ำ', 'บัว', 'ฝักบัว', 'ฝักบัวรดน้ำ', 'ฝักบัวฮดน้ำ',
+        'กาน้ำรดน้ำ', 'กาฮดน้ำ', 'ที่รดน้ำ', 'ที่รดน้ำต้นไม้', 'กระป๋องรดน้ำ',
+        'กะป๋องฮดน้ำ', 'กระป๋องฮดน้ำ', 'ถังรดน้ำ', 'ถังฮดน้ำ', 'ครุฮดน้ำ',
+        'คุฮดน้ำ', 'คุรดน้ำ', 'ช้องรดน้ำ', 'บัวรดผัก', 'บัวฮดผัก',
+        'กาบัวรดน้ำ', 'ถังรดน้ำต้นไม้'
+    ],
+    'ครก': [
+        'ครก', 'คก', 'ครกหิน', 'คกหิน', 'ครกสาก', 'ครกตำน้ำพริก', 'ครกตำส้มตำ',
+        'ครกส้มตำ', 'ครกดิน', 'ครกดินเผา', 'ครกไม้', 'คกมอง', 'ครกบด', 'คกดิน', 'คกไม้'
+    ],
+    'เคียว': [
+        'เคียว', 'เคียวเกี่ยวข้าว', 'เคียวเกี่ยวหญ้า', 'ขอเกี่ยวข้าว', 'ขอเกี่ยว',
+        'ขอลาย', 'ขอ', 'เกียว', 'เกี้ยว', 'กะเคียว', 'ก่าเคียว', 'มีดเกี่ยวข้าว',
+        'มีดเคียว', 'กริชเกี่ยวข้าว'
+    ],
+    'ตะกร้า': [
+        'ตะกร้า', 'กะต่า', 'กะต้า', 'ซ้า', 'ก๋วย', 'กวย', 'กะแตะ', 'ตะก้า',
+        'กระเช้า', 'กระบุง', 'ชะลอม', 'ตะกร้าหวาย', 'ตะกร้าสาน', 'กะต่าสาน',
+        'กะต้าสาน', 'ซ้าใส่ผัก', 'ซ้าหวาย', 'ซ้าสาน', 'กระจาด', 'ตะกร้าใส่ผัก',
+        'ตะกร้าใส่ของ', 'เข่ง'
+    ],
+    'เสียม': ['เสียม', 'เสียมขุดดิน', 'เสียมขุด', 'เสียมถาก'],
+    'พลั่ว': ['พลั่ว', 'พลั่วตักดิน', 'พลั่วขุด'],
+    'กรรไกรตัดกิ่ง': ['กรรไกรตัดกิ่ง', 'กรรไกรแต่งกิ่ง', 'กรรไกรตัดหญ้า', 'กรรไกร'],
+    'ถังน้ำ': ['ถังน้ำ', 'คุ', 'ครุ', 'ถัง', 'กะป๋องน้ำ', 'กระป๋องน้ำ']
+};
+
+function normalizeDialectText(str) {
+    if (!str) return '';
+    let text = str.trim().toLowerCase();
+    // ตัดเครื่องหมายวรรคตอนและสัญลักษณ์
+    text = text.replace(/[\.,\/#!$%\^&\*;:{}=\-_`~()?"'“”]/g, '');
+    // ตัดช่องว่างซ้ำซ้อน
+    text = text.replace(/\s+/g, ' ');
+    // ตัดคำเกริ่นนำทั่วไป เช่น "นี่คือ", "มันคือ", "อันนี้คือ", "รูปภาพ", "รูป", "ภาพ", "คือ", "เป็น", "มันแม่น", "แม่น"
+    const prefixRegex = /^(นี่คือ|มันคือ|อันนี้คือ|อันนี้|รูปนี้คือ|ภาพนี้คือ|รูปภาพ|ภาพ|รูป|คือ|เป็น|มันแม่น|แม่น)\s*/;
+    while (prefixRegex.test(text)) {
+        text = text.replace(prefixRegex, '').trim();
+    }
+    // ตัดคำลงท้ายและคำสุภาพทั่วไป / ภาษาถิ่น เช่น "ครับ", "ค่ะ", "นะคะ", "เจ้า", "เด้อ", "เน้อ", "จ้า", "ก๊า", "หนา", "นิ", "บ่", "น่อ"
+    const suffixRegex = /\s*(ครับ|ค่ะ|คะ|นะคะ|นะครับ|เจ้า|เด้อ|เน้อ|จ้า|จ้ะ|ก๊า|หนา|นิ|บ่|น่อ|คับ|ฮะ|จ้าว)$/;
+    while (suffixRegex.test(text)) {
+        text = text.replace(suffixRegex, '').trim();
+    }
+    return text.trim();
+}
+
+function checkNamingAnswer(userAnswer, targetObj) {
+    if (!userAnswer || !targetObj) return false;
+    const cleanUser = normalizeDialectText(userAnswer);
+    const targetName = (targetObj.name || '').trim().toLowerCase();
+
+    // 1. ตรวจสอบตรงตัว (exact match)
+    if (cleanUser === targetName || userAnswer.trim().toLowerCase() === targetName) {
+        return true;
+    }
+
+    // 2. ค้นหารายการคำศัพท์ที่ยอมรับได้ (ทั้งภาษากลางและภาษาถิ่น)
+    let validTerms = [];
+    for (const [key, terms] of Object.entries(NAMING_DIALECT_DICTIONARY)) {
+        if (key.toLowerCase() === targetName || targetName.includes(key.toLowerCase()) || key.toLowerCase().includes(targetName)) {
+            validTerms = terms;
+            break;
+        }
+    }
+    if (validTerms.length === 0) {
+        validTerms = [targetName];
+    }
+
+    // 3. เทียบกับคำศัพท์ในพจนานุกรมภาษาถิ่น
+    for (const term of validTerms) {
+        const cleanTerm = normalizeDialectText(term);
+        if (!cleanTerm) continue;
+
+        // ตรงกับคำศัพท์ภาษาถิ่นพอดี
+        if (cleanUser === cleanTerm) return true;
+
+        // กรณีคำมีความยาวพอสมควร (เช่น 'บัวฮดน้ำ', 'ขอเกี่ยวข้าว', 'กะต่า') อนุญาตให้เป็นคำย่อยในข้อความได้
+        if (cleanTerm.length >= 4 && cleanUser.includes(cleanTerm)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // --- Image Zoom Modal Helpers for Naming Test ---
 function openImageZoom(imgSrc, titleText) {
     const modal = document.getElementById('image-zoom-modal');
@@ -1390,7 +1482,9 @@ function openImageZoom(imgSrc, titleText) {
     if (!modal || !modalImg) return;
 
     modalImg.src = imgSrc;
-    if (modalTitle && titleText) modalTitle.textContent = `🔍 ${titleText}`;
+    modalImg.alt = 'ภาพเครื่องมือและสิ่งของ';
+    // ไม่แสดงชื่อสิ่งของ/เฉลยใน title
+    if (modalTitle) modalTitle.textContent = `🔍 ${titleText || 'ภาพสิ่งของในสวน'}`;
     modal.style.display = 'flex';
     requestAnimationFrame(() => {
         modal.style.opacity = '1';
@@ -1428,7 +1522,8 @@ async function startNamingTest() {
         imgWrapper.title = 'แตะเพื่อขยายดูภาพใหญ่ 🔍';
         imgWrapper.onmouseenter = () => { imgWrapper.style.transform = 'scale(1.05)'; imgWrapper.style.boxShadow = '0 4px 12px rgba(130,149,75,0.3)'; };
         imgWrapper.onmouseleave = () => { imgWrapper.style.transform = 'scale(1)'; imgWrapper.style.boxShadow = 'none'; };
-        imgWrapper.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}: ${obj.name || 'สิ่งของในสวน'}`);
+        // ป้องกันเฉลยในหน้าขยายภาพ โดยไม่ใส่ obj.name
+        imgWrapper.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}`);
 
         const img = document.createElement('img');
         img.src = obj.image_url;
@@ -1451,7 +1546,8 @@ async function startNamingTest() {
         const label = document.createElement('label');
         label.textContent = `สิ่งของในภาพที่ ${i + 1} (ข้อที่ ${i + 1}/5)`;
         label.style.cssText = 'font-size:0.85rem;color:#4a5d23;font-weight:bold;white-space:normal;word-break:break-word;line-height:1.3;cursor:pointer;';
-        label.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}: ${obj.name || 'สิ่งของในสวน'}`);
+        // ป้องกันเฉลยในหน้าขยายภาพ โดยไม่ใส่ obj.name
+        label.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}`);
 
         // Input Row: ช่องพิมพ์ + ปุ่มไมค์
         const inputRow = document.createElement('div');
@@ -1460,7 +1556,7 @@ async function startNamingTest() {
         const input = document.createElement('input');
         input.type = 'text';
         input.id = `naming-answer-${i}`;
-        input.placeholder = 'พิมพ์ชื่อสิ่งของ หรือแตะเลือก';
+        input.placeholder = 'พิมพ์/พูดชื่อสิ่งของ (ภาษาถิ่นได้)';
         input.style.cssText = 'flex:1;min-width:0;width:0;padding:8px 10px;border:1.5px solid #ddd;border-radius:10px;font-size:0.95rem;outline:none;box-sizing:border-box;font-family:\'Anuphan\',sans-serif;transition:border-color 0.2s;';
         input.oninput = () => {
             input.style.borderColor = '#ddd';
@@ -1479,27 +1575,8 @@ async function startNamingTest() {
         inputRow.appendChild(input);
         inputRow.appendChild(micBtn);
 
-        // Choice suggestions for easier tapping
-        const chipsDiv = document.createElement('div');
-        chipsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;';
-        const distractorOptions = ['จอบ', 'บัวรดน้ำ', 'กรรไกรตัดกิ่ง', 'กระถางต้นไม้', 'เสียม', 'สายยาง', 'หมวกสาน', 'ถุงมือทำสวน', 'กรรไกร', 'ร่ม', 'นาฬิกา', 'เก้าอี้', 'ครก', 'เคียว', 'ตะกร้า'];
-        const quickOptions = [...new Set([obj.name, ...distractorOptions.filter(d => d !== obj.name).slice(0, 2)])].sort(() => Math.random() - 0.5);
-        quickOptions.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.innerText = opt;
-            btn.style.cssText = 'padding:3px 8px;background:#f0f7e6;color:#4a5d23;border:1px solid #82954b;border-radius:12px;font-size:0.8rem;cursor:pointer;font-family:\'Anuphan\',sans-serif;';
-            btn.onclick = () => {
-                input.value = opt;
-                input.style.borderColor = '#ddd';
-                input.style.background = '#fff';
-            };
-            chipsDiv.appendChild(btn);
-        });
-
         rightDiv.appendChild(label);
         rightDiv.appendChild(inputRow);
-        rightDiv.appendChild(chipsDiv);
         card.appendChild(imgWrapper);
         card.appendChild(rightDiv);
         container.appendChild(card);
@@ -1632,8 +1709,11 @@ document.getElementById('naming-submit-btn').onclick = function () {
 
     namingScore = 0;
     inputs.forEach((inp, i) => {
-        const correct = namingSelectedObjects[i].name.trim().toLowerCase();
-        if (inp.value.trim().toLowerCase() === correct) namingScore++;
+        const userAns = inp ? inp.value : '';
+        const targetObj = namingSelectedObjects[i];
+        if (checkNamingAnswer(userAns, targetObj)) {
+            namingScore++;
+        }
     });
 
     document.getElementById('naming-test-page').style.display = 'none';

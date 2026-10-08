@@ -194,16 +194,35 @@ const MemoryGardenTools = {
         }
     },
 
-    // ---------- 10. ดึงผลการทดสอบทั้งหมดสำหรับ Admin ----------
+    // ---------- 10. ดึงผลการทดสอบทั้งหมดสำหรับ Admin (รองรับไม่จำกัดจำนวนคน Pagination) ----------
     async getAllTestResults() {
         try {
             if (!supabaseClient) throw new Error("Supabase is not initialized");
-            const { data, error } = await supabaseClient
-                .from('test_results')
-                .select('*')
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            return data || [];
+            let allData = [];
+            let from = 0;
+            const pageSize = 1000;
+            let hasMore = true;
+
+            while (hasMore) {
+                const { data, error } = await supabaseClient
+                    .from('test_results')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .range(from, from + pageSize - 1);
+
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    allData = allData.concat(data);
+                    if (data.length < pageSize) {
+                        hasMore = false;
+                    } else {
+                        from += pageSize;
+                    }
+                } else {
+                    hasMore = false;
+                }
+            }
+            return allData;
         } catch (err) {
             console.error('[MCP] getAllTestResults failed:', err.message);
             return [];

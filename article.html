@@ -1627,7 +1627,7 @@
         <div class="garden-cta-box">
             <h2 class="garden-cta-title">🌱 สนใจเช็กความจำของตัวเองหรือคนที่คุณรัก?</h2>
             <p class="garden-cta-desc">
-                ลองทำแบบทดสอบ <strong>Memory Garden</strong> — ประเมินภาวะความจำและสมรรถภาพสมองเบื้องต้น ผ่านเกมและเรื่องราวในสวนธรรมชาติ เข้าใจง่าย ใช้เวลาเพียง 10–15 นาที
+                ลองทำแบบทดสอบ <strong>Memory Garden</strong> — ประเมินภาวะความจำและสมรรถภาพสมองเบื้องต้น ผ่านเกมและเรื่องราวในสวนธรรมชาติ เข้าใจง่าย ใช้เวลาประมาณ 20–25 นาที
             </p>
             <a href="index.html" class="btn-start-test">
                 <span>🌸</span>
@@ -1943,6 +1943,8 @@
             const systemPrompt = `คุณคือ "อาจารย์แพทย์ AI ผู้เชี่ยวชาญด้านเวชศาสตร์ผู้สูงอายุและประสาทวิทยาแห่งสวนความทรงจำ Memory Garden"
 ให้คำปรึกษาและวิเคราะห์ข้อสงสัย/อาการของผู้ใช้ด้วยภาษาไทยที่สุภาพ อบอุ่น ชัดเจน ให้กำลังใจ และมีหลักการแพทย์รองรับ
 
+ข้อกำหนดสำคัญ: ห้ามใช้ LaTeX, สูตรคณิตศาสตร์, หรือเครื่องหมาย $ ครอบตัวเลข/สูตรโดยเด็ดขาด (เช่น ห้ามเขียน $n = 95$ หรือ $x^2$) ให้เขียนตัวเลขเป็นข้อความธรรมดาเท่านั้น
+
 บุคคลที่ต้องการให้วิเคราะห์: "${targetLabel}"
 แนวทางการตอบและวิเคราะห์:
 - ใช้ชื่อหรือสรรพนาม "${rawName ? rawName : 'ท่าน'}" ในการทักทายและให้คำแนะนำอย่างอบอุ่นและสุภาพ
@@ -1973,8 +1975,11 @@
                 const data = await resp.json();
                 const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'ไม่สามารถรับข้อมูลวิเคราะห์ได้ในขณะนี้';
                 
+                // ลบ LaTeX notation เช่น $n = 95$ → n = 95
+                const cleanedText = rawText.replace(/\$\$([^$]+?)\$\$/g, '$1').replace(/\$([^$]+?)\$/g, '$1');
+
                 // Format Markdown to HTML nicely
-                const formattedHtml = rawText
+                const formattedHtml = cleanedText
                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                     .replace(/### (.*?)\n/g, '<h4 style="color:#273d16;margin:12px 0 6px;font-size:1.05rem;">$1</h4>')
                     .replace(/## (.*?)\n/g, '<h3 style="color:#273d16;margin:14px 0 8px;font-size:1.15rem;">$1</h3>')

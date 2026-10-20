@@ -208,7 +208,8 @@ window.addEventListener('orientationchange', () => {
 });
 
 // --- Global Variables ---
-let fluencyScore = 0;  // Category Fluency score (max 4)
+let fluencyScore = 0;  // Category Fluency score (max 1)
+let fluencyWordCount = 0; // จำนวนชื่อสัตว์ที่บอกได้ (เก็บไว้วิเคราะห์)
 let sentenceRepeatScore = 0; // Sentence Repetition score (max 2)
 let currentStory = null; // เรื่องที่ถูกสุ่มในรอบนี้
 
@@ -562,16 +563,36 @@ async function showHistoryPage() {
     }
 }
 
+// รายการคะแนนรายด้านตามเวอร์ชันเกณฑ์ (v1 = 5 ด้านแบบเดิม, v2 = 7 ด้านตามแนวทาง MoCA)
+// ใช้ร่วมกันในการ์ดประวัติ, prompt AI, บทวิเคราะห์สำรอง และหน้าพิมพ์ผล
+function getDomainScores(details) {
+    const d = details || {};
+    const v = (key) => (d[key] != null ? d[key] : null);
+    if ((d.score_version || 1) >= 2) {
+        return [
+            { key: 'visuospatial', icon: '🕰️', short: 'นาฬิกา', label: 'มิติสัมพันธ์ (Visuospatial / Clock)', desc: 'วาดหน้าปัด วางตัวเลข และตั้งเข็มนาฬิกา', score: v('visuospatial'), max: 3 },
+            { key: 'naming', icon: '🖼️', short: 'บอกชื่อ', label: 'การบอกชื่อสิ่งของ (Naming)', desc: 'ดูภาพแล้วบอกชื่อสิ่งของ 5 ภาพ', score: v('naming'), max: 5 },
+            { key: 'attention', icon: '🎯', short: 'สมาธิ', label: 'สมาธิและความจดจ่อ (Attention)', desc: 'จำตัวเลข, กดตัวเลขเป้าหมาย, ลบ 7 ต่อเนื่อง', score: v('attention'), max: 6 },
+            { key: 'language', icon: '🗣️', short: 'ภาษา', label: 'ภาษา (Language)', desc: 'พูดซ้ำประโยค และบอกชื่อสัตว์ใน 60 วินาที', score: v('language'), max: 3 },
+            { key: 'abstraction', icon: '🧩', short: 'นามธรรม', label: 'ความคิดเชิงนามธรรม (Abstraction)', desc: 'บอกความเหมือนของสิ่งของ 2 คู่', score: v('abstraction'), max: 2 },
+            { key: 'memory', icon: '🧠', short: 'ความจำ', label: 'การระลึกความจำ (Delayed Recall)', desc: 'ระลึกสิ่งของ 5 อย่างที่จำไว้ตอนต้น', score: v('memory'), max: 5 },
+            { key: 'orientation', icon: '🗺️', short: 'วันเวลา', label: 'การรับรู้วันเวลาและสถานที่ (Orientation)', desc: 'วันที่ เดือน ปี วัน ช่วงเวลา จังหวัด', score: v('orientation'), max: 6 }
+        ];
+    }
+    return [
+        { key: 'memory', icon: '🧠', short: 'ความจำ', label: 'การระลึกความจำ (Memory Recall)', desc: 'ระลึกคำศัพท์ 5 คำ', score: v('memory'), max: 5 },
+        { key: 'visuospatial', icon: '🕰️', short: 'นาฬิกา', label: 'มิติสัมพันธ์ (Visuospatial / Clock)', desc: 'วาดหน้าปัดนาฬิกาและตำแหน่งเข็ม', score: v('visuospatial'), max: 3 },
+        { key: 'math', icon: '🛒', short: 'คิดเลข', label: 'สมาธิและการคำนวณ (Attention & Math)', desc: 'ลบเลข 100 ลบ 7 ต่อเนื่อง', score: v('math'), max: 5 },
+        { key: 'language', icon: '🌿', short: 'ภาษา', label: 'ภาษาและการสื่อสาร (Language)', desc: 'บอกชื่อสิ่งของ, พูดตาม, บอกชื่อสัตว์', score: v('language'), max: 11 },
+        { key: 'orientation', icon: '🗺️', short: 'วันเวลา', label: 'การรับรู้วันเวลาและสถานที่ (Orientation)', desc: 'วันที่ เดือน ปี วัน ช่วงเวลา จังหวัด', score: v('orientation'), max: 6 }
+    ];
+}
+
 // ฟังก์ชัน render card แต่ละครั้ง
 function renderHistoryCard(record, index) {
     const score = record.total_score || 0;
     const risk = record.risk_level || 'ไม่ระบุ';
     const details = record.details || {};
-    const memory = details.memory ?? '-';
-    const visuospatial = details.visuospatial ?? '-';
-    const math = details.math ?? '-';
-    const language = details.language ?? '-';
-    const orientation = details.orientation ?? '-';
     const pct = Math.round((score / 30) * 100);
 
     // สีแถบและ badge — ใช้ score ตัวเลขแทน string matching (เสถียรกว่า ไม่เปลี่ยนตามข้อความ)
@@ -624,11 +645,7 @@ function renderHistoryCard(record, index) {
             <div style="margin-left: 10px; font-size: 0.85rem; color: #888; min-width: 36px; text-align: right;">${pct}%</div>
         </div>
         <div class="history-detail-row">
-            <div class="history-detail-chip">🧠 ความจำ: <strong>${memory}/5</strong></div>
-            <div class="history-detail-chip">🕰️ นาฬิกา: <strong>${visuospatial}/5</strong></div>
-            <div class="history-detail-chip">🛒 คิดเลข: <strong>${math}/5</strong></div>
-            <div class="history-detail-chip">🌿 บอกชื่อ: <strong>${language}/5</strong></div>
-            <div class="history-detail-chip">🗺️ วันเวลา: <strong>${orientation}/10</strong></div>
+            ${getDomainScores(details).map(x => `<div class="history-detail-chip">${x.icon} ${x.short}: <strong>${x.score ?? '-'}/${x.max}</strong></div>`).join('')}
         </div>
     </div>`;
 }
@@ -870,13 +887,8 @@ if (memoryReadyBtn) {
 
 
 // --- 6. ด่านที่ 2: ระบบนาฬิกา (Clock Drawing Test - 3 คะแนน) ---
-const CLOCK_TIME_POOL = [
-    { h: 3, m: 0 }, { h: 6, m: 0 }, { h: 9, m: 0 }, { h: 12, m: 0 },
-    { h: 1, m: 30 }, { h: 4, m: 30 }, { h: 7, m: 30 }, { h: 10, m: 30 },
-    { h: 2, m: 15 }, { h: 5, m: 45 }, { h: 8, m: 15 }, { h: 11, m: 45 },
-    { h: 3, m: 10 }, { h: 6, m: 20 }, { h: 9, m: 40 }, { h: 12, m: 50 },
-    { h: 2, m: 0 }, { h: 5, m: 0 }, { h: 8, m: 0 }, { h: 11, m: 10 },
-];
+// เวลาที่ให้ตั้ง: ใช้เวลาที่เข็มทั้งสองอยู่คนละฝั่งหน้าปัด ตามข้อเสนอแนะ IOC (11:10 หรือ 9:10)
+const CLOCK_TIME_POOL = [{ h: 11, m: 10 }, { h: 9, m: 10 }];
 let targetHour = 0, targetMinute = 0;
 let correctHourAngle = 0, correctMinuteAngle = 0;
 let selectedNumberElement = null;
@@ -1133,7 +1145,8 @@ function setupClockGame() {
     }
 
     // สร้างตัวเลข 1–12 ใส่ใน pile
-    const numbers = Array.from({ length: 12 }, (_, k) => k + 1);
+    // สลับลำดับตัวเลข ไม่ให้เรียง 1-12 ไว้ให้ (ข้อเสนอแนะ IOC ข้อ 2.2)
+    const numbers = Array.from({ length: 12 }, (_, k) => k + 1).sort(() => Math.random() - 0.5);
 
     numbers.forEach(i => {
         const num = document.createElement('div');
@@ -1187,27 +1200,22 @@ function returnToPile(el) {
     const pile = document.getElementById('numbers-pile');
     if (!pile) return;
 
-    const val = parseInt(el.innerText);
-    const numbersInPile = Array.from(pile.querySelectorAll('.draggable-number'));
-
-    let inserted = false;
-    for (let i = 0; i < numbersInPile.length; i++) {
-        const currentVal = parseInt(numbersInPile[i].innerText);
-        if (val < currentVal) {
-            pile.insertBefore(el, numbersInPile[i]);
-            inserted = true;
-            break;
-        }
-    }
-
-    if (!inserted) {
-        pile.appendChild(el);
-    }
+    // นำกลับไปท้ายกอง (ไม่เรียงลำดับให้ เพื่อไม่ช่วยใบ้ตำแหน่ง)
+    pile.appendChild(el);
 
     el.style.position = 'static';
     el.style.transform = 'none';
     el.style.left = '';
     el.style.top = '';
+}
+
+// คะแนนตัวเลข 1 คะแนน: วางครบ 12 ตัวและทุกตัวอยู่ตรงตำแหน่งของตัวเองบนหน้าปัด
+function getClockNumbersScore() {
+    for (let i = 1; i <= 12; i++) {
+        const zone = document.getElementById(`zone-${i}`);
+        if (!zone || !zone.querySelector(`#num-${i}`)) return 0;
+    }
+    return 1;
 }
 
 function makeElementDraggable(el) {
@@ -1297,14 +1305,14 @@ document.getElementById('clock-submit-btn').onclick = function () {
         return;
     }
     
-    const numbersScore = (numbersCount === 12) ? 1 : 0;
+    const numbersScore = getClockNumbersScore();
     handsScore = (hourAngle === correctHourAngle && minuteAngle === correctMinuteAngle) ? 1 : 0;
     
     // รวมคะแนนนาฬิกาเต็ม 3 คะแนน (Contour 1 + Numbers 1 + Hands 1)
     clockScore = contourScore + numbersScore + handsScore;
     
     document.getElementById('clock-test-page').style.display = 'none';
-    startMathTest();
+    startDigitSpanTest(); // ด่าน Attention: Digit span → Vigilance → Serial 7s
 };
 
 // --- 7. ด่านที่ 3: ระบบคิดเลข 100 ลบ 7 ต่อเนื่อง (Serial 7s Math Test - 5 ข้อ 5 คะแนน) ---
@@ -1334,12 +1342,13 @@ function updateMathUI() {
         if (mathStep === 1) {
             scenarioEl.innerHTML = `เริ่มต้นจากตัวเลข <b>100</b> <br>🧮 ข้อที่ 1: <b>100 ลบออก 7</b> <br>👉 เหลือเท่าไหร่ครับ?`;
         } else {
-            scenarioEl.innerHTML = `จากผลลัพธ์เดิม <b>${mathCurrentValue}</b> <br>🧮 ข้อที่ ${mathStep}: <b>ลบออกอีก 7</b> <br>👉 เหลือเท่าไหร่ครับ?`;
+            // แสดงโจทย์จากคำตอบข้อก่อนของผู้ทดสอบเอง (ไม่ใช่ค่าที่ถูกต้อง) ผู้สูงอายุจึงเห็นโจทย์โดยไม่เป็นการเฉลย
+            scenarioEl.innerHTML = `จากคำตอบที่แล้ว <b>${mathCurrentValue}</b> <br>🧮 ข้อที่ ${mathStep}: <b>ลบออกอีก 7</b> <br>👉 เหลือเท่าไหร่ครับ?`;
         }
     }
-    
-    document.getElementById('current-num').innerText = mathCurrentValue;
-    document.getElementById('math-subtractor').innerText = 7;
+
+    const mathDisplay = document.getElementById('math-display');
+    if (mathDisplay) mathDisplay.innerHTML = `${mathCurrentValue} - 7 = ?`;
     document.getElementById('math-step').innerText = mathStep;
     
     const input = document.getElementById('math-answer');
@@ -1354,18 +1363,20 @@ document.getElementById('math-next-btn').onclick = async function () {
         return; 
     }
     
+    // ตรวจแต่ละข้อแยกกันตาม MoCA: เทียบกับคำตอบก่อนหน้าของผู้ใช้ (ข้อแรกเทียบกับ 100)
+    // เช่น 93, 85, 78 → ข้อ 2 ผิด แต่ข้อ 3 ถูก เพราะ 85 - 7 = 78
     const expected = mathCurrentValue - 7;
     if (userAnswer === expected) {
         mathCorrectCount++;
     }
     
-    mathCurrentValue = expected;
+    mathCurrentValue = userAnswer;
     mathStep++;
     
     if (mathStep <= 5) {
         updateMathUI();
     } else {
-        // ให้คะแนนตามเกณฑ์ Serial 7s
+        // ให้คะแนนตามเกณฑ์ Serial 7s ของ MoCA (เต็ม 3): ถูก 4-5 = 3, 2-3 = 2, 1 = 1, 0 = 0
         if (mathCorrectCount >= 4) mathScore = 3;
         else if (mathCorrectCount >= 2) mathScore = 2;
         else if (mathCorrectCount === 1) mathScore = 1;
@@ -1382,6 +1393,98 @@ document.getElementById('math-next-btn').onclick = async function () {
 let namingScore = 0;
 let namingSelectedObjects = [];
 
+// พจนานุกรมคำศัพท์ภาษาถิ่นและคำพ้องความหมาย (เหนือ อีสาน ใต้ กลาง) สำหรับการบอกชื่อสิ่งของ
+const NAMING_DIALECT_DICTIONARY = {
+    'จอบ': [
+        'จอบ', 'จ๊อบ', 'จอบขุด', 'จอบถาก', 'จอบดายหญ้า', 'จอบขุดดิน'
+    ],
+    'บัวรดน้ำ': [
+        'บัวรดน้ำ', 'บัวฮดน้ำ', 'บัว', 'ฝักบัว', 'ฝักบัวรดน้ำ', 'ฝักบัวฮดน้ำ',
+        'กาน้ำรดน้ำ', 'กาฮดน้ำ', 'ที่รดน้ำ', 'ที่รดน้ำต้นไม้', 'กระป๋องรดน้ำ',
+        'กะป๋องฮดน้ำ', 'กระป๋องฮดน้ำ', 'ถังรดน้ำ', 'ถังฮดน้ำ', 'ครุฮดน้ำ',
+        'คุฮดน้ำ', 'คุรดน้ำ', 'ช้องรดน้ำ', 'บัวรดผัก', 'บัวฮดผัก',
+        'กาบัวรดน้ำ', 'ถังรดน้ำต้นไม้'
+    ],
+    'ครก': [
+        'ครก', 'คก', 'ครกหิน', 'คกหิน', 'ครกสาก', 'ครกตำน้ำพริก', 'ครกตำส้มตำ',
+        'ครกส้มตำ', 'ครกดิน', 'ครกดินเผา', 'ครกไม้', 'คกมอง', 'ครกบด', 'คกดิน', 'คกไม้'
+    ],
+    'เคียว': [
+        'เคียว', 'เคียวเกี่ยวข้าว', 'เคียวเกี่ยวหญ้า', 'ขอเกี่ยวข้าว', 'ขอเกี่ยว',
+        'ขอลาย', 'ขอ', 'เกียว', 'เกี้ยว', 'กะเคียว', 'ก่าเคียว', 'มีดเกี่ยวข้าว',
+        'มีดเคียว', 'กริชเกี่ยวข้าว'
+    ],
+    'ตะกร้า': [
+        'ตะกร้า', 'กะต่า', 'กะต้า', 'ซ้า', 'ก๋วย', 'กวย', 'กะแตะ', 'ตะก้า',
+        'กระเช้า', 'กระบุง', 'ชะลอม', 'ตะกร้าหวาย', 'ตะกร้าสาน', 'กะต่าสาน',
+        'กะต้าสาน', 'ซ้าใส่ผัก', 'ซ้าหวาย', 'ซ้าสาน', 'กระจาด', 'ตะกร้าใส่ผัก',
+        'ตะกร้าใส่ของ', 'เข่ง'
+    ],
+    'เสียม': ['เสียม', 'เสียมขุดดิน', 'เสียมขุด', 'เสียมถาก'],
+    'พลั่ว': ['พลั่ว', 'พลั่วตักดิน', 'พลั่วขุด'],
+    'กรรไกรตัดกิ่ง': ['กรรไกรตัดกิ่ง', 'กรรไกรแต่งกิ่ง', 'กรรไกรตัดหญ้า', 'กรรไกร'],
+    'ถังน้ำ': ['ถังน้ำ', 'คุ', 'ครุ', 'ถัง', 'กะป๋องน้ำ', 'กระป๋องน้ำ']
+};
+
+function normalizeDialectText(str) {
+    if (!str) return '';
+    let text = str.trim().toLowerCase();
+    // ตัดเครื่องหมายวรรคตอนและสัญลักษณ์
+    text = text.replace(/[\.,\/#!$%\^&\*;:{}=\-_`~()?"'“”]/g, '');
+    // ตัดช่องว่างซ้ำซ้อน
+    text = text.replace(/\s+/g, ' ');
+    // ตัดคำเกริ่นนำทั่วไป เช่น "นี่คือ", "มันคือ", "อันนี้คือ", "รูปภาพ", "รูป", "ภาพ", "คือ", "เป็น", "มันแม่น", "แม่น"
+    const prefixRegex = /^(นี่คือ|มันคือ|อันนี้คือ|อันนี้|รูปนี้คือ|ภาพนี้คือ|รูปภาพ|ภาพ|รูป|คือ|เป็น|มันแม่น|แม่น)\s*/;
+    while (prefixRegex.test(text)) {
+        text = text.replace(prefixRegex, '').trim();
+    }
+    // ตัดคำลงท้ายและคำสุภาพทั่วไป / ภาษาถิ่น เช่น "ครับ", "ค่ะ", "นะคะ", "เจ้า", "เด้อ", "เน้อ", "จ้า", "ก๊า", "หนา", "นิ", "บ่", "น่อ"
+    const suffixRegex = /\s*(ครับ|ค่ะ|คะ|นะคะ|นะครับ|เจ้า|เด้อ|เน้อ|จ้า|จ้ะ|ก๊า|หนา|นิ|บ่|น่อ|คับ|ฮะ|จ้าว)$/;
+    while (suffixRegex.test(text)) {
+        text = text.replace(suffixRegex, '').trim();
+    }
+    return text.trim();
+}
+
+function checkNamingAnswer(userAnswer, targetObj) {
+    if (!userAnswer || !targetObj) return false;
+    const cleanUser = normalizeDialectText(userAnswer);
+    const targetName = (targetObj.name || '').trim().toLowerCase();
+
+    // 1. ตรวจสอบตรงตัว (exact match)
+    if (cleanUser === targetName || userAnswer.trim().toLowerCase() === targetName) {
+        return true;
+    }
+
+    // 2. ค้นหารายการคำศัพท์ที่ยอมรับได้ (ทั้งภาษากลางและภาษาถิ่น)
+    let validTerms = [];
+    for (const [key, terms] of Object.entries(NAMING_DIALECT_DICTIONARY)) {
+        if (key.toLowerCase() === targetName || targetName.includes(key.toLowerCase()) || key.toLowerCase().includes(targetName)) {
+            validTerms = terms;
+            break;
+        }
+    }
+    if (validTerms.length === 0) {
+        validTerms = [targetName];
+    }
+
+    // 3. เทียบกับคำศัพท์ในพจนานุกรมภาษาถิ่น
+    for (const term of validTerms) {
+        const cleanTerm = normalizeDialectText(term);
+        if (!cleanTerm) continue;
+
+        // ตรงกับคำศัพท์ภาษาถิ่นพอดี
+        if (cleanUser === cleanTerm) return true;
+
+        // กรณีคำมีความยาวพอสมควร (เช่น 'บัวฮดน้ำ', 'ขอเกี่ยวข้าว', 'กะต่า') อนุญาตให้เป็นคำย่อยในข้อความได้
+        if (cleanTerm.length >= 4 && cleanUser.includes(cleanTerm)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // --- Image Zoom Modal Helpers for Naming Test ---
 function openImageZoom(imgSrc, titleText) {
     const modal = document.getElementById('image-zoom-modal');
@@ -1390,7 +1493,9 @@ function openImageZoom(imgSrc, titleText) {
     if (!modal || !modalImg) return;
 
     modalImg.src = imgSrc;
-    if (modalTitle && titleText) modalTitle.textContent = `🔍 ${titleText}`;
+    modalImg.alt = 'ภาพเครื่องมือและสิ่งของ';
+    // ไม่แสดงชื่อสิ่งของ/เฉลยใน title
+    if (modalTitle) modalTitle.textContent = `🔍 ${titleText || 'ภาพสิ่งของในสวน'}`;
     modal.style.display = 'flex';
     requestAnimationFrame(() => {
         modal.style.opacity = '1';
@@ -1428,7 +1533,8 @@ async function startNamingTest() {
         imgWrapper.title = 'แตะเพื่อขยายดูภาพใหญ่ 🔍';
         imgWrapper.onmouseenter = () => { imgWrapper.style.transform = 'scale(1.05)'; imgWrapper.style.boxShadow = '0 4px 12px rgba(130,149,75,0.3)'; };
         imgWrapper.onmouseleave = () => { imgWrapper.style.transform = 'scale(1)'; imgWrapper.style.boxShadow = 'none'; };
-        imgWrapper.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}: ${obj.name || 'สิ่งของในสวน'}`);
+        // ป้องกันเฉลยในหน้าขยายภาพ โดยไม่ใส่ obj.name
+        imgWrapper.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}`);
 
         const img = document.createElement('img');
         img.src = obj.image_url;
@@ -1451,7 +1557,8 @@ async function startNamingTest() {
         const label = document.createElement('label');
         label.textContent = `สิ่งของในภาพที่ ${i + 1} (ข้อที่ ${i + 1}/5)`;
         label.style.cssText = 'font-size:0.85rem;color:#4a5d23;font-weight:bold;white-space:normal;word-break:break-word;line-height:1.3;cursor:pointer;';
-        label.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}: ${obj.name || 'สิ่งของในสวน'}`);
+        // ป้องกันเฉลยในหน้าขยายภาพ โดยไม่ใส่ obj.name
+        label.onclick = () => openImageZoom(obj.image_url, `ภาพที่ ${i + 1}`);
 
         // Input Row: ช่องพิมพ์ + ปุ่มไมค์
         const inputRow = document.createElement('div');
@@ -1460,7 +1567,7 @@ async function startNamingTest() {
         const input = document.createElement('input');
         input.type = 'text';
         input.id = `naming-answer-${i}`;
-        input.placeholder = 'พิมพ์ชื่อสิ่งของ หรือแตะเลือก';
+        input.placeholder = 'พิมพ์/พูดชื่อสิ่งของ (ภาษาถิ่นได้)';
         input.style.cssText = 'flex:1;min-width:0;width:0;padding:8px 10px;border:1.5px solid #ddd;border-radius:10px;font-size:0.95rem;outline:none;box-sizing:border-box;font-family:\'Anuphan\',sans-serif;transition:border-color 0.2s;';
         input.oninput = () => {
             input.style.borderColor = '#ddd';
@@ -1479,27 +1586,8 @@ async function startNamingTest() {
         inputRow.appendChild(input);
         inputRow.appendChild(micBtn);
 
-        // Choice suggestions for easier tapping
-        const chipsDiv = document.createElement('div');
-        chipsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;';
-        const distractorOptions = ['จอบ', 'บัวรดน้ำ', 'กรรไกรตัดกิ่ง', 'กระถางต้นไม้', 'เสียม', 'สายยาง', 'หมวกสาน', 'ถุงมือทำสวน', 'กรรไกร', 'ร่ม', 'นาฬิกา', 'เก้าอี้', 'ครก', 'เคียว', 'ตะกร้า'];
-        const quickOptions = [...new Set([obj.name, ...distractorOptions.filter(d => d !== obj.name).slice(0, 2)])].sort(() => Math.random() - 0.5);
-        quickOptions.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.innerText = opt;
-            btn.style.cssText = 'padding:3px 8px;background:#f0f7e6;color:#4a5d23;border:1px solid #82954b;border-radius:12px;font-size:0.8rem;cursor:pointer;font-family:\'Anuphan\',sans-serif;';
-            btn.onclick = () => {
-                input.value = opt;
-                input.style.borderColor = '#ddd';
-                input.style.background = '#fff';
-            };
-            chipsDiv.appendChild(btn);
-        });
-
         rightDiv.appendChild(label);
         rightDiv.appendChild(inputRow);
-        rightDiv.appendChild(chipsDiv);
         card.appendChild(imgWrapper);
         card.appendChild(rightDiv);
         container.appendChild(card);
@@ -1632,8 +1720,11 @@ document.getElementById('naming-submit-btn').onclick = function () {
 
     namingScore = 0;
     inputs.forEach((inp, i) => {
-        const correct = namingSelectedObjects[i].name.trim().toLowerCase();
-        if (inp.value.trim().toLowerCase() === correct) namingScore++;
+        const userAns = inp ? inp.value : '';
+        const targetObj = namingSelectedObjects[i];
+        if (checkNamingAnswer(userAns, targetObj)) {
+            namingScore++;
+        }
     });
 
     document.getElementById('naming-test-page').style.display = 'none';
@@ -2552,14 +2643,12 @@ function stopFluencyRecognition() {
 }
 function submitFluency() {
     const count = fluencyWords.length;
-    if (count >= 11) fluencyScore = 4;
-    else if (count >= 8) fluencyScore = 3;
-    else if (count >= 5) fluencyScore = 2;
-    else if (count >= 2) fluencyScore = 1;
-    else fluencyScore = 0;
+    // เกณฑ์ MoCA: บอกชื่อสัตว์ได้ตั้งแต่ 11 คำขึ้นไป = 1 คะแนน
+    fluencyWordCount = count;
+    fluencyScore = count >= 11 ? 1 : 0;
 
     document.getElementById('fluency-test-page').style.display = 'none';
-    startRecallTest();
+    startAbstractionTest();
 }
 
 
@@ -2600,6 +2689,7 @@ function startRecallTest() {
     recallScore = 0;
     recallHintUsed = false;
     recallHintStage = 0;
+    recallSkipConfirmed = false;
 
     const hintBtn = document.getElementById('recall-hint-btn');
     hintBtn.disabled = false;
@@ -2613,36 +2703,6 @@ function startRecallTest() {
     }
     inputCon.style.opacity = '0';
     recallPage.style.display = 'flex';
-
-    // สร้างตัวเลือกคำตอบแบบปุ่มกด (Choice Chips) สุ่มรวมกับตัวหลอก เพื่อให้ผู้สูงอายุแตะเลือกได้ง่าย
-    const choicesContainer = document.getElementById('recall-choices-chips');
-    if (choicesContainer) {
-        choicesContainer.innerHTML = '';
-        const distractorWords = ['กุหลาบ', 'สายน้ำ', 'เก้าอี้', 'ร่มเงา', 'สุนัข', 'พลั่ว'];
-        const combinedPool = [...new Set([...secretWords, ...distractorWords.slice(0, 4)])]
-            .sort(() => Math.random() - 0.5);
-
-        combinedPool.forEach(word => {
-            const chip = document.createElement('button');
-            chip.type = 'button';
-            chip.innerText = word;
-            chip.style.cssText = 'padding: 6px 14px; background: #f0f7e6; color: #4a5d23; border: 1.5px solid #82954b; border-radius: 20px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;';
-            chip.onclick = () => {
-                // เติมลงในช่องที่ยังว่างใน 5 ช่อง
-                for (let k = 1; k <= 5; k++) {
-                    const inEl = document.getElementById(`recall-${k}`);
-                    if (inEl && !inEl.value) {
-                        inEl.value = word;
-                        return;
-                    }
-                }
-                // ถ้าเต็มหมดแล้ว ให้แทนที่ช่องแรก
-                const in1 = document.getElementById('recall-1');
-                if (in1) in1.value = word;
-            };
-            choicesContainer.appendChild(chip);
-        });
-    }
 
     // แสดงข้อความด้วย typeWriter ให้ตัวหนังสือค่อยๆ พิมพ์
     typeWriter("เมื่อสักครู่นี้ในสวนความทรงจำ มีสิ่งของ 5 อย่างอยู่ด้วย คุณช่วยเรานึกออกมาได้มั้ยครับ? (ข้อละ 1 คะแนน)", "recall-caption", 45, () => {
@@ -2737,6 +2797,22 @@ function speakWord(word) {
     speakText(word);
 }
 
+// ปุ่ม "จำไม่ได้ / ข้ามด่านนี้": บันทึกด่านความจำเป็น 0 คะแนนแล้วไปต่อ (ข้อเสนอแนะ IOC ข้อ 1.2)
+let recallSkipConfirmed = false;
+const recallSkipBtn = document.getElementById('recall-skip-btn');
+if (recallSkipBtn) {
+    recallSkipBtn.onclick = async function () {
+        const confirmed = await showCustomPopup("ยืนยันว่าจำคำไม่ได้ใช่ไหมครับ?\n\nระบบจะบันทึกคะแนนด้านความจำเป็น 0 แล้วไปด่านถัดไป", "🤔", true);
+        if (!confirmed) return;
+        for (let i = 1; i <= 5; i++) {
+            const el = document.getElementById(`recall-${i}`);
+            if (el) el.value = '';
+        }
+        recallSkipConfirmed = true;
+        document.getElementById('recall-next-btn').click();
+    };
+}
+
 document.getElementById('recall-next-btn').onclick = async function () {
     const rawAnswers = [];
     for (let i = 1; i <= 5; i++) {
@@ -2747,7 +2823,7 @@ document.getElementById('recall-next-btn').onclick = async function () {
 
     // อนุญาตให้ผ่านได้แม้จำไม่ได้ทุกคำ เพื่อไม่บิดเบือนผลทางคลินิก
     // แต่ต้องกรอกอย่างน้อย 1 ช่อง หรือยืนยันว่าจำไม่ได้
-    if (filledAnswers.length === 0) {
+    if (filledAnswers.length === 0 && !recallSkipConfirmed) {
         const confirmed = await showCustomPopup("คุณยังไม่ได้กรอกคำตอบเลย\n\nหากจำไม่ได้จริงๆ กดยืนยันเพื่อไปต่อ (คะแนนความจำจะเป็น 0)", "⚠️", true);
         if (!confirmed) return;
     }
@@ -2755,9 +2831,12 @@ document.getElementById('recall-next-btn').onclick = async function () {
     recallScore = 0;
     if (!recallHintUsed) {
         const correctAnswers = new Set();
+        // พิมพ์เองทั้งหมด (ไม่มีตัวเลือก) จึงตัดช่องว่างออกก่อนเทียบ เช่น "ดอก ไม้" = "ดอกไม้"
+        const squash = w => (w || '').replace(/\s+/g, '');
         rawAnswers.forEach(ans => {
-            if (ans && secretWords.includes(ans)) {
-                correctAnswers.add(ans);
+            const match = secretWords.find(w => squash(w) === squash(ans));
+            if (ans && match) {
+                correctAnswers.add(match);
             }
         });
         recallScore = correctAnswers.size;
@@ -3008,32 +3087,37 @@ function calculateAndShowResult() {
         localStorage.setItem('memory_garden_user_id', userId);
     }
 
-    // --- คำนวณคะแนนเต็ม 30 คะแนน (5 โดเมนหลักตามมาตรฐาน MoCA) ---
-    // 1. ด้านความจำ (Memory Story Recall): 5 ข้อ -> ข้อละ 1 คะแนน = 5 คะแนนเต็ม
-    const memoryScoreScaled = Math.min(5, Math.max(0, recallScore));
-
-    // 2. ด้านมิติสัมพันธ์และนาฬิกา (Visuospatial Clock): ตามมาตรฐาน MoCA ต้นฉบับ = 3 คะแนน
-    //    Contour (วาดวงกลมหน้าปัดด้วยตัวเอง): 1 คะแนน (ประเมินจากความกลม contourScore)
-    //    Numbers (วางตัวเลข 1–12 ครบถ้วน): 1 คะแนน
-    //    Hands (เข็มสั้น + เข็มยาวถูกต้องทั้งคู่): 1 คะแนน
-    const numbersScore = (document.querySelectorAll('.drop-zone .draggable-number').length === 12) ? 1 : 0;
+    // --- คำนวณคะแนนเต็ม 30 คะแนน (โครงสร้าง v2: 7 ด้านตามแนวทาง MoCA) ---
+    // 1. Visuospatial (นาฬิกา) 3 = วาดวงกลม 1 + ตัวเลขครบและถูกตำแหน่ง 1 + เข็มถูกทั้งคู่ 1
+    const numbersScore = getClockNumbersScore();
     const handsCorrect = (hourAngle === correctHourAngle && minuteAngle === correctMinuteAngle) ? 1 : 0;
     const visuoScoreScaled = Math.min(3, Math.max(0, contourScore + numbersScore + handsCorrect));
 
-    // 3. ด้านสมาธิและคิดเงินทอนในตลาด (Math & Attention): 5 ข้อ -> ข้อละ 1 คะแนน = 5 คะแนนเต็ม
-    const mathScoreScaled = Math.min(5, Math.max(0, mathCorrectCount));
-
-    // 4. ด้านภาษา (Language): Naming 5 + Sentence Repeat 2 + Fluency 4 = 11 คะแนนเต็ม
+    // 2. Naming (บอกชื่อสิ่งของ) 5 = ภาพละ 1 คะแนน
     const namingScoreScaled = Math.min(5, Math.max(0, namingScore));
-    const repeatScoreScaled = Math.min(2, Math.max(0, sentenceRepeatScore));
-    const fluencyScoreScaled = Math.min(4, Math.max(0, fluencyScore));
-    const langScoreScaled = namingScoreScaled + repeatScoreScaled + fluencyScoreScaled;  // max 11
 
-    // 5. ด้านการรับรู้วันเวลาและสถานที่ (Orientation): ข้อละ 1 คะแนน 6 ข้อ = 6 คะแนนเต็ม
+    // 3. Attention 6 = Digit span ไปข้างหน้า 1 + ย้อนหลัง 1 + Vigilance 1 + Serial 7s 3
+    const serial7ScoreScaled = Math.min(3, Math.max(0, mathScore));
+    const attentionScoreScaled = Math.min(6, Math.max(0,
+        digitForwardScore + digitBackwardScore + vigilanceScore + serial7ScoreScaled));
+
+    // 4. Language 3 = พูดซ้ำประโยค 2 + บอกชื่อสัตว์ 1
+    const repeatScoreScaled = Math.min(2, Math.max(0, sentenceRepeatScore));
+    const fluencyScoreScaled = Math.min(1, Math.max(0, fluencyScore));
+    const langScoreScaled = repeatScoreScaled + fluencyScoreScaled;
+
+    // 5. Abstraction 2 = ความเหมือน 2 คู่ ข้อละ 1 คะแนน
+    const abstractionScoreScaled = Math.min(2, Math.max(0, abstractionScore));
+
+    // 6. Delayed recall (ระลึกคำ) 5 = คำละ 1 คะแนน
+    const memoryScoreScaled = Math.min(5, Math.max(0, recallScore));
+
+    // 7. Orientation 6 = ข้อละ 1 คะแนน
     const orientScoreScaled = Math.min(6, Math.max(0, orientationScore));
 
-    // รวม: 5 + 3 + 5 + 11 + 6 = 30 คะแนน
-    let totalScore = memoryScoreScaled + visuoScoreScaled + mathScoreScaled + langScoreScaled + orientScoreScaled;
+    // รวม: 3 + 5 + 6 + 3 + 2 + 5 + 6 = 30 คะแนน
+    let totalScore = visuoScoreScaled + namingScoreScaled + attentionScoreScaled + langScoreScaled
+        + abstractionScoreScaled + memoryScoreScaled + orientScoreScaled;
 
     const eduLevel = document.getElementById('user-education').value;
     let hasEduBonus = false;
@@ -3058,17 +3142,18 @@ function calculateAndShowResult() {
         eduBadge.style.display = hasEduBonus ? 'inline-block' : 'none';
     }
 
-    // อัปเดตผลคะแนนแยก 5 โดเมนหลัก (เต็ม 30 คะแนน)
-    const memEl = document.getElementById('score-memory-val');
-    const visEl = document.getElementById('score-visuo-val');
-    const matEl = document.getElementById('score-math-val');
-    const lanEl = document.getElementById('score-lang-val');
-    const oriEl = document.getElementById('score-ori-val');
-    if (memEl) memEl.innerText = `${memoryScoreScaled} / 5`;
-    if (visEl) visEl.innerText = `${visuoScoreScaled} / 3 (วาดวงกลม: ${contourScore} + ตัวเลข: ${numbersScore} + เข็ม: ${handsCorrect})`;
-    if (matEl) matEl.innerText = `${mathScoreScaled} / 5`;
-    if (lanEl) lanEl.innerText = `${langScoreScaled} / 11 (Naming: ${namingScoreScaled} + Repeat: ${repeatScoreScaled} + Fluency: ${fluencyScoreScaled})`;
-    if (oriEl) oriEl.innerText = `${orientScoreScaled} / 6`;
+    // อัปเดตผลคะแนนแยก 7 ด้าน (เต็ม 30 คะแนน)
+    const setScore = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+    setScore('score-visuo-val', `${visuoScoreScaled} / 3`);
+    setScore('score-visuo-detail', `วาดวงกลม ${contourScore} · ตัวเลข ${numbersScore} · เข็ม ${handsCorrect}`);
+    setScore('score-naming-val', `${namingScoreScaled} / 5`);
+    setScore('score-attention-val', `${attentionScoreScaled} / 6`);
+    setScore('score-attention-detail', `จำตัวเลข ${digitForwardScore + digitBackwardScore}/2 · กดเลขเป้าหมาย ${vigilanceScore}/1 · ลบ 7 ${serial7ScoreScaled}/3`);
+    setScore('score-lang-val', `${langScoreScaled} / 3`);
+    setScore('score-lang-detail', `พูดซ้ำ ${repeatScoreScaled}/2 · ชื่อสัตว์ ${fluencyScoreScaled}/1 (${fluencyWordCount} คำ)`);
+    setScore('score-abstraction-val', `${abstractionScoreScaled} / 2`);
+    setScore('score-memory-val', `${memoryScoreScaled} / 5`);
+    setScore('score-ori-val', `${orientScoreScaled} / 6`);
 
     updateRiskDisplay(totalScore);
 
@@ -3086,14 +3171,30 @@ function calculateAndShowResult() {
         latitude: userLatitude,
         longitude: userLongitude,
         details: {
-            memory: memoryScoreScaled,
+            score_version: SCORE_VERSION,   // 2 = โครงสร้าง 7 ด้าน (ข้อมูลเก่าไม่มีฟิลด์นี้ = v1)
             visuospatial: visuoScoreScaled,
             contour: contourScore,
-            math: mathScoreScaled,
+            clock_numbers: numbersScore,
+            clock_hands: handsCorrect,
             naming: namingScoreScaled,
+            attention: attentionScoreScaled,
+            digit_forward: digitForwardScore,
+            digit_backward: digitBackwardScore,
+            digit_span_log: digitSpanLog,
+            vigilance: vigilanceScore,
+            vigilance_hits: vigilanceStats.hits,
+            vigilance_false_alarms: vigilanceStats.falseAlarms,
+            vigilance_misses: vigilanceStats.misses,
+            math: serial7ScoreScaled,
+            serial7_correct_count: mathCorrectCount,
             sentenceRepeat: repeatScoreScaled,
             fluency: fluencyScoreScaled,
+            fluency_count: fluencyWordCount,
             language: langScoreScaled,
+            abstraction: abstractionScoreScaled,
+            abstraction_answers: abstractionAnswers,
+            abstraction_reviewed: false,
+            memory: memoryScoreScaled,
             orientation: orientScoreScaled,
             duration_seconds: testTotalDurationSeconds,
             duration_formatted: testTotalDurationFormatted
@@ -3412,12 +3513,13 @@ async function generateUserAIAnalysis() {
 - ผลการประเมินเบื้องต้น: ${u.riskLevel}
 - เวลาที่ใช้ทำแบบทดสอบ: ${dur}
 
-## คะแนนรายด้าน (5 มิติ):
-1. ด้านความจำระยะสั้น (Short-term Memory): ${d.memory != null ? d.memory : '-'} / 5
-2. ด้านมิติสัมพันธ์และการวางแผน (Visuospatial / Clock Drawing): ${d.visuospatial != null ? d.visuospatial : '-'} / 3
-3. ด้านสมาธิ ความจดจ่อ และการคำนวณ (Attention & Math): ${d.math != null ? d.math : '-'} / 5
-4. ด้านภาษาและการสื่อสาร (Language Domain): ${d.language != null ? d.language : '-'} / 11
-5. ด้านการรับรู้วันเวลาและสถานที่ (Orientation): ${d.orientation != null ? d.orientation : '-'} / 6
+## คะแนนรายด้าน (${getDomainScores(d).length} ด้าน):
+${getDomainScores(d).map((x, i) => `${i + 1}. ${x.label}: ${x.score != null ? x.score : '-'} / ${x.max}`).join('\n')}
+
+## ข้อกำหนดสำคัญในการเขียน:
+- ห้ามใช้ LaTeX, สูตรคณิตศาสตร์, หรือเครื่องหมาย $ ครอบตัวเลข/สูตรโดยเด็ดขาด (เช่น ห้ามเขียน $n = 95$ หรือ $x^2$)
+- ให้เขียนตัวเลขและค่าคะแนนเป็นข้อความธรรมดา เช่น "คะแนน 25 จาก 30" แทนการใช้สัญลักษณ์ทางคณิตศาสตร์
+- ใช้ Markdown ภาษาไทยธรรมดาเท่านั้น (หัวข้อ, ตัวหนา, รายการ)
 
 ## โครงสร้างผลการวิเคราะห์ที่ต้องการ (เป็น Markdown ภาษาไทย):
 ### 🌿 1. สรุปภาพรวมสุขภาพสมองของท่าน
@@ -3474,11 +3576,6 @@ async function generateUserAIAnalysis() {
 
 function generateUserLocalAnalysis(u, d) {
     const score = u.totalScore || 0;
-    const mem = d.memory || 0;
-    const vis = d.visuospatial || 0;
-    const math = d.math || 0;
-    const lang = d.language || 0;
-    const ori = d.orientation || 0;
 
     let overview = '';
     let strengths = [];
@@ -3492,20 +3589,31 @@ function generateUserLocalAnalysis(u, d) {
         overview = 'ผลคะแนนรวม **' + score + ' / 30 คะแนน** อยู่ในเกณฑ์ **ควรได้รับการดูแลและตรวจประเมินเพิ่มเติมโดยแพทย์ผู้เชี่ยวชาญ** เพื่อตรวจหาสาเหตุที่แท้จริง เช่น ปัญหาการนอนหลับ อารมณ์ ฮอร์โมน หรือสุขภาพหลอดเลือดสมอง';
     }
 
-    if (mem >= 4) strengths.push('**ความจำระยะสั้น (Memory Recall)**: สามารถจดจำและระลึกคำศัพท์ได้ดีมาก สะท้อนถึงการทำงานที่ดีของสมองส่วนฮิปโปแคมปัส');
-    else weaknesses.push('**ความจำระยะสั้น**: มีการลืมคำศัพท์บางส่วน แนะนำให้ใช้เทคนิคการผูกเรื่องราว การจดโน้ต หรือการทวนซ้ำ');
-
-    if (vis >= 2) strengths.push('**มิติสัมพันธ์และการวางแผน (Visuospatial)**: วาดและกำหนดตำแหน่งหน้าปัดนาฬิกาได้ถูกต้อง แสดงถึงการวางแผนของสมองกลีบหน้าและกลีบข้างที่ดี');
-    else weaknesses.push('**มิติสัมพันธ์และการจัดวาง**: อาจมีความคลาดเคลื่อนในการวาดหรือจัดวางตำแหน่ง แนะนำกิจกรรมต่อจิ๊กซอว์หรือวาดรูป');
-
-    if (math >= 4) strengths.push('**สมาธิและการคำนวณ (Attention & Math)**: มีสมาธิจดจ่อและคิดคำนวณเงินทอนได้อย่างแม่นยำ');
-    else weaknesses.push('**สมาธิและความจดจ่อ**: อาจมีช่วงสมาธิวอกแวกขณะคำนวณ แนะนำฝึกการนับเลขถอยหลังหรือเล่นบอร์ดเกม');
-
-    if (lang >= 8) strengths.push('**ภาษาและการสื่อสาร (Language)**: สามารถเรียกชื่อสิ่งของและนึกคำศัพท์ได้อย่างคล่องแคล่ว');
-    else weaknesses.push('**ความคล่องแคล่วทางภาษา**: นึกคำศัพท์ได้น้อยลง แนะนำการพูดคุย เล่าเรื่องราวในอดีต หรืออ่านหนังสือออกเสียง');
-
-    if (ori >= 5) strengths.push('**การรับรู้วันเวลาและสถานที่ (Orientation)**: รับรู้กาลเวลา ฤดูกาล และสถานที่รอบตัวได้ชัดเจน');
-    else weaknesses.push('**การรับรู้วันเวลา**: มีความสับสนเกี่ยวกับวันหรือสถานที่ แนะนำให้วางปฏิทินตัวใหญ่และนาฬิกาไว้ในจุดที่มองเห็นง่าย');
+    // ข้อความจุดเด่น/จุดที่ควรฝึก แยกตามด้าน ใช้เกณฑ์ ≥ 70% ของคะแนนเต็มด้านนั้นเป็น "ทำได้ดี"
+    const DOMAIN_FEEDBACK = {
+        memory: ['**ความจำระยะสั้น (Memory Recall)**: สามารถจดจำและระลึกคำศัพท์ได้ดีมาก สะท้อนถึงการทำงานที่ดีของสมองส่วนฮิปโปแคมปัส',
+                 '**ความจำระยะสั้น**: มีการลืมคำศัพท์บางส่วน แนะนำให้ใช้เทคนิคการผูกเรื่องราว การจดโน้ต หรือการทวนซ้ำ'],
+        visuospatial: ['**มิติสัมพันธ์และการวางแผน (Visuospatial)**: วาดและกำหนดตำแหน่งหน้าปัดนาฬิกาได้ถูกต้อง แสดงถึงการวางแผนของสมองกลีบหน้าและกลีบข้างที่ดี',
+                       '**มิติสัมพันธ์และการจัดวาง**: อาจมีความคลาดเคลื่อนในการวาดหรือจัดวางตำแหน่ง แนะนำกิจกรรมต่อจิ๊กซอว์หรือวาดรูป'],
+        math: ['**สมาธิและการคำนวณ (Attention & Math)**: มีสมาธิจดจ่อและคิดคำนวณได้อย่างแม่นยำ',
+               '**สมาธิและความจดจ่อ**: อาจมีช่วงสมาธิวอกแวกขณะคำนวณ แนะนำฝึกการนับเลขถอยหลังหรือเล่นบอร์ดเกม'],
+        attention: ['**สมาธิและความจดจ่อ (Attention)**: จำตัวเลข จดจ่อกับตัวเลขเป้าหมาย และคิดคำนวณต่อเนื่องได้ดี',
+                    '**สมาธิและความจดจ่อ**: อาจมีช่วงสมาธิวอกแวก แนะนำฝึกการนับเลขถอยหลัง ท่องเบอร์โทรศัพท์ หรือเล่นบอร์ดเกม'],
+        naming: ['**การบอกชื่อสิ่งของ (Naming)**: จำแนกและเรียกชื่อสิ่งของรอบตัวได้ถูกต้อง',
+                 '**การบอกชื่อสิ่งของ**: นึกชื่อสิ่งของบางอย่างไม่ออก แนะนำให้ฝึกเรียกชื่อสิ่งของในบ้านหรือดูภาพแล้วบอกชื่อ'],
+        language: ['**ภาษาและการสื่อสาร (Language)**: พูดทวนประโยคและนึกคำศัพท์ได้อย่างคล่องแคล่ว',
+                   '**ความคล่องแคล่วทางภาษา**: นึกคำศัพท์ได้น้อยลง แนะนำการพูดคุย เล่าเรื่องราวในอดีต หรืออ่านหนังสือออกเสียง'],
+        abstraction: ['**ความคิดเชิงนามธรรม (Abstraction)**: มองเห็นความเหมือนและจัดหมวดหมู่สิ่งของได้ดี',
+                      '**ความคิดเชิงนามธรรม**: ยังจัดหมวดหมู่สิ่งของได้ไม่ชัดเจน แนะนำเกมจับกลุ่มคำ เช่น ผลไม้ สัตว์ เครื่องใช้'],
+        orientation: ['**การรับรู้วันเวลาและสถานที่ (Orientation)**: รับรู้กาลเวลาและสถานที่รอบตัวได้ชัดเจน',
+                      '**การรับรู้วันเวลา**: มีความสับสนเกี่ยวกับวันหรือสถานที่ แนะนำให้วางปฏิทินตัวใหญ่และนาฬิกาไว้ในจุดที่มองเห็นง่าย']
+    };
+    getDomainScores(d).forEach(x => {
+        const fb = DOMAIN_FEEDBACK[x.key];
+        if (!fb) return;
+        if ((x.score || 0) / x.max >= 0.7) strengths.push(fb[0]);
+        else weaknesses.push(fb[1]);
+    });
 
     if (strengths.length === 0) strengths.push('มีความพยายามและให้ความร่วมมือในการทำแบบประเมินจนครบถ้วนทุกขั้นตอน');
     if (weaknesses.length === 0) weaknesses.push('ทุกด้านทำงานประสานกันได้อย่างสมดุล แนะนำให้คงพฤติกรรมสุขภาพที่ดีนี้ต่อไป');
@@ -3524,6 +3632,8 @@ function generateUserLocalAnalysis(u, d) {
 
 function renderUserAIMarkdown(md) {
     if (!md) return '';
+    // ลบ LaTeX notation เช่น $n = 95$ → n = 95, $$...$$ → ...
+    md = md.replace(/\$\$([^$]+?)\$\$/g, '$1').replace(/\$([^$]+?)\$/g, '$1');
     let html = md
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/^### (.*$)/gim, '<h4 style="color:#2e5a27; margin:16px 0 8px 0; font-size:1.08rem; font-weight:700;">$1</h4>')
@@ -3531,181 +3641,10 @@ function renderUserAIMarkdown(md) {
         .replace(/^# (.*$)/gim, '<h2 style="color:#2e5a27; margin:20px 0 12px 0; font-size:1.25rem;">$1</h2>')
         .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-        .replace(/^> (.*$)/gim, '<div style="background:#fff8e1; border-left:4px solid #ffb300; padding:10px 14px; border-radius:8px; margin:12px 0; color:#6d4c41; font-size:0.9rem;">$1</div>')
+        // ข้อความถูก escape แล้ว (> กลายเป็น &gt;) จึงต้องจับ &gt; ไม่ใช่ >
+        .replace(/^&gt; (.*$)/gim, '<div style="background:#fff8e1; border-left:4px solid #ffb300; padding:10px 14px; border-radius:8px; margin:12px 0; color:#6d4c41; font-size:0.9rem;">$1</div>')
         .replace(/^\- (.*$)/gim, '<li style="margin-bottom:6px;">$1</li>');
 
     html = html.replace(/(<li.*<\/li>)/s, '<ul style="padding-left:22px; margin:8px 0;">$1</ul>');
     return html.replace(/\n\n/g, '<p style="margin:8px 0;"></p>').replace(/\n/g, '<br>');
-}
-
-
-// =========================================================================
-// --- Print / Export PDF & Share for Test Taker AI Analysis ---
-// =========================================================================
-
-function printUserAiPdf() {
-    const u = window.currentUserTestResult || {
-        totalScore: parseInt(document.getElementById('score-text')?.innerText) || 0,
-        riskLevel: document.getElementById('risk-level-title')?.innerText || 'ปกติ',
-        age: document.getElementById('user-age')?.value || 'ผู้สูงอายุ',
-        education: document.getElementById('user-education')?.value || 'ไม่ระบุ',
-        details: {
-            memory: parseInt(document.getElementById('score-memory-val')?.innerText) || 0,
-            visuospatial: parseInt(document.getElementById('score-visuo-val')?.innerText) || 0,
-            math: parseInt(document.getElementById('score-math-val')?.innerText) || 0,
-            language: parseInt(document.getElementById('score-lang-val')?.innerText) || 0,
-            orientation: parseInt(document.getElementById('score-ori-val')?.innerText) || 0,
-            duration_formatted: document.getElementById('result-duration-display')?.innerText || ''
-        }
-    };
-    const d = u.details || {};
-    const contentEl = document.getElementById('user-ai-content');
-    const aiHtml = contentEl ? contentEl.innerHTML : '';
-    const now = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-    const win = window.open('', '_blank');
-    if (!win) {
-        if (typeof showCustomPopup === 'function') {
-            showCustomPopup('กรุณาอนุญาต Pop-up ในเบราว์เซอร์เพื่อพิมพ์ PDF', '⚠️');
-        } else {
-            alert('กรุณาอนุญาต Pop-up ในเบราว์เซอร์');
-        }
-        return;
-    }
-
-    const css = [
-        '<meta charset="UTF-8">',
-        '<title>รายงานผลประเมินสุขภาพสมอง — Memory Garden</title>',
-        '<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">',
-        '<style>',
-        '* { box-sizing: border-box; }',
-        'body { font-family: Prompt, Sarabun, sans-serif; background: #fff; color: #2c3e50; line-height: 1.7; margin: 0; padding: 0; }',
-        '.pdf-container { max-width: 800px; margin: 0 auto; padding: 36px 32px; }',
-        '.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #82954b; padding-bottom: 14px; margin-bottom: 20px; }',
-        '.brand { font-size: 1.4rem; font-weight: 800; color: #4a5d23; display: flex; align-items: center; gap: 8px; }',
-        '.doc-info { text-align: right; font-size: 0.8rem; color: #666; }',
-        '.patient-box { background: #f8faf5; border: 1px solid #dce7d1; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 0.88rem; }',
-        '.score-summary { display: flex; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }',
-        '.score-card { flex: 1; min-width: 200px; background: #e8f5e9; border: 2px solid #a5d6a7; border-radius: 14px; padding: 16px; text-align: center; }',
-        '.score-num { font-size: 2.2rem; font-weight: 800; color: #2e7d32; line-height: 1.1; }',
-        '.score-label { font-size: 0.85rem; color: #555; margin-top: 4px; }',
-        '.risk-badge { display: inline-block; background: #82954b; color: white; border-radius: 20px; padding: 6px 16px; font-size: 0.95rem; font-weight: 700; margin-top: 8px; }',
-        '.domain-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 0.88rem; }',
-        '.domain-table th, .domain-table td { border: 1px solid #e0e0e0; padding: 8px 12px; text-align: left; }',
-        '.domain-table th { background: #f0f7e6; color: #335522; font-weight: 600; }',
-        '.ai-box { background: #ffffff; border: 1.5px solid #a4ba74; border-radius: 14px; padding: 22px 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }',
-        '.ai-box h2, .ai-box h3, .ai-box h4 { color: #2e5a27; margin-top: 16px; margin-bottom: 6px; border-bottom: 1px solid #e8ede0; padding-bottom: 4px; }',
-        '.ai-box strong { color: #2e5a27; }',
-        '.ai-box ul { padding-left: 20px; margin: 8px 0; }',
-        '.ai-box li { margin-bottom: 4px; }',
-        '.disclaimer { background: #fff8e1; border: 1px solid #ffe082; border-radius: 10px; padding: 12px 16px; font-size: 0.8rem; color: #795548; margin-top: 20px; }',
-        '.footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #eee; text-align: center; font-size: 0.75rem; color: #999; }',
-        '@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none; } }',
-        '</style>'
-    ].join('\n');
-
-    const domainRows = [
-        `<tr><td>1. การระลึกความจำ (Memory Recall)</td><td style="text-align:center;font-weight:bold;">${d.memory != null ? d.memory : '-'} / 5</td><td>ทดสอบการจำสิ่งของ 5 สิ่ง</td></tr>`,
-        `<tr><td>2. มิติสัมพันธ์และการวางแผน (Visuospatial / Clock)</td><td style="text-align:center;font-weight:bold;">${d.visuospatial != null ? d.visuospatial : '-'} / 3</td><td>วาดวงหน้าปัดนาฬิกาและตำแหน่งเข็ม</td></tr>`,
-        `<tr><td>3. สมาธิและการคำนวณ (Attention & Math)</td><td style="text-align:center;font-weight:bold;">${d.math != null ? d.math : '-'} / 5</td><td>ลบเลข 100 ลบ 7 ต่อเนื่อง</td></tr>`,
-        `<tr><td>4. ด้านภาษาและการสื่อสาร (Language Domain)</td><td style="text-align:center;font-weight:bold;">${d.language != null ? d.language : '-'} / 11</td><td>บอกชื่อสัตว์, พูดตาม, ความคล่องทางภาษา</td></tr>`,
-        `<tr><td>5. การรับรู้วันเวลาและสถานที่ (Orientation)</td><td style="text-align:center;font-weight:bold;">${d.orientation != null ? d.orientation : '-'} / 6</td><td>วัน วันที่ เดือน ปี ฤดูกาล สถานที่</td></tr>`
-    ].join('');
-
-    const html = [
-        '<!DOCTYPE html><html lang="th"><head>', css, '</head><body>',
-        '<div class="pdf-container">',
-        '  <div class="header">',
-        '    <div class="brand">🌱 Memory Garden</div>',
-        '    <div class="doc-info">รายงานผลการประเมินสุขภาพสมอง (MoCA)<br>' + now + '</div>',
-        '  </div>',
-        '  <div class="patient-box">',
-        '    <div><strong>ผู้รับการประเมิน:</strong> ข้อมูลนิรนาม (PDPA Compliant)</div>',
-        '    <div><strong>อายุ:</strong> ' + (u.age ? u.age + ' ปี' : 'ไม่ระบุ') + '</div>',
-        '    <div><strong>การศึกษา:</strong> ' + (u.education || 'ไม่ระบุ') + '</div>',
-        '    <div><strong>เวลาที่ใช้:</strong> ' + (d.duration_formatted || 'ประมาณ 10-15 นาที') + '</div>',
-        '  </div>',
-        '  <div class="score-summary">',
-        '    <div class="score-card">',
-        '      <div class="score-label">คะแนนรวมทั้งหมด</div>',
-        '      <div class="score-num">' + u.totalScore + '<span style="font-size:1.1rem;font-weight:normal;color:#666;"> / 30</span></div>',
-        '      <div class="risk-badge">' + u.riskLevel + '</div>',
-        '    </div>',
-        '  </div>',
-        '  <h4 style="color:#2e5a27;margin-bottom:8px;">📊 คะแนนรายด้าน 5 มิติ</h4>',
-        '  <table class="domain-table">',
-        '    <thead><tr><th>มิติการประเมิน</th><th style="text-align:center;">คะแนน</th><th>รายละเอียด</th></tr></thead>',
-        '    <tbody>' + domainRows + '</tbody>',
-        '  </table>',
-        '  <div class="ai-box">',
-        '    <div style="font-size:1.15rem;font-weight:700;color:#2e5a27;margin-bottom:12px;border-bottom:2px solid #82954b;padding-bottom:6px;">🤖 ผลการวิเคราะห์และคำแนะนำเชิงลึกโดย Gemini AI</div>',
-        '    ' + aiHtml,
-        '  </div>',
-        '  <div class="disclaimer">',
-        '    <strong>⚠️ ข้อควรระวัง:</strong> ผลการประเมินนี้ผลิตโดย AI เพื่อสนับสนุนเบื้องต้นและการดูแลสุขภาพเชิงป้องกันเท่านั้น ',
-        '    <strong>ไม่ใช่การวินิจฉัยโรคทางการแพทย์</strong> หากมีข้อกังวล ควรปรึกษาแพทย์เฉพาะทางด้านระบบประสาทหรือคลินิกความจำเสมอ',
-        '  </div>',
-        '  <div class="footer">Memory Garden — โครงการประเมินและดูแลสุขภาพสมองผู้สูงอายุ &copy; 2025-2026</div>',
-        '</div>',
-        '<script>setTimeout(function(){ window.print(); }, 600);<\/script>',
-        '</body></html>'
-    ].join('\n');
-
-    win.document.write(html);
-    win.document.close();
-}
-
-function shareUserAiResult() {
-    const u = window.currentUserTestResult || {};
-    const total = u.totalScore != null ? u.totalScore : (document.getElementById('score-text')?.innerText || '0');
-    const risk = u.riskLevel || (document.getElementById('risk-level-title')?.innerText || '');
-    const currentUrl = window.location.href.split('#')[0];
-
-    const shareTitle = 'ผลการประเมินสุขภาพสมอง Memory Garden';
-    const shareText = `🌱 ผลการประเมินสุขภาพสมอง Memory Garden (MoCA Standard)\nคะแนนรวม: ${total} / 30 คะแนน (${risk})\nพร้อมรับบทวิเคราะห์สุขภาพสมองและคำแนะนำเฉพาะบุคคลโดย AI`;
-
-    if (navigator.share) {
-        navigator.share({
-            title: shareTitle,
-            text: shareText,
-            url: currentUrl
-        }).catch(err => {
-            if (err.name !== 'AbortError') {
-                fallbackShareAi(shareText, currentUrl);
-            }
-        });
-    } else {
-        fallbackShareAi(shareText, currentUrl);
-    }
-}
-
-function fallbackShareAi(shareText, shareUrl) {
-    const fullText = shareText + '\nเข้าทำแบบประเมินได้ที่: ' + shareUrl;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(fullText).then(() => {
-            if (typeof showCustomPopup === 'function') {
-                showCustomPopup('คัดลอกผลประเมินแล้ว! คุณสามารถส่งต่อใน LINE หรือส่งให้ครอบครัวได้ทันทีครับ 📋', '✅');
-            } else {
-                alert('คัดลอกผลประเมินแล้ว!');
-            }
-        }).catch(() => {
-            copyViaInput(fullText);
-        });
-    } else {
-        copyViaInput(fullText);
-    }
-}
-
-function copyViaInput(text) {
-    const tempInput = document.createElement('textarea');
-    tempInput.value = text;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempInput);
-    if (typeof showCustomPopup === 'function') {
-        showCustomPopup('คัดลอกผลประเมินแล้ว! 📋', '✅');
-    } else {
-        alert('คัดลอกผลประเมินแล้ว!');
-    }
 }

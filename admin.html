@@ -444,6 +444,76 @@
             grid-column: 1 / -1;
         }
 
+        /* --- Abstraction Review Modal --- */
+        #abstraction-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .btn-action-review {
+            padding: 8px 16px;
+            background: #8e44ad;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-action-review:hover { background: #6c3483; }
+        .btn-action-review.reviewed { background: #e8daef; color: #6c3483; }
+
+        .abs-review-user { margin: 0 0 6px; color: #333; }
+        .abs-review-help { margin: 0 0 16px; color: #666; font-size: 0.88rem; line-height: 1.6; }
+
+        .abs-review-item {
+            border: 1.5px solid #e0e6d4;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            background: #fafcf7;
+        }
+
+        .abs-review-pair { font-weight: 700; color: #4a5d23; font-size: 1.05rem; }
+        .abs-review-concept { color: #888; font-size: 0.85rem; margin-left: 6px; }
+        .abs-review-answer {
+            margin: 8px 0;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            font-size: 1rem;
+        }
+        .abs-review-answer.empty { color: #aaa; font-style: italic; }
+
+        .abs-review-score-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.9rem; color: #555; }
+        .abs-review-score-row select { padding: 8px 10px; border-radius: 10px; border: 1.5px solid #ccc; font-size: 0.95rem; }
+        .abs-review-changed { color: #d35400; font-weight: 600; }
+
+        .abs-review-summary {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px 14px;
+            background: #f0f7e6;
+            border-radius: 12px;
+            color: #4a5d23;
+            margin-bottom: 8px;
+        }
+
+        .abs-review-status { font-size: 0.85rem; color: #888; margin: 0 0 12px; }
+
         /* --- Delete Confirm Modal --- */
         #delete-confirm-modal {
             display: none;
@@ -969,6 +1039,26 @@
                     <button type="submit" class="btn-login" style="width:auto; padding:12px 30px;">💾 บันทึกการแก้ไข</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Abstraction Review Modal (เกณฑ์ v2): ตรวจทานคะแนนด่านบอกความเหมือนที่ระบบให้อัตโนมัติ -->
+    <div id="abstraction-modal">
+        <div class="edit-modal-box">
+            <h3>🧩 ตรวจคะแนนด่านบอกความเหมือน (Abstraction)</h3>
+            <p class="abs-review-user">ผู้ทดสอบ: <strong id="abs-review-name"></strong></p>
+            <p class="abs-review-help">ระบบให้คะแนนอัตโนมัติจากคำสำคัญ ให้ตรวจคำตอบดิบแล้วเลือกคะแนนที่ถูกต้อง
+                — ได้ 1 คะแนนเมื่อตอบเป็น <b>ประเภทหรือหน้าที่</b>ร่วมกัน (เช่น ผลไม้, เครื่องวัด) ได้ 0 เมื่อตอบลักษณะภายนอก (สี รูปร่าง วัสดุ)</p>
+            <div id="abs-review-list"></div>
+            <div class="abs-review-summary">
+                <span>คะแนนด่านนี้: <strong id="abs-review-subtotal">0</strong> / 2</span>
+                <span>คะแนนรวม: <strong id="abs-review-old-total">-</strong> → <strong id="abs-review-new-total">-</strong> / 30</span>
+            </div>
+            <p id="abs-review-status" class="abs-review-status"></p>
+            <div class="modal-actions">
+                <button type="button" id="btn-cancel-abs-review" class="btn-secondary">ยกเลิก</button>
+                <button type="button" id="btn-save-abs-review" class="btn-login" style="width:auto; padding:12px 30px;">💾 ยืนยันผลการตรวจ</button>
+            </div>
         </div>
     </div>
 

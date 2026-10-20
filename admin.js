@@ -102,6 +102,12 @@ function bindAdminEvents() {
         cancelEditBtn.addEventListener("click", closeEditModal);
     }
 
+    // Abstraction Review Modal
+    const cancelAbsBtn = document.getElementById("btn-cancel-abs-review");
+    if (cancelAbsBtn) cancelAbsBtn.addEventListener("click", closeAbstractionReview);
+    const saveAbsBtn = document.getElementById("btn-save-abs-review");
+    if (saveAbsBtn) saveAbsBtn.addEventListener("click", saveAbstractionReview);
+
     // Edit Record Form Submit
     const editForm = document.getElementById("edit-record-form");
     if (editForm) {
@@ -666,6 +672,7 @@ function renderTable(results) {
                 <div class="action-cell">
                     <button class="btn-action" onclick="openPaperModal('${record.id}')">📝 บันทึกคะแนน</button>
                     <button class="btn-action-edit" onclick="openEditModal('${record.id}')">✏️ แก้ไขข้อมูล</button>
+                    ${abstractionReviewButton(record)}
                     <button class="btn-action-delete" onclick="confirmDeleteRecord('${record.id}', '${(record.name || record.user_id).replace(/'/g, "\\'")}')">🗑️ ลบข้อมูล</button>
                 </div>
             </td>
@@ -863,6 +870,141 @@ async function handleEditSubmit(e) {
 }
 
 // =====================================================
+// Abstraction Review (เกณฑ์ v2)
+// ด่านบอกความเหมือนให้คะแนนอัตโนมัติจากคำสำคัญ ซึ่งอาจตัดสินผิด
+// ให้ผู้ดูแลตรวจคำตอบดิบ แก้คะแนนรายข้อ แล้วคำนวณคะแนนรวมใหม่
+// =====================================================
+
+let activeAbsReview = null;
+
+function escapeHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function abstractionReviewButton(record) {
+    const d = record.details || {};
+    if (!Array.isArray(d.abstraction_answers) || d.abstraction_answers.length === 0) return '';
+    return d.abstraction_reviewed
+        ? `<button class="btn-action-review reviewed" onclick="openAbstractionReview('${record.id}')">🧩 ตรวจแล้ว (${d.abstraction}/2)</button>`
+        : `<button class="btn-action-review" onclick="openAbstractionReview('${record.id}')">🧩 ตรวจคะแนนนามธรรม</button>`;
+}
+
+// คะแนนรวม v2 = ผลรวม 7 ด้าน + โบนัสการศึกษา (ไม่เกิน 30) — ตรงกับ calculateAndShowResult() ใน script.js
+function calcV2TotalScore(details, education) {
+    const keys = ['visuospatial', 'naming', 'attention', 'language', 'abstraction', 'memory', 'orientation'];
+    let total = keys.reduce((sum, k) => sum + (Number(details[k]) || 0), 0);
+    if (education === 'ตํ่ากว่ามัธยมศึกษาปีที่ 6' || education === 'ไม่ได้เรียนหนังสือ / ประถมศึกษา') total += 1;
+    return Math.min(30, total);
+}
+
+function getAbsReviewSelections() {
+    return Array.from(document.querySelectorAll('#abs-review-list select')).map(sel => parseInt(sel.value, 10) || 0);
+}
+
+function updateAbsReviewSummary() {
+    if (!activeAbsReview) return;
+    const scores = getAbsReviewSelections();
+    const subtotal = Math.min(2, scores.reduce((a, b) => a + b, 0));
+    const newDetails = { ...activeAbsReview.details, abstraction: subtotal };
+    document.getElementById('abs-review-subtotal').textContent = subtotal;
+    document.getElementById('abs-review-new-total').textContent = calcV2TotalScore(newDetails, activeAbsReview.education);
+
+    document.querySelectorAll('#abs-review-list .abs-review-item').forEach((item, i) => {
+        const note = item.querySelector('.abs-review-changed');
+        const auto = activeAbsReview.details.abstraction_answers[i].auto_score;
+        note.textContent = scores[i] !== auto ? '(แก้จากคะแนนอัตโนมัติ)' : '';
+    });
+}
+
+function openAbstractionReview(id) {
+    const record = rawTestResults.find((r) => r.id === id);
+    if (!record || !record.details || !Array.isArray(record.details.abstraction_answers)) return;
+
+    activeAbsReview = record;
+    const d = record.details;
+    document.getElementById('abs-review-name').textContent = record.name || record.user_id || '-';
+    document.getElementById('abs-review-old-total').textContent = record.total_score != null ? record.total_score : '-';
+
+    document.getElementById('abs-review-list').innerHTML = d.abstraction_answers.map((a, i) => {
+        const current = a.reviewed_score != null ? a.reviewed_score : a.auto_score;
+        const answerHtml = a.cant_answer || !a.answer
+            ? '<div class="abs-review-answer empty">ผู้ทดสอบกด "ตอบไม่ได้"</div>'
+            : `<div class="abs-review-answer">"${escapeHtml(a.answer)}"</div>`;
+        return `
+            <div class="abs-review-item">
+                <span class="abs-review-pair">ข้อ ${i + 1}: ${escapeHtml(String(a.pair || '').replace('-', ' กับ '))}</span>
+                <span class="abs-review-concept">(คำตอบที่คาดหวัง: ${escapeHtml(a.concept || '-')})</span>
+                ${answerHtml}
+                <div class="abs-review-score-row">
+                    <span>อัตโนมัติ: <b>${a.auto_score}</b></span>
+                    <label>คะแนนที่ตรวจแล้ว:
+                        <select onchange="updateAbsReviewSummary()">
+                            <option value="1" ${current === 1 ? 'selected' : ''}>1 — ถูก (เชิงนามธรรม)</option>
+                            <option value="0" ${current !== 1 ? 'selected' : ''}>0 — ไม่ถูก</option>
+                        </select>
+                    </label>
+                    <span class="abs-review-changed"></span>
+                </div>
+            </div>`;
+    }).join('');
+
+    document.getElementById('abs-review-status').textContent = d.abstraction_reviewed
+        ? `ตรวจแล้วเมื่อ ${d.abstraction_reviewed_at ? new Date(d.abstraction_reviewed_at).toLocaleString('th-TH') : '-'} — แก้ไขซ้ำได้`
+        : 'ยังไม่ได้ตรวจ';
+
+    updateAbsReviewSummary();
+    document.getElementById('abstraction-modal').style.display = 'flex';
+}
+
+function closeAbstractionReview() {
+    document.getElementById('abstraction-modal').style.display = 'none';
+    activeAbsReview = null;
+}
+
+async function saveAbstractionReview() {
+    if (!activeAbsReview) return;
+    const record = activeAbsReview;
+    const scores = getAbsReviewSelections();
+    const subtotal = Math.min(2, scores.reduce((a, b) => a + b, 0));
+
+    const details = {
+        ...record.details,
+        abstraction: subtotal,
+        abstraction_answers: record.details.abstraction_answers.map((a, i) => ({ ...a, reviewed_score: scores[i] })),
+        abstraction_reviewed: true,
+        abstraction_reviewed_at: new Date().toISOString()
+    };
+    // เก็บคะแนนอัตโนมัติเดิมไว้ครั้งแรกที่ตรวจ เพื่อดูย้อนหลังได้ว่าแก้จากเท่าไหร่
+    if (record.details.abstraction_auto_total == null) {
+        details.abstraction_auto_total = record.details.abstraction;
+    }
+    const totalScore = calcV2TotalScore(details, record.education);
+    const updatedData = { details, total_score: totalScore, risk_level: calcRiskLevel(totalScore) };
+
+    const saveBtn = document.getElementById('btn-save-abs-review');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'กำลังบันทึก...';
+    saveBtn.disabled = true;
+
+    const success = await MemoryGardenTools.updateTestResult(record.id, updatedData);
+
+    saveBtn.textContent = originalText;
+    saveBtn.disabled = false;
+
+    if (success) {
+        const idx = rawTestResults.findIndex((r) => r.id === record.id);
+        if (idx !== -1) rawTestResults[idx] = { ...rawTestResults[idx], ...updatedData };
+        computePercentilesAndStats();
+        closeAbstractionReview();
+        showToast(`✅ บันทึกผลตรวจแล้ว คะแนนรวม ${totalScore}/30`, 'success');
+    } else {
+        showToast('❌ เกิดข้อผิดพลาดในการบันทึก', 'error');
+    }
+}
+
+// =====================================================
 // Delete Record Handlers
 // =====================================================
 
@@ -1025,6 +1167,41 @@ function populateAiSingleSelect(records) {
     if (gc) gc.textContent = records.length;
 }
 
+// รายการคะแนนรายด้านและคะแนนเต็มตามเวอร์ชันเกณฑ์ (v1 = เดิม, v2 = เพิ่ม Attention/Abstraction)
+const DOMAIN_ITEMS = {
+    1: [
+        ['memory', '🧠 ความจำระยะสั้น (Memory)', 5],
+        ['visuospatial', '🕰️ มิติสัมพันธ์และการวางแผนนาฬิกา (Visuospatial/Clock)', 3],
+        ['naming', '🗣️ การบอกชื่อสิ่งของ (Naming)', 5],
+        ['sentence', '💬 การพูดซ้ำประโยค (Sentence)', 2],
+        ['fluency', '⚡ ความคล่องแคล่วทางภาษา (Fluency)', 4],
+        ['math', '🧮 สมาธิและการคำนวณ (Math & Attention)', 5],
+        ['orientation', '🗺️ การรับรู้วันเวลาและสถานที่ (Orientation)', 6]
+    ],
+    2: [
+        ['visuospatial', '🕰️ มิติสัมพันธ์ (Visuospatial/Clock)', 3],
+        ['naming', '🗣️ การบอกชื่อสิ่งของ (Naming)', 5],
+        ['attention', '🎯 สมาธิรวม (Attention)', 6],
+        ['digit_span', '   ↳ จำตัวเลขไปข้างหน้า+ย้อนหลัง (Digit span)', 2],
+        ['vigilance', '   ↳ กดตัวเลขเป้าหมาย (Vigilance)', 1],
+        ['math', '   ↳ ลบ 7 ต่อเนื่อง (Serial 7s)', 3],
+        ['language', '💬 ภาษา (Language: พูดซ้ำ + บอกชื่อสัตว์)', 3],
+        ['sentence', '   ↳ การพูดซ้ำประโยค (Sentence)', 2],
+        ['fluency', '   ↳ บอกชื่อสัตว์ ≥ 11 คำ (Fluency)', 1],
+        ['abstraction', '🧩 ความคิดเชิงนามธรรม (Abstraction)', 2],
+        ['memory', '🧠 การระลึกความจำ (Delayed Recall)', 5],
+        ['orientation', '🗺️ การรับรู้วันเวลาและสถานที่ (Orientation)', 6]
+    ]
+};
+
+function domainLines(items, getValue, indent) {
+    const pad = indent || '';
+    return items.map(function(it) {
+        const v = getValue(it[0]);
+        return pad + '- ' + it[1] + ': ' + (v != null ? v : 'N/A') + ' / ' + it[2];
+    }).join('\n') + '\n';
+}
+
 function deidentifyRecord(r) {
     const d = r.details || {};
     return {
@@ -1045,7 +1222,14 @@ function deidentifyRecord(r) {
             fluency:     d.fluency != null ? d.fluency : (d.fluency_count != null ? d.fluency_count : null),
             math:        d.math != null ? d.math : (d.math_score != null ? d.math_score : null),
             orientation: d.orientation != null ? d.orientation : (d.orientation_score != null ? d.orientation_score : null),
+            // ฟิลด์ใหม่ของเกณฑ์ v2 (ข้อมูลเก่าจะเป็น null)
+            attention:   d.attention != null ? d.attention : null,
+            digit_span:  (d.digit_forward != null || d.digit_backward != null) ? ((d.digit_forward || 0) + (d.digit_backward || 0)) : null,
+            vigilance:   d.vigilance != null ? d.vigilance : null,
+            language:    d.language != null ? d.language : null,
+            abstraction: d.abstraction != null ? d.abstraction : null,
         },
+        score_version: d.score_version || 1,
         test_date: r.created_at ? r.created_at.substring(0, 10) : null,
         paper_score: r.paper_score != null ? r.paper_score : null,
         paper_risk: r.paper_risk_level || r.paper_risk || null,
@@ -1075,13 +1259,7 @@ function buildSinglePrompt(d) {
 '- เวลาที่ใช้ในการทำ: ' + dur + '\n\n' +
 '## 📊 ผลคะแนน Memory Garden ดิจิทัล\n' +
 '- คะแนนรวม: ' + (d.total_score != null ? d.total_score : 'N/A') + '/30 (' + (d.risk_level || 'N/A') + ')' + appPercentileInfo + paperInfo + '\n' +
-'- 🧠 ความจำระยะสั้น (Memory): ' + (s.memory != null ? s.memory : 'N/A') + '/5\n' +
-'- 🕰️ มิติสัมพันธ์และการวางแผนนาฬิกา (Visuospatial/Clock): ' + (s.visuospatial != null ? s.visuospatial : 'N/A') + '/3' + (s.contour != null ? ' (Contour: ' + s.contour + ')' : '') + '\n' +
-'- 🗣️ การบอกชื่อสิ่งของ (Naming): ' + (s.naming != null ? s.naming : 'N/A') + '/5\n' +
-'- 💬 การพูดซ้ำประโยค (Sentence): ' + (s.sentence != null ? s.sentence : 'N/A') + '/2\n' +
-'- ⚡ ความคล่องแคล่วทางภาษา (Fluency): ' + (s.fluency != null ? s.fluency : 'N/A') + ' / 4\n' +
-'- 🧮 สมาธิและการคำนวณเงินทอน (Math & Attention): ' + (s.math != null ? s.math : 'N/A') + '/5\n' +
-'- 🗺️ การรับรู้วันเวลาและสถานที่ (Orientation): ' + (s.orientation != null ? s.orientation : 'N/A') + '/6\n\n' +
+domainLines(DOMAIN_ITEMS[d.score_version >= 2 ? 2 : 1], function(key) { return s[key]; }) + '\n' +
 '## 🎯 เกณฑ์มาตรฐาน: >=25 ปกติ | 18-24 เสี่ยงบกพร่องเล็กน้อย (MCI) | <18 ควรได้รับการดูแลพิเศษ\n\n' +
 'กรุณาวิเคราะห์เป็น Markdown ภาษาไทย จัดหัวข้อน่าอ่าน: \n' +
 '1. **สรุปสถานะการทำงานของสมองภาพรวม**\n' +
@@ -1119,10 +1297,17 @@ function buildGroupPrompt(records) {
     records.forEach(function(r){ const k = r.risk_level || 'ไม่ระบุ'; riskCount[k] = (riskCount[k]||0)+1; });
     const riskLines = Object.keys(riskCount).map(function(k){ return '- '+k+': '+riskCount[k]+' คน ('+Math.round(riskCount[k]/n*100)+'%)'; }).join('\n');
     
-    const getAvg = function(key) {
-        const vals = records.map(function(r){ return r.scores && r.scores[key] != null ? r.scores[key] : null; }).filter(function(v){ return v!=null; });
+    const getAvgIn = function(list, key) {
+        const vals = list.map(function(r){ return r.scores && r.scores[key] != null ? r.scores[key] : null; }).filter(function(v){ return v!=null; });
         return vals.length ? (vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(1) : 'N/A';
     };
+    const domainAvgSection = [1, 2].map(function(ver) {
+        const list = records.filter(function(r){ return (r.score_version >= 2 ? 2 : 1) === ver; });
+        if (list.length === 0) return '';
+        const title = ver === 2 ? 'เกณฑ์ v2 (7 ด้านตามแนวทาง MoCA)' : 'เกณฑ์ v1 (เดิม)';
+        return '   **' + title + ' — ' + list.length + ' คน**\n' +
+            domainLines(DOMAIN_ITEMS[ver], function(key){ return getAvgIn(list, key); }, '   ');
+    }).filter(Boolean).join('\n');
 
     // ดึงค่าสถิติและการคำนวณทางการแพทย์
     const cs = currentComputedStats || {};
@@ -1152,14 +1337,7 @@ function buildGroupPrompt(records) {
 '- ผลต่างเฉลี่ยสัมบูรณ์ Normalized Score MAE: ' + maeStr + ' (|%App - %Paper|)\n\n' +
 '## 📈 2. ข้อมูลการกระจายตัวและกราฟการประเมิน (Graph & Distribution Data)\n' +
 '1. **กราฟการกระจายระดับความเสี่ยง (Risk Distribution)**:\n' + riskLines + '\n' +
-'2. **คะแนนเฉลี่ยแยก 5 มิติ (Cognitive Domains Breakdown)**:\n' +
-'   - 🧠 ความจำระยะสั้น (Memory): ' + getAvg('memory') + ' / 5\n' +
-'   - 🕰️ มิติสัมพันธ์และการวางแผน (Visuospatial/Clock): ' + getAvg('visuospatial') + ' / 3\n' +
-'   - 🗣️ การเรียกชื่อสิ่งของ (Naming): ' + getAvg('naming') + ' / 5\n' +
-'   - 💬 การพูดซ้ำประโยค (Sentence): ' + getAvg('sentence') + ' / 2\n' +
-'   - ⚡ ความคล่องแคล่วทางภาษา (Fluency): ' + getAvg('fluency') + ' / 4\n' +
-'   - 🧮 สมาธิและการคิดคำนวณ (Math & Attention): ' + getAvg('math') + ' / 5\n' +
-'   - 🗺️ การรับรู้วันเวลาและสถานที่ (Orientation): ' + getAvg('orientation') + ' / 6\n' +
+'2. **คะแนนเฉลี่ยแยกรายด้าน (Cognitive Domains Breakdown)** — แยกตามเวอร์ชันเกณฑ์ เพราะคะแนนเต็มรายด้านไม่เท่ากัน:\n' + domainAvgSection + '\n' +
 '3. **กราฟ Scatter Plot (ความสัมพันธ์ Percentile Rank App vs Paper)**: แสดงความสอดคล้องเชิงลำดับยศตามค่า r_s = ' + rsStr + '\n' +
 '4. **กราฟ ROC Curve**: วิเคราะห์ความสามารถในการแยกแยะระหว่างผู้สูงอายุภาวะปกติและภาวะ MCI\n\n' +
 '## 📝 โครงสร้างรายงานการวิเคราะห์ที่ต้องการ (เป็น Markdown ภาษาไทยอย่างมืออาชีพ):\n' +
@@ -1196,6 +1374,8 @@ async function callGeminiAPI(prompt) {
 
 function renderMarkdown(md) {
     if (!md) return '<p>(ไม่มีข้อมูล)</p>';
+    // ลบ LaTeX notation เช่น $n = 95$ → n = 95
+    md = md.replace(/\$\$([^$]+?)\$\$/g, '$1').replace(/\$([^$]+?)\$/g, '$1');
     // Normalize line endings
     md = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     // Split into lines and process each

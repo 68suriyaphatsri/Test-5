@@ -180,6 +180,7 @@ function calculateStandardPercentileRank(scores, targetScore) {
 function computePercentilesAndStats() {
     if (!rawTestResults || rawTestResults.length === 0) {
         renderMetrics(0, 0, 0, 0, 0, null, null, null, null, 0);
+        renderDemographicCharts([]);
         renderTable([]);
         return;
     }
@@ -261,6 +262,7 @@ function computePercentilesAndStats() {
 
     renderMetrics(N, paperCount, paperPct, spearmanRs, maePct, sensitivity, specificity, auc, optCutoff, diagnosticAccuracy, avgDurationStr);
     renderCharts(rawTestResults, paperRecords);
+    renderDemographicCharts(rawTestResults);
     renderTable(rawTestResults);
     populateAiSingleSelect(rawTestResults);
 }
@@ -612,6 +614,149 @@ function renderCharts(allRecords, paperRecords) {
         }
     }
 } // end renderCharts
+
+// =====================================================
+// Demographics Charts (PDPA)
+// - แสดงเฉพาะจำนวนรวม ไม่มีข้อมูลรายบุคคล
+// - อายุจัดเป็นช่วง / การศึกษาจัดเป็น 3 ระดับตามจำนวนปี (ลดความละเอียดของข้อมูล)
+// - กลุ่มที่มีน้อยกว่า DEMO_MIN_CELL คนถูกรวมเป็น "กลุ่มเล็ก" และถ้ารวมแล้วยังน้อยกว่าเกณฑ์จะไม่แสดงตัวเลข
+// - ถ้าผู้ใช้ทั้งหมดน้อยกว่า DEMO_MIN_TOTAL คน จะไม่แสดงกราฟเลย
+// =====================================================
+const DEMO_MIN_CELL = 5;
+const DEMO_MIN_TOTAL = 10;
+let demographicChartInstances = {};
+
+const DEMO_GROUPS = {
+    gender: {
+        order: ['ชาย', 'หญิง', 'อื่นๆ', 'ไม่ระบุ'],
+        classify: (r) => ({ male: 'ชาย', female: 'หญิง', other: 'อื่นๆ' })[r.gender] || 'ไม่ระบุ'
+    },
+    age: {
+        order: ['ต่ำกว่า 60 ปี', '60–69 ปี', '70–79 ปี', '80 ปีขึ้นไป', 'ไม่ระบุ'],
+        classify: (r) => {
+            const a = parseInt(r.age, 10);
+            if (!a || a <= 0) return 'ไม่ระบุ';
+            if (a < 60) return 'ต่ำกว่า 60 ปี';
+            if (a < 70) return '60–69 ปี';
+            if (a < 80) return '70–79 ปี';
+            return '80 ปีขึ้นไป';
+        }
+    },
+    education: {
+        order: ['ไม่เกิน 6 ปี (ประถม)', '7–12 ปี (ต่ำกว่า ม.6)', 'มากกว่า 12 ปี', 'ไม่ระบุ'],
+        classify: (r) => {
+            const e = r.education || '';
+            if (e.includes('ประถม') || e.includes('ไม่ได้เรียน')) return 'ไม่เกิน 6 ปี (ประถม)';
+            if (e.includes('ตํ่ากว่ามัธยม') || e.includes('ต่ำกว่ามัธยม')) return '7–12 ปี (ต่ำกว่า ม.6)';
+            if (e.includes('สูงกว่ามัธยม') || e.includes('ปริญญา')) return 'มากกว่า 12 ปี';
+            return 'ไม่ระบุ';
+        }
+    }
+};
+
+// นับจำนวนต่อกลุ่ม แล้วรวม/ซ่อนกลุ่มเล็ก — ใช้ร่วมกันทั้งกราฟและ prompt AI
+function summarizeDemographic(records, key) {
+    const def = DEMO_GROUPS[key];
+    const counts = {};
+    records.forEach(r => { const g = def.classify(r); counts[g] = (counts[g] || 0) + 1; });
+
+    const shown = [];
+    let smallTotal = 0, smallGroups = 0;
+    def.order.forEach(label => {
+        const n = counts[label] || 0;
+        if (n === 0) return;
+        if (n >= DEMO_MIN_CELL) shown.push({ label, n });
+        else { smallTotal += n; smallGroups++; }
+    });
+    // กลุ่มเล็กที่รวมกันแล้วถึงเกณฑ์ แสดงเป็นแท่ง "กลุ่มเล็กรวมกัน"; ถ้ายังไม่ถึงเกณฑ์ไม่แสดงตัวเลข
+    const small = smallGroups > 0 ? { groups: smallGroups, n: smallTotal, visible: smallTotal >= DEMO_MIN_CELL } : null;
+    if (small && small.visible) shown.push({ label: `กลุ่มเล็กรวมกัน (${smallGroups} กลุ่ม)`, n: smallTotal, merged: true });
+    return { shown, small, total: records.length };
+}
+
+function renderDemographicCharts(records) {
+    const grid = document.getElementById('demo-grid');
+    const empty = document.getElementById('demo-empty');
+    const minCellEl = document.getElementById('demo-min-cell');
+    if (!grid || !empty) return;
+    if (minCellEl) minCellEl.textContent = DEMO_MIN_CELL;
+
+    Object.values(demographicChartInstances).forEach(c => c && c.destroy());
+    demographicChartInstances = {};
+
+    const list = records || [];
+    if (list.length < DEMO_MIN_TOTAL) {
+        grid.style.display = 'none';
+        empty.style.display = 'block';
+        empty.textContent = `ต้องมีผู้ใช้อย่างน้อย ${DEMO_MIN_TOTAL} คนจึงจะแสดงกราฟได้โดยไม่เสี่ยงต่อการระบุตัวบุคคล (ตอนนี้มี ${list.length} คน)`;
+        return;
+    }
+    grid.style.display = 'grid';
+    empty.style.display = 'none';
+
+    const palette = ['#82954b', '#e67e22', '#3498db', '#9b59b6', '#95a5a6'];
+    const charts = [
+        { key: 'gender', canvas: 'genderChart', type: 'doughnut' },
+        { key: 'age', canvas: 'ageChart', type: 'bar' },
+        { key: 'education', canvas: 'educationChart', type: 'bar' }
+    ];
+
+    charts.forEach(({ key, canvas, type }) => {
+        const ctx = document.getElementById(canvas);
+        const note = document.getElementById(canvas + '-note');
+        if (!ctx) return;
+        const s = summarizeDemographic(list, key);
+        const values = s.shown.map(x => x.n);
+        const colors = s.shown.map((x, i) => x.merged ? '#bdc3c7' : palette[i % palette.length]);
+
+        if (note) {
+            note.textContent = s.small && !s.small.visible
+                ? `มี ${s.small.groups} กลุ่มที่มีน้อยกว่า ${DEMO_MIN_CELL} คน ไม่แสดงตัวเลขเพื่อคุ้มครองข้อมูลส่วนบุคคล`
+                : (s.small ? `รวมกลุ่มที่มีน้อยกว่า ${DEMO_MIN_CELL} คนไว้ในแท่งสีเทา` : '');
+        }
+
+        const tooltip = {
+            callbacks: {
+                label: (c) => {
+                    const n = c.raw;
+                    return ` ${n} คน (${Math.round(n / s.total * 100)}%)`;
+                }
+            }
+        };
+
+        demographicChartInstances[key] = new Chart(ctx.getContext('2d'), {
+            type,
+            data: {
+                labels: s.shown.map(x => x.label),
+                datasets: [{ data: values, backgroundColor: colors, borderRadius: type === 'bar' ? 8 : 0, borderWidth: type === 'doughnut' ? 2 : 0 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: type === 'doughnut', position: 'bottom', labels: { font: { family: 'Prompt' } } },
+                    tooltip
+                },
+                scales: type === 'bar' ? {
+                    y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'จำนวน (คน)' } },
+                    x: { ticks: { font: { family: 'Prompt', size: 11 } } }
+                } : undefined
+            }
+        });
+    });
+}
+
+// สรุปข้อมูลประชากรเป็นข้อความสำหรับ prompt AI (ใช้กติกาการซ่อนกลุ่มเล็กเดียวกับกราฟ)
+function demographicSummaryText(records) {
+    if (!records || records.length < DEMO_MIN_TOTAL) return `   - ข้อมูลน้อยกว่า ${DEMO_MIN_TOTAL} คน ไม่สรุปข้อมูลประชากรเพื่อคุ้มครองข้อมูลส่วนบุคคล\n`;
+    const titles = { gender: 'เพศ', age: 'ช่วงอายุ', education: 'ระดับการศึกษา' };
+    return Object.keys(titles).map(key => {
+        const s = summarizeDemographic(records, key);
+        const parts = s.shown.map(x => `${x.label} ${x.n} คน (${Math.round(x.n / s.total * 100)}%)`);
+        if (s.small && !s.small.visible) parts.push(`กลุ่มเล็กที่มีน้อยกว่า ${DEMO_MIN_CELL} คน (ไม่เปิดเผยตัวเลข)`);
+        return `   - ${titles[key]}: ${parts.join(', ')}`;
+    }).join('\n') + '\n';
+}
 
 // --- Render Table ---
 function renderTable(results) {
@@ -1337,6 +1482,7 @@ function buildGroupPrompt(records) {
 '- ผลต่างเฉลี่ยสัมบูรณ์ Normalized Score MAE: ' + maeStr + ' (|%App - %Paper|)\n\n' +
 '## 📈 2. ข้อมูลการกระจายตัวและกราฟการประเมิน (Graph & Distribution Data)\n' +
 '1. **กราฟการกระจายระดับความเสี่ยง (Risk Distribution)**:\n' + riskLines + '\n' +
+'   **ข้อมูลประชากรของกลุ่มตัวอย่าง (ข้อมูลรวม ไม่ระบุตัวตน ตาม PDPA)**:\n' + demographicSummaryText(records) +
 '2. **คะแนนเฉลี่ยแยกรายด้าน (Cognitive Domains Breakdown)** — แยกตามเวอร์ชันเกณฑ์ เพราะคะแนนเต็มรายด้านไม่เท่ากัน:\n' + domainAvgSection + '\n' +
 '3. **กราฟ Scatter Plot (ความสัมพันธ์ Percentile Rank App vs Paper)**: แสดงความสอดคล้องเชิงลำดับยศตามค่า r_s = ' + rsStr + '\n' +
 '4. **กราฟ ROC Curve**: วิเคราะห์ความสามารถในการแยกแยะระหว่างผู้สูงอายุภาวะปกติและภาวะ MCI\n\n' +

@@ -1038,8 +1038,14 @@
                     <div class="form-group">
                         <label>ระดับการศึกษา</label>
                         <select id="edit-education" style="width:100%; padding:12px; border-radius:12px; border:1.5px solid #ddd; font-size:1rem;">
-                            <option value="ตํ่ากว่ามัธยมศึกษาปีที่ 6">ต่ำกว่า ม.6</option>
-                            <option value="สูงกว่ามัธยมศึกษาปีที่ 6 หรือเทียบเท่า">สูงกว่า ม.6</option>
+                            <!-- ค่าต้องตรงกับตัวเลือกในหน้าแบบทดสอบ (test.html) ทุกตัว ไม่เช่นนั้นการบันทึกจะทำให้ค่าการศึกษากลายเป็นค่าว่าง -->
+                            <option value="">— ไม่ระบุ —</option>
+                            <option value="ไม่ได้เรียนหนังสือ / ประถมศึกษา">ไม่ได้เรียนหนังสือ / ประถม (≤ 6 ปี)</option>
+                            <option value="ตํ่ากว่ามัธยมศึกษาปีที่ 6">ต่ำกว่า ม.6 (7–12 ปี)</option>
+                            <option value="สูงกว่ามัธยมศึกษาปีที่ 6 หรือเทียบเท่า">สูงกว่า ม.6 ขึ้นไป (&gt; 12 ปี)</option>
+                            <option value="ปริญญาตรี">ปริญญาตรี (&gt; 12 ปี)</option>
+                            <option value="ปริญญาโท">ปริญญาโท (&gt; 12 ปี)</option>
+                            <option value="ปริญญาเอก">ปริญญาเอก (&gt; 12 ปี)</option>
                         </select>
                     </div>
                     <div class="form-group full-width">

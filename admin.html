@@ -239,6 +239,24 @@
             width: 100%;
         }
 
+        /* --- Demographics (PDPA) --- */
+        .demo-section {
+            background: white;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            border: 1px solid #eef2e6;
+            margin-bottom: 24px;
+        }
+        .demo-section h3 { font-size: 1.1rem; color: #333; margin: 0 0 6px; }
+        .demo-pdpa { font-size: 0.82rem; color: #6b7a55; background: #f4f8ec; border-radius: 10px; padding: 8px 12px; margin: 0 0 16px; line-height: 1.6; }
+        .demo-empty { color: #888; text-align: center; padding: 30px 10px; margin: 0; }
+        .demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+        .demo-card { border: 1px solid #eef2e6; border-radius: 16px; padding: 14px 16px; }
+        .demo-card h4 { margin: 0 0 8px; color: #4a5d23; font-size: 1rem; }
+        .demo-chart { position: relative; height: 230px; }
+        .demo-note { font-size: 0.78rem; color: #999; margin: 8px 0 0; min-height: 1em; }
+
         /* --- Data Table Section --- */
         .table-section {
             background: white;
@@ -820,6 +838,31 @@
                 <p style="font-size:0.82rem; color:#888; margin-bottom:16px;">แกน X = False Positive Rate (1-Specificity) | แกน Y = True Positive Rate (Sensitivity) | AUC ยิ่งใกล้ 1 ยิ่งดี (&gt;0.8 = ดี, &gt;0.9 = ดีมาก)</p>
                 <div style="position:relative; height:300px;">
                     <canvas id="rocChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Demographics (PDPA): แสดงเฉพาะข้อมูลรวม จัดกลุ่มกว้าง และซ่อนกลุ่มที่มีน้อยกว่า 5 คน -->
+            <div class="demo-section">
+                <h3>👥 ข้อมูลประชากรของผู้ใช้ (ไม่ระบุตัวตน)</h3>
+                <p class="demo-pdpa">🔒 แสดงเฉพาะข้อมูลรวม อายุแสดงเป็นช่วง การศึกษาแสดงเป็นระดับจำนวนปี
+                    และกลุ่มที่มีน้อยกว่า <b id="demo-min-cell">5</b> คนจะถูกรวมหรือซ่อนตัวเลข เพื่อไม่ให้ระบุตัวบุคคลได้ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)</p>
+                <p id="demo-empty" class="demo-empty" style="display:none;"></p>
+                <div id="demo-grid" class="demo-grid">
+                    <div class="demo-card">
+                        <h4>เพศ</h4>
+                        <div class="demo-chart"><canvas id="genderChart"></canvas></div>
+                        <p class="demo-note" id="genderChart-note"></p>
+                    </div>
+                    <div class="demo-card">
+                        <h4>ช่วงอายุ</h4>
+                        <div class="demo-chart"><canvas id="ageChart"></canvas></div>
+                        <p class="demo-note" id="ageChart-note"></p>
+                    </div>
+                    <div class="demo-card">
+                        <h4>ระดับการศึกษา</h4>
+                        <div class="demo-chart"><canvas id="educationChart"></canvas></div>
+                        <p class="demo-note" id="educationChart-note"></p>
+                    </div>
                 </div>
             </div>
 

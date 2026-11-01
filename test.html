@@ -23,7 +23,8 @@
     <title>Memory Garden - แบบทดสอบความจำ</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
-    <link rel="stylesheet" href="style.css">
+    <!-- ใส่เลขเวอร์ชันเพื่อไม่ให้มือถือใช้ CSS เก่าที่แคชไว้ (เปลี่ยนเลขทุกครั้งที่แก้ style.css) -->
+    <link rel="stylesheet" href="style.css?v=20261101">
     <link
         href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&family=Prompt:wght@300;400;600;700&display=swap"
         rel="stylesheet">
@@ -77,16 +78,16 @@
         /* ส่วนอื่นๆ คงเดิม */
     </style>
 
-    <!-- Floating Live Test Timer Widget -->
-    <div id="test-global-timer-widget"
-        style="display: none; position: fixed; top: 18px; right: 18px; z-index: 99999; background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); border: 2px solid #82954b; color: #2e4414; font-weight: 700; font-size: 0.95rem; border-radius: 50px; padding: 6px 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.12); align-items: center; gap: 6px; pointer-events: none; transition: all 0.3s ease;">
-        <span style="font-size: 1.1rem; animation: pulse 1.5s infinite alternate;">⏱️</span>
-        <span id="test-global-timer-display" style="font-family: 'Anuphan', monospace; letter-spacing: 0.5px;">00:00</span>
-    </div>
-
 </head>
 
 <body>
+
+    <!-- Floating Live Test Timer Widget (มุมซ้ายล่าง เพื่อไม่บังหัวข้อและปุ่ม 🔊/ℹ️ ด้านบนของแต่ละด่าน) -->
+    <div id="test-global-timer-widget"
+        style="display: none; position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 14px; z-index: 99999; background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); border: 2px solid #82954b; color: #2e4414; font-weight: 700; font-size: 0.9rem; border-radius: 50px; padding: 5px 14px; box-shadow: 0 4px 18px rgba(0,0,0,0.12); align-items: center; gap: 6px; pointer-events: none; transition: all 0.3s ease;">
+        <span style="font-size: 1.05rem; animation: pulse 1.5s infinite alternate;">⏱️</span>
+        <span id="test-global-timer-display" style="font-family: 'Anuphan', monospace; letter-spacing: 0.5px;">00:00</span>
+    </div>
 
     <div id="loader-wrapper">
         <p
@@ -101,15 +102,15 @@
         style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; z-index: 99999; opacity: 0; pointer-events: none;">
     </div>
 
-    <!-- Floating Knowledge Article & Admin Shortcut Buttons -->
-    <div style="position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; gap: 8px; align-items: center;">
-        <a href="article.html" target="_blank"
+    <!-- Floating Knowledge Article & Admin Shortcut Buttons (แสดงเฉพาะหน้าแนะนำ ซ่อนเมื่อเริ่มทำแบบทดสอบ) -->
+    <div id="floating-top-links" style="position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; gap: 8px; align-items: center;">
+        <a href="article.html" target="_blank" rel="noopener"
             style="background: rgba(255, 255, 255, 0.95); color: #3d5e23; border: 1.5px solid #82954b; border-radius: 50px; padding: 8px 16px; font-size: 0.9rem; font-weight: bold; text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 6px; backdrop-filter: blur(8px); transition: transform 0.2s;"
             onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"
             title="บทความให้ความรู้เรื่องอัลไซเมอร์">
             <span>🌿</span> <span>ความรู้อัลไซเมอร์</span>
         </a>
-        <a href="admin.html" target="_blank"
+        <a href="admin.html" target="_blank" rel="noopener"
             style="background: rgba(255, 255, 255, 0.95); color: #4a5d23; border: 1.5px solid #82954b; border-radius: 50px; padding: 8px 16px; font-size: 0.9rem; font-weight: bold; text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 6px; backdrop-filter: blur(8px); transition: transform 0.2s;"
             onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"
             title="Admin Control Panel">
@@ -143,7 +144,7 @@
                     </svg>
                     เข้าสู่ระบบด้วย LINE
                 </button>
-                <a href="admin.html" target="_blank"
+                <a href="admin.html" target="_blank" rel="noopener"
                     style="color: #4a5d23; font-size: 0.9rem; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 6px; background: rgba(130,149,75,0.12); padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(130,149,75,0.25);">🔐 เข้าสู่ระบบผู้ดูแลระบบ (Admin Dashboard)</a>
             </div>
 
@@ -165,7 +166,7 @@
                     style="width: 100%; padding: 12px; background: rgba(130,149,75,0.1); color: #82954b; border: 2px solid rgba(130,149,75,0.35); border-radius: 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <span style="font-size: 1.1rem;">📊</span> ดูประวัติผลการทดสอบ
                 </button>
-                <a href="admin.html" target="_blank"
+                <a href="admin.html" target="_blank" rel="noopener"
                     style="color: #4a5d23; font-size: 0.9rem; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 6px; background: rgba(130,149,75,0.12); padding: 10px 20px; border-radius: 50px; border: 1px solid rgba(130,149,75,0.25);">🔐 เข้าสู่ระบบผู้ดูแลระบบ (Admin Dashboard)</a>
             </div>
 
@@ -177,7 +178,7 @@
         style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; flex-direction: column; justify-content: flex-start; align-items: center; z-index: 550; background: url('https://wqllezztqhfabpygicuv.supabase.co/storage/v1/object/public/Back%20image%201/garden.gif') center/cover no-repeat; overflow-y: auto;">
         <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); pointer-events: none; z-index: 0;"></div>
         <div
-            style="position: relative; z-index: 1; background: rgba(255,255,255,0.97); border-radius: 28px; padding: 36px 28px; max-width: 480px; width: 92%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.25); margin: 24px 0 40px 0;">
+            style="position: relative; z-index: 1; background: rgba(255,255,255,0.97); border-radius: 28px; padding: 36px 28px; max-width: 480px; width: 92%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.25); margin: 72px 0 40px 0;">
 
             <div style="font-size: 3rem; margin-bottom: 8px;">🧠</div>
             <h2 style="color: #4a5d23; font-size: 1.5rem; margin-bottom: 4px;">การประเมินสุขภาพสมองเบื้องต้น</h2>
@@ -313,13 +314,13 @@
                 เริ่มเลย →</button>
 
             <!-- ปุ่มอ่านบทความความรู้ -->
-            <a href="article.html" target="_blank"
+            <a href="article.html" target="_blank" rel="noopener"
                 style="color: #2e5a27; font-size: 0.95rem; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: #edf5e7; padding: 12px 20px; border-radius: 50px; border: 1.5px solid #a4ba74; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 10px; transition: all 0.2s;">
                 <span>🌿</span> อ่านบทความ: เข้าใจอัลไซเมอร์ ก่อนที่ความทรงจำจะร่วงหล่น ↗
             </a>
 
             <!-- ปุ่มเข้า Admin บนหน้าแรก -->
-            <a href="admin.html" target="_blank"
+            <a href="admin.html" target="_blank" rel="noopener"
                 style="color: #4a5d23; font-size: 0.95rem; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: #ffffff; padding: 12px 20px; border-radius: 50px; border: 1.5px solid #82954b; box-shadow: 0 4px 12px rgba(0,0,0,0.06); box-sizing: border-box;">
                 <span>🔐</span> เข้าสู่ระบบผู้ดูแลระบบ (Admin Dashboard)
             </a>
@@ -369,7 +370,6 @@
 
 
     <div id="welcome-garden-page" style="display: none; opacity: 0;">
-        <div id="white-fade-overlay"></div>
         <div class="video-overlay"></div>
         <div class="welcome-container">
             <h1 id="typing-text" style="font-size: 20px; color: #ffffff; text-align: center; padding: 0 20px;"></h1>
@@ -1079,7 +1079,7 @@
                     style="background: #0275d8;">โรงพยาบาลอัลไซเมอร์ใกล้ฉัน 📍</button>
                 <button onclick="openSatisfactionForm()" class="btn-advice"
                     style="background: #673ab7;">ทำแบบประเมินความพึงพอใจ (กรอกรหัสให้อัตโนมัติ)</button>
-                <a href="https://line.me/R/ti/p/@683ypjyr" target="_blank" class="btn-advice"
+                <a href="https://line.me/R/ti/p/@683ypjyr" target="_blank" rel="noopener" class="btn-advice"
                     style="background: #06C755; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; font-weight: bold;">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: white;">
                         <path d="M12 2C6.477 2 2 5.82 2 10.53C2 12.87 3.12 14.97 4.96 16.4C4.58 17.75 3.91 19.89 3.73 20.46C3.51 21.14 4.04 21.05 4.3 20.89C6.41 19.5 8.91 17.89 9.61 17.47C10.37 17.73 11.17 17.87 12 17.87C17.52 17.87 22 14.05 22 9.34C22 4.63 17.52 2 12 2Z"/>
@@ -1122,7 +1122,7 @@
                             <a id="hosp-call-btn" href="#"
                                 style="flex: 1; text-decoration: none; text-align: center; padding: 12px; background: #28a745; color: white; border-radius: 10px; font-weight: bold; font-size: 0.95rem; transition: 0.3s; display: block; box-shadow: 0 4px 12px rgba(40,167,69,0.25);">📞
                                 โทรศัพท์</a>
-                            <a id="hosp-map-btn" target="_blank" href="#"
+                            <a id="hosp-map-btn" target="_blank" rel="noopener" href="#"
                                 style="flex: 1; text-decoration: none; text-align: center; padding: 12px; background: #0275d8; color: white; border-radius: 10px; font-weight: bold; font-size: 0.95rem; transition: 0.3s; display: block; box-shadow: 0 4px 12px rgba(2,117,216,0.25);">📍
                                 นำทาง</a>
                         </div>

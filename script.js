@@ -678,6 +678,9 @@ function showIntroPage() {
         startBtn.dataset.bound = 'true';
         startBtn.addEventListener('click', function () {
             if (introPage) introPage.style.display = 'none';
+            // ซ่อนปุ่มลอย "ความรู้อัลไซเมอร์ / Admin" ระหว่างทำแบบทดสอบ ไม่ให้ทับหัวข้อของแต่ละด่าน
+            const floatingLinks = document.getElementById('floating-top-links');
+            if (floatingLinks) floatingLinks.style.display = 'none';
             if (login) {
                 login.style.display = 'flex';
                 login.style.opacity = '1';
@@ -710,12 +713,17 @@ function typeWriter(text, elementId, speed, callback) {
     const element = document.getElementById(elementId);
     if (!element) return;
     element.innerHTML = "";
+    // โทเคนของรอบนี้: ถ้ามีการพิมพ์รอบใหม่หรือถูกยกเลิก (cancelTypeWriter) รอบเก่าจะหยุดทันที
+    // ป้องกันข้อความต่อท้ายซ้ำ เช่น คำสั่งนาฬิกาที่ถูกเปลี่ยนข้อความระหว่างกำลังพิมพ์
+    const token = {};
+    element._typeWriterToken = token;
 
     // ใช้ Array.from เพื่อจัดการ Surrogate Pairs และเบื้องต้นสำหรับภาษาไทย
     // แต่สำหรับภาษาไทยที่สมบูรณ์ ควรใช้การเช็คสระ/วรรณยุกต์
     const characters = Array.from(text);
 
     function typing() {
+        if (element._typeWriterToken !== token) return;
         if (i < characters.length) {
             let char = characters[i];
 
@@ -733,6 +741,12 @@ function typeWriter(text, elementId, speed, callback) {
         } else { if (callback) callback(); }
     }
     typing();
+}
+
+// หยุดการพิมพ์ทีละตัวที่ยังค้างอยู่ใน element นี้ (ก่อนเขียนข้อความใหม่ทับ)
+function cancelTypeWriter(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) element._typeWriterToken = null;
 }
 
 // --- Custom Premium Popup Modal Functions ---
@@ -1084,6 +1098,7 @@ function snapToPerfectClock() {
     const timeStr = `${targetHour}:${String(targetMinute).padStart(2, '0')}`;
     const instr = document.getElementById('clock-instruction');
     if (instr) {
+        cancelTypeWriter('clock-instruction');
         instr.innerHTML = `เก่งมากครับ! ตอนนี้นำตัวเลข 1 ถึง 12 มาวางบนหน้าปัด และปรับเข็มให้ตรงเวลา <b>${timeStr}</b> นะครับ`;
     }
     speakText(`นำตัวเลข 1 ถึง 12 มาวางบนหน้าปัด และปรับเข็มให้ตรงเวลา ${timeStr} ครับ`);
@@ -3481,17 +3496,23 @@ async function generateUserAIAnalysis() {
     const loading = document.getElementById('user-ai-loading');
     const content = document.getElementById('user-ai-content');
 
+    // ผลการประเมินถูกเก็บไว้ใน currentUserTestResult เสมอเมื่อถึงหน้าสรุปผล (calculateAndShowResult)
+    // ค่าสำรองด้านล่างใช้เฉพาะกรณีผิดปกติ และอ่านจากการ์ดคะแนน 7 ด้านที่มีอยู่จริงในหน้า
+    const readScore = (id) => parseInt(document.getElementById(id)?.innerText) || 0;
     const u = window.currentUserTestResult || {
-        totalScore: parseInt(document.getElementById('score-text')?.innerText) || 0,
-        riskLevel: document.getElementById('risk-level-title')?.innerText || 'ปกติ',
+        totalScore: 0,
+        riskLevel: document.getElementById('risk-level-title')?.innerText || '-',
         age: document.getElementById('user-age')?.value || 'ไม่ระบุ',
         education: document.getElementById('user-education')?.value || 'ไม่ระบุ',
         details: {
-            memory: parseInt(document.getElementById('score-memory-val')?.innerText) || 0,
-            visuospatial: parseInt(document.getElementById('score-visuo-val')?.innerText) || 0,
-            math: parseInt(document.getElementById('score-math-val')?.innerText) || 0,
-            language: parseInt(document.getElementById('score-lang-val')?.innerText) || 0,
-            orientation: parseInt(document.getElementById('score-ori-val')?.innerText) || 0,
+            score_version: SCORE_VERSION,
+            visuospatial: readScore('score-visuo-val'),
+            naming: readScore('score-naming-val'),
+            attention: readScore('score-attention-val'),
+            language: readScore('score-lang-val'),
+            abstraction: readScore('score-abstraction-val'),
+            memory: readScore('score-memory-val'),
+            orientation: readScore('score-ori-val'),
             duration_formatted: document.getElementById('result-duration-display')?.innerText || ''
         }
     };
